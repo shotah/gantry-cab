@@ -9,6 +9,9 @@ import android.content.Intent
 import androidx.core.app.NotificationCompat
 import androidx.core.app.Person
 import androidx.core.app.RemoteInput
+import androidx.core.content.pm.ShortcutInfoCompat
+import androidx.core.content.pm.ShortcutManagerCompat
+import androidx.core.graphics.drawable.IconCompat
 import com.gantree.cab.MainActivity
 import com.gantree.cab.R
 
@@ -18,36 +21,36 @@ object CabNotifier {
   const val MESSAGE_ID = 42
   const val KEY_REPLY = "cab.reply"
 
+  fun conversationId(slug: String): String = "cab-$slug"
+
   fun ensureChannel(ctx: Context) {
     val mgr = ctx.getSystemService(NotificationManager::class.java)
     val ch = NotificationChannel(CHANNEL, ctx.getString(R.string.notify_channel), NotificationManager.IMPORTANCE_HIGH)
     ch.setShowBadge(true)
+    ch.enableVibration(true)
     mgr.createNotificationChannel(ch)
   }
 
   fun connected(ctx: Context): Notification {
     ensureChannel(ctx)
-    val open = PendingIntent.getActivity(
-      ctx,
-      0,
-      Intent(ctx, MainActivity::class.java),
-      PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
-    )
     return NotificationCompat.Builder(ctx, CHANNEL)
       .setSmallIcon(R.drawable.ic_stat_cab)
       .setContentTitle(ctx.getString(R.string.app_name))
       .setContentText(ctx.getString(R.string.notify_connected))
-      .setContentIntent(open)
+      .setContentIntent(openApp(ctx))
       .setOngoing(true)
       .setSilent(true)
       .setCategory(NotificationCompat.CATEGORY_SERVICE)
+      .setForegroundServiceBehavior(NotificationCompat.FOREGROUND_SERVICE_IMMEDIATE)
       .build()
   }
 
   fun kitMessage(ctx: Context, slug: String, text: String) {
     ensureChannel(ctx)
+    val shortcutId = conversationId(slug)
     val you = Person.Builder().setName("You").setKey("you").build()
-    val kit = Person.Builder().setName(slug).setKey("kit").build()
+    val kit = Person.Builder().setName(slug).setKey(shortcutId).build()
+    publishConversation(ctx, slug, kit)
     val style = NotificationCompat.MessagingStyle(you)
       .setConversationTitle(slug)
       .addMessage(text, System.currentTimeMillis(), kit)
@@ -72,17 +75,49 @@ object CabNotifier {
       .build()
     val n = NotificationCompat.Builder(ctx, CHANNEL)
       .setSmallIcon(R.drawable.ic_stat_cab)
+      .setContentTitle(slug)
+      .setContentText(text)
+      .setContentIntent(openApp(ctx))
       .setStyle(style)
       .addAction(reply)
       .addAction(read)
       .setCategory(NotificationCompat.CATEGORY_MESSAGE)
+      .setShortcutId(shortcutId)
+      .setAutoCancel(true)
       .setVisibility(NotificationCompat.VISIBILITY_PRIVATE)
+      .setPriority(NotificationCompat.PRIORITY_HIGH)
+      .setDefaults(NotificationCompat.DEFAULT_ALL)
       .build()
     ctx.getSystemService(NotificationManager::class.java).notify(MESSAGE_ID, n)
   }
 
   fun dismissKit(ctx: Context) {
     ctx.getSystemService(NotificationManager::class.java).cancel(MESSAGE_ID)
+  }
+
+  private fun publishConversation(ctx: Context, slug: String, kit: Person) {
+    val shortcut = ShortcutInfoCompat.Builder(ctx, conversationId(slug))
+      .setShortLabel(slug)
+      .setLongLabel(slug)
+      .setIcon(IconCompat.createWithResource(ctx, R.drawable.ic_stat_cab))
+      .setIntent(Intent(ctx, MainActivity::class.java).setAction(Intent.ACTION_MAIN))
+      .setPerson(kit)
+      .setLongLived(true)
+      .setCategories(setOf("android.shortcut.conversation"))
+      .build()
+    ShortcutManagerCompat.pushDynamicShortcut(ctx, shortcut)
+  }
+
+  private fun openApp(ctx: Context): PendingIntent {
+    return PendingIntent.getActivity(
+      ctx,
+      0,
+      Intent(ctx, MainActivity::class.java)
+        .setAction(Intent.ACTION_MAIN)
+        .addCategory(Intent.CATEGORY_LAUNCHER)
+        .addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP),
+      PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
+    )
   }
 
   private fun serviceIntent(ctx: Context, action: String, slug: String): PendingIntent {

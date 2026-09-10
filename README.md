@@ -23,6 +23,15 @@ Android Auto reads Kit aloud and stuffs spoken replies into
 `RemoteInput`. This app turns that string into an `inbound` frame.
 It does not wrap the Vinext PWA. It does not run React Native.
 
+<p align="center">
+  <img src="assets/docs/phone-thread.png" alt="Cab on a phone" width="180">
+  &nbsp;
+  <img src="assets/docs/auto-thread.png" alt="Cab in Android Auto" width="320">
+</p>
+
+Every screen: [docs/screens.md](docs/screens.md). `make shot` reshoots.
+Phone + Auto install: [docs/sideload_to_android.md](docs/sideload_to_android.md).
+
 ## This is not
 
 - A Chrome Install / TWA / PWA in the dash. Auto will not project that.
@@ -50,16 +59,17 @@ Android Studio works. So does make, same shape as
 ```bash
 make test            # script tests + JVM unit tests
 make lint            # Android lint
-make coverage        # JaCoCo + 70% bar (mailbox wire)
+make coverage        # JaCoCo + 70% bar (mailbox + mouth)
 make install-hooks   # pre-commit: lint + test + 70% coverage
+make shot            # phone + Auto PNGs → assets/docs
 make build           # debug APK
 make apk             # sideload APK (GitHub Release uses this)
 make release         # bump patch, tag, push (GitHub Release + APK)
 make release DRY_RUN=1
 ```
 
-Needs an Android SDK (`local.properties` `sdk.dir`, or `ANDROID_HOME`).
-Script tests (`make test-scripts`) do not. Nested checkout under
+Needs JDK 21 and an Android SDK (`local.properties` `sdk.dir`, or
+`ANDROID_HOME`). Script tests (`make test-scripts`) do not. Nested checkout under
 gantree (`repos/gantry-cab`), own git remote, same pattern as
 `repos/ai-gantry`. Walk: [docs/setup.md](docs/setup.md).
 

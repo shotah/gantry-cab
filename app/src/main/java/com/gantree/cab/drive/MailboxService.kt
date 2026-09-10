@@ -1,18 +1,24 @@
 package com.gantree.cab.drive
 
+import android.Manifest
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.content.pm.ServiceInfo
 import android.os.Build
 import android.os.Looper
+import androidx.core.content.ContextCompat
 import androidx.lifecycle.LifecycleService
 import com.gantree.cab.CabApp
-import com.gantree.cab.outbound
-import com.gantree.cab.spoken
 import com.gantree.cab.mailbox.Geo
 import com.gantree.cab.mailbox.MailboxClient
 import com.gantree.cab.mailbox.PhoneContext
+import com.gantree.cab.mailbox.applyEmoji
+import com.gantree.cab.mailbox.geoHint
 import com.gantree.cab.mailbox.parseSlug
+import com.gantree.cab.mailbox.pinFrame
+import com.gantree.cab.outbound
+import com.gantree.cab.spoken
 import com.google.android.gms.location.LocationServices
 import com.google.android.gms.location.Priority
 import com.google.android.gms.tasks.Tasks
@@ -65,27 +71,53 @@ class MailboxService : LifecycleService() {
     mailbox.start(app.prefs.origin, slug, bearer)
   }
 
-  fun send(text: String) {
+  fun send(text: String, photo: String? = null) {
     Thread {
-      sendBlocking(text)
+      sendBlocking(text, photo)
     }.start()
   }
 
-  private fun sendBlocking(text: String) {
-    val trimmed = text.trim()
-    if (trimmed.isEmpty()) {
+  fun pin() {
+    Thread {
+      pinBlocking()
+    }.start()
+  }
+
+  private fun sendBlocking(text: String, photo: String?) {
+    val trimmed = applyEmoji(text, text.length, "send").text.trim()
+    if (trimmed.isEmpty() && photo.isNullOrEmpty()) {
       return
     }
     val app = application as CabApp
-    val frame = app.outbound(trimmed, phoneContext())
+    val gpsOn = app.prefs.gps
+    val geo = if (gpsOn) lastGeo() else null
+    val ctx = phoneContext(geo)
+    app.mouth.setHint(geoHint(gpsOn, geo))
+    val frame = app.outbound(trimmed, ctx, photo?.let { listOf(it) })
     client?.remember(frame.id ?: return)
     if (client?.send(frame) != true) {
       app.mouth.setHint("socket down — reconnecting")
     }
   }
 
-  private fun phoneContext(): PhoneContext {
+  private fun pinBlocking() {
+    val app = application as CabApp
+    if (!app.prefs.gps) {
+      app.mouth.setHint("GPS off")
+      return
+    }
     val geo = lastGeo()
+    app.mouth.setHint(geoHint(true, geo))
+    if (geo == null) {
+      return
+    }
+    val frame = pinFrame(phoneContext(geo))
+    if (client?.send(frame) != true) {
+      app.mouth.setHint("socket down — reconnecting")
+    }
+  }
+
+  private fun phoneContext(geo: Geo?): PhoneContext {
     return PhoneContext(
       at = Instant.now().toString(),
       tz = TimeZone.getDefault().id,
@@ -94,6 +126,11 @@ class MailboxService : LifecycleService() {
   }
 
   private fun lastGeo(): Geo? {
+    val fine = ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION)
+    val coarse = ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION)
+    if (fine != PackageManager.PERMISSION_GRANTED && coarse != PackageManager.PERMISSION_GRANTED) {
+      return null
+    }
     return try {
       val fused = LocationServices.getFusedLocationProviderClient(this)
       val loc = Tasks.await(
@@ -117,14 +154,26 @@ class MailboxService : LifecycleService() {
     }
 
     fun sendText(ctx: Context, text: String) {
+      sendBits(ctx) { it.send(text) }
+    }
+
+    fun sendPhoto(ctx: Context, url: String) {
+      sendBits(ctx) { it.send("", photo = url) }
+    }
+
+    fun sendPin(ctx: Context) {
+      sendBits(ctx) { it.pin() }
+    }
+
+    private fun sendBits(ctx: Context, fn: (MailboxService) -> Unit) {
       val svc = instance
       if (svc != null) {
-        svc.send(text)
+        fn(svc)
         return
       }
       start(ctx)
       android.os.Handler(Looper.getMainLooper()).postDelayed({
-        instance?.send(text)
+        instance?.let(fn)
       }, 400)
     }
   }

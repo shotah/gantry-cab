@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Print integer JaCoCo line coverage from a report XML.
 #
-# Default: WireKt + MailboxUrlKt (JVM mailbox wire — same idea as gantree
+# Default: mailbox helpers + Mouth (JVM pendant-parity — same idea as gantree
 # gating lib/yard). Empty COVERAGE_CLASSES uses the report-total LINE counter.
 set -euo pipefail
 
@@ -14,7 +14,7 @@ fi
 # Default scoped classes. Override: COVERAGE_CLASSES=  (report total)
 # or COVERAGE_CLASSES="com/gantree/cab/mailbox/AuthApi".
 if [[ ! -v COVERAGE_CLASSES ]]; then
-  COVERAGE_CLASSES="com/gantree/cab/mailbox/WireKt com/gantree/cab/mailbox/MailboxUrlKt"
+  COVERAGE_CLASSES="com/gantree/cab/mailbox/WireKt com/gantree/cab/mailbox/MailboxUrlKt com/gantree/cab/mailbox/EmojiKt com/gantree/cab/mailbox/SlashKt com/gantree/cab/mailbox/PhotoKt com/gantree/cab/mailbox/JpegKt com/gantree/cab/mailbox/LookKt com/gantree/cab/mailbox/GeoHintKt com/gantree/cab/mailbox/AvatarKt com/gantree/cab/Mouth"
 fi
 
 parse() {
@@ -25,19 +25,25 @@ parse() {
   eval "$parsed"
 }
 
+# JaCoCo XML may be pretty-printed or a single line. Concatenate, then pick
+# class-level LINE counters (not method counters) or the report total.
 if [[ -z "${COVERAGE_CLASSES// /}" ]]; then
   parse awk '
-    /type="LINE"/ {
+    { xml = xml $0 }
+    END {
+      tail = xml
+      while ((i = index(tail, "</package>")) > 0) {
+        tail = substr(tail, i + 10)
+      }
+      if (!match(tail, /<counter type="LINE" missed="[0-9]+" covered="[0-9]+"/)) exit 2
+      s = substr(tail, RSTART, RLENGTH)
       missed = 0
       covered = 0
-      n = split($0, a, "\"")
+      n = split(s, a, "\"")
       for (i = 1; i < n; i++) {
         if (a[i] ~ /missed=$/) missed = a[i + 1]
         if (a[i] ~ /covered=$/) covered = a[i + 1]
       }
-    }
-    END {
-      if (covered == "" && missed == "") exit 2
       print "MISSED=" missed + 0
       print "COVERED=" covered + 0
     }
@@ -47,37 +53,36 @@ if [[ -z "${COVERAGE_CLASSES// /}" ]]; then
   }
 else
   parse awk -v classes="$COVERAGE_CLASSES" '
-    BEGIN {
-      ncls = split(classes, cls, " ")
-    }
-    /<class / {
-      keep = 0
-      in_method = 0
-      current = ""
-      if (match($0, /<class name="[^"]+"/)) {
-        s = substr($0, RSTART, RLENGTH)
-        split(s, a, "\"")
-        current = a[2]
-      }
-      for (i = 1; i <= ncls; i++) {
-        if (current == cls[i]) keep = 1
-      }
-    }
-    /<method / { in_method = 1 }
-    /<\/method>/ { in_method = 0 }
-    keep && !in_method && /type="LINE"/ {
-      missed = 0
-      covered = 0
-      n = split($0, a, "\"")
-      for (i = 1; i < n; i++) {
-        if (a[i] ~ /missed=$/) missed = a[i + 1]
-        if (a[i] ~ /covered=$/) covered = a[i + 1]
-      }
-      MISSED += missed + 0
-      COVERED += covered + 0
-      found = 1
-    }
+    BEGIN { ncls = split(classes, cls, " ") }
+    { xml = xml $0 }
     END {
+      for (c = 1; c <= ncls; c++) {
+        needle = "<class name=\"" cls[c] "\""
+        start = index(xml, needle)
+        if (start == 0) continue
+        rest = substr(xml, start)
+        closeat = index(rest, "</class>")
+        if (closeat == 0) continue
+        blob = substr(rest, 1, closeat + 7)
+        while (match(blob, /<method /)) {
+          rest2 = substr(blob, RSTART)
+          mend = index(rest2, "</method>")
+          if (mend == 0) break
+          blob = substr(blob, 1, RSTART - 1) substr(rest2, mend + 9)
+        }
+        if (!match(blob, /<counter type="LINE" missed="[0-9]+" covered="[0-9]+"/)) continue
+        s = substr(blob, RSTART, RLENGTH)
+        missed = 0
+        covered = 0
+        n = split(s, a, "\"")
+        for (i = 1; i < n; i++) {
+          if (a[i] ~ /missed=$/) missed = a[i + 1]
+          if (a[i] ~ /covered=$/) covered = a[i + 1]
+        }
+        MISSED += missed + 0
+        COVERED += covered + 0
+        found = 1
+      }
       if (!found) exit 2
       print "MISSED=" MISSED + 0
       print "COVERED=" COVERED + 0

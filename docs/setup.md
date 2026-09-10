@@ -15,8 +15,18 @@ make build           # debug APK → app/build/outputs/apk/debug/
 make apk             # sideload APK → app/build/outputs/apk/release/
 ```
 
-Android Studio: open this folder, Sync, Run (API 28+). Make and Studio
-both read `VERSION` for `versionName` / `versionCode`.
+Needs JDK 21 (`JAVA_HOME`). Android Studio: open this folder, Sync,
+Run (API 28+). Make writes `local.properties` from `~/Android/Sdk`
+(or `ANDROID_HOME`) if that file is missing. Studio and Make both
+read `VERSION` for `versionName` / `versionCode`.
+
+This APK is a normal phone app (launcher + chat + `MessagingStyle`
+heads-up). Auto is extra, not the only mouth. The pendant PWA in
+Chrome is a different client.
+
+Debug builds are **dev mode**: chips for `unsigned` / `empty` / `thread`
+/ `ping` / `down` (same Ada/Kit copy as pendant). `make shot` records
+those into `assets/docs`. Release ignores the `sample` extra.
 
 The 70% bar is line coverage of the JVM mailbox wire (`Wire` +
 `MailboxUrl`), same idea as gantree gating `lib/yard`. Android UI and
@@ -39,7 +49,8 @@ make release TAG=v0.2.0
 make release DRY_RUN=1
 ```
 
-Sideload that APK (or Play **internal** testing). Without a Play
+Sideload that APK (or Play **internal** testing). Walk:
+[sideload_to_android.md](sideload_to_android.md). Without a Play
 keystore the APK is debug-signed. Optional repo secrets:
 `CAB_KEYSTORE_BASE64`, `CAB_STORE_PASSWORD`, `CAB_KEY_ALIAS`,
 `CAB_KEY_PASSWORD`.

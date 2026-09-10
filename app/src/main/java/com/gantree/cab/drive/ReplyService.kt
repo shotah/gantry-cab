@@ -12,7 +12,6 @@ class ReplyService : Service() {
   override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
     when (intent?.action) {
       ACTION_REPLY -> {
-      ACTION_REPLY -> {
         val text = RemoteInput.getResultsFromIntent(intent)
           ?.getCharSequence(CabNotifier.KEY_REPLY)
           ?.toString()

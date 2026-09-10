@@ -1,6 +1,10 @@
 package com.gantree.cab
 
 import android.content.Context
+import com.gantree.cab.mailbox.DEFAULT_FONT
+import com.gantree.cab.mailbox.DEFAULT_THEME
+import com.gantree.cab.mailbox.parseFont
+import com.gantree.cab.mailbox.parseTheme
 
 class CabPrefs(ctx: Context) {
   private val p = ctx.getSharedPreferences("cab", Context.MODE_PRIVATE)
@@ -25,6 +29,18 @@ class CabPrefs(ctx: Context) {
     get() = p.getString(EMAIL, "") ?: ""
     set(value) { p.edit().putString(EMAIL, value).apply() }
 
+  var gps: Boolean
+    get() = p.getString(GPS, "on") != "off"
+    set(value) { p.edit().putString(GPS, if (value) "on" else "off").apply() }
+
+  var theme: String
+    get() = parseTheme(p.getString(THEME, DEFAULT_THEME))
+    set(value) { p.edit().putString(THEME, parseTheme(value)).apply() }
+
+  var font: String
+    get() = parseFont(p.getString(FONT, DEFAULT_FONT))
+    set(value) { p.edit().putString(FONT, parseFont(value)).apply() }
+
   val bearer: String
     get() = session.ifBlank { spike }
 
@@ -41,5 +57,8 @@ class CabPrefs(ctx: Context) {
     private const val SPIKE = "spike"
     private const val SESSION = "session"
     private const val EMAIL = "email"
+    private const val GPS = "gps"
+    private const val THEME = "theme"
+    private const val FONT = "font"
   }
 }

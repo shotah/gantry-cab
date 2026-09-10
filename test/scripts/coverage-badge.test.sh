@@ -11,7 +11,8 @@ fix69="$root/test/scripts/fixtures/jacoco-line-69.xml"
 out="$(mktemp)"
 trap 'rm -f "$out"' EXIT
 
-# Default classes: WireKt 18/20 + MailboxUrlKt 9/10 = 27/30 → 90%
+# Fixture only lists WireKt + MailboxUrlKt; extra default classes are skipped.
+# WireKt 18/20 + MailboxUrlKt 9/10 = 27/30 → 90%
 assert_eq() {
   local got="$1" want="$2" msg="$3"
   if [[ "$got" != "$want" ]]; then
@@ -20,8 +21,10 @@ assert_eq() {
   fi
 }
 
-assert_eq "$("$pct" "$fix90")" "90" "scoped wire 90%"
+assert_eq "$("$pct" "$fix90")" "90" "scoped mailbox 90%"
 assert_eq "$(COVERAGE_CLASSES= "$pct" "$fix90")" "14" "report total 33/233"
+assert_eq "$(COVERAGE_CLASSES="com/gantree/cab/mailbox/AuthApi" "$pct" "$fix90")" "6" "AuthApi 5/85"
+assert_eq "$(COVERAGE_CLASSES="com/gantree/cab/mailbox/WireKt com/gantree/cab/mailbox/AuthApi" "$pct" "$fix90")" "22" "class counters do not leak"
 assert_eq "$("$pct" "$fix70")" "70" "exactly 70%"
 assert_eq "$("$pct" "$fix69")" "69" "69%"
 

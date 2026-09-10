@@ -22,6 +22,7 @@ data class WireFrame(
   val since: String? = null,
   val images: List<String>? = null,
   val context: PhoneContext? = null,
+  val commands: List<SlashCommand>? = null,
 )
 
 fun encodeFrame(frame: WireFrame): String {
@@ -59,12 +60,10 @@ fun parseFrame(raw: String): WireFrame? {
   }
   return try {
     val o = JSONObject(raw)
-    if (o.optString("kind", "") == "face") {
-      return null
-    }
+    val kind = o.optStringOrNull("kind")
     WireFrame(
       text = o.optStringOrNull("text"),
-      kind = o.optStringOrNull("kind"),
+      kind = kind,
       id = o.optStringOrNull("id"),
       since = o.optStringOrNull("since"),
       images = o.optJSONArray("images")?.let { arr ->
@@ -75,14 +74,24 @@ fun parseFrame(raw: String): WireFrame? {
           }
         }.ifEmpty { null }
       },
+      commands = if (kind == "cmds") parseCommands(o.optJSONArray("commands")) else null,
     )
   } catch (_: Exception) {
     null
   }
 }
 
-fun inbound(text: String, id: String, context: PhoneContext?): WireFrame =
-  WireFrame(text = text, kind = "inbound", id = id, context = context)
+fun inbound(text: String, id: String, context: PhoneContext?, images: List<String>? = null): WireFrame =
+  WireFrame(
+    text = text.takeIf { it.isNotEmpty() },
+    kind = "inbound",
+    id = id,
+    context = context,
+    images = images?.takeIf { it.isNotEmpty() },
+  )
+
+fun pinFrame(context: PhoneContext): WireFrame =
+  WireFrame(kind = "pin", context = context)
 
 fun ackSince(since: String): WireFrame = WireFrame(kind = "ack", since = since)
 

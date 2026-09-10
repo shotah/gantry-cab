@@ -30,25 +30,16 @@ class CabSession : Session() {
 class CabThreadScreen(carContext: CarContext) : Screen(carContext) {
   override fun onGetTemplate(): Template {
     val app = carContext.applicationContext as CabApp
-    val lines = app.mouth.lines.value.takeLast(6)
+    val slug = app.prefs.slug.ifBlank { "cab" }
+    val rows = carRows(app.mouth.lines.value, slug, carContext.getString(R.string.car_empty))
     val items = ItemList.Builder()
-    if (lines.isEmpty()) {
-      items.addItem(
-        Row.Builder().setTitle(carContext.getString(R.string.car_empty)).build(),
-      )
-    } else {
-      for (line in lines.asReversed()) {
-        val who = if (line.fromYou) "You" else app.prefs.slug
-        items.addItem(
-          Row.Builder()
-            .setTitle(who)
-            .addText(line.text)
-            .build(),
-        )
-      }
+    for (row in rows) {
+      val builder = Row.Builder().setTitle(row.title)
+      row.text?.let { builder.addText(it) }
+      items.addItem(builder.build())
     }
     return ListTemplate.Builder()
-      .setTitle(app.prefs.slug.ifBlank { "cab" })
+      .setTitle(slug)
       .setSingleList(items.build())
       .build()
   }
