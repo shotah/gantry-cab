@@ -1,0 +1,15 @@
+.gradle/
+.idea/
+*.iml
+.DS_Store
+build/
+local.properties
+captures/
+*.apk
+*.ap_
+*.aab
+app/release/
+app/debug/
+badges/
+coverage.svg
+dist/

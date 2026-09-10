@@ -1,0 +1,101 @@
+name: ci
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+# contents:write needed to push the coverage badge to gh-pages on main.
+permissions:
+  contents: write
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - uses: android-actions/setup-android@v3
+
+      - uses: gradle/actions/setup-gradle@v4
+
+      - name: Script tests
+        run: |
+          chmod +x scripts/*.sh test/scripts/*.test.sh
+          make test-scripts
+
+      - name: Lint
+        run: ./gradlew --no-daemon lintDebug
+
+      - name: Test + coverage
+        run: ./gradlew --no-daemon testDebugUnitTest createDebugUnitTestCoverageReport
+
+      - name: Coverage bar (70%)
+        run: |
+          set -euo pipefail
+          chmod +x scripts/jacoco-pct.sh scripts/coverage-gate.sh
+          XML="$(find app/build/reports -name 'report.xml' | head -n1)"
+          test -n "${XML}"
+          COVERAGE_MIN=70 ./scripts/coverage-gate.sh "$XML"
+
+      - name: Upload coverage artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage
+          path: |
+            app/build/reports/coverage/**/report.xml
+            app/build/reports/jacoco/**/*.xml
+
+      - name: Generate coverage badge
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        run: |
+          set -euo pipefail
+          mkdir -p badges
+          chmod +x scripts/coverage-badge.sh
+          XML="$(find app/build/reports -name 'report.xml' | head -n1)"
+          test -n "${XML}"
+          ./scripts/coverage-badge.sh "$XML" badges/coverage.svg
+
+      # gh-pages hosts:
+      #   badges/coverage.svg  → README coverage badge
+      # Pages source: branch gh-pages / (root). Enable once in repo Settings → Pages.
+      - name: Push gh-pages (coverage badge)
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          REPO="${{ github.repository }}"
+          BADGE="${GITHUB_WORKSPACE}/badges/coverage.svg"
+          WORKDIR=$(mktemp -d)
+          cd "$WORKDIR"
+          git init
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git remote add origin "https://x-access-token:${GITHUB_TOKEN}@github.com/${REPO}.git"
+
+          if git fetch --depth 1 origin gh-pages; then
+            git checkout -B gh-pages FETCH_HEAD
+          else
+            git checkout --orphan gh-pages
+            git rm -rf . >/dev/null 2>&1 || true
+          fi
+
+          mkdir -p badges
+          cp "$BADGE" badges/coverage.svg
+          touch .nojekyll
+
+          git add -A
+          if git diff --staged --quiet; then
+            echo "No gh-pages change; skipping push."
+          else
+            git commit -m "chore: publish coverage badge [skip ci]"
+            git push origin HEAD:gh-pages
+          fi

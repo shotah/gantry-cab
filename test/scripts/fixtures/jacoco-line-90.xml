@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<report name="app">
+  <package name="com/gantree/cab/mailbox">
+    <class name="com/gantree/cab/mailbox/WireKt" sourcefilename="Wire.kt">
+      <method name="inbound" desc="()V">
+        <counter type="LINE" missed="0" covered="10"/>
+      </method>
+      <counter type="INSTRUCTION" missed="2" covered="40"/>
+      <counter type="LINE" missed="2" covered="18"/>
+    </class>
+    <class name="com/gantree/cab/mailbox/MailboxUrlKt" sourcefilename="MailboxUrl.kt">
+      <counter type="INSTRUCTION" missed="1" covered="20"/>
+      <counter type="LINE" missed="1" covered="9"/>
+    </class>
+    <class name="com/gantree/cab/mailbox/AuthApi" sourcefilename="AuthApi.kt">
+      <counter type="LINE" missed="80" covered="5"/>
+    </class>
+    <counter type="LINE" missed="82" covered="33"/>
+  </package>
+  <counter type="LINE" missed="200" covered="33"/>
+</report>

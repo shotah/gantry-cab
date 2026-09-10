@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<report name="app">
+  <package name="com/gantree/cab/mailbox">
+    <class name="com/gantree/cab/mailbox/WireKt" sourcefilename="Wire.kt">
+      <counter type="LINE" missed="20" covered="30"/>
+    </class>
+    <class name="com/gantree/cab/mailbox/MailboxUrlKt" sourcefilename="MailboxUrl.kt">
+      <counter type="LINE" missed="10" covered="40"/>
+    </class>
+  </package>
+  <counter type="LINE" missed="30" covered="70"/>
+</report>

@@ -1,0 +1,9 @@
+# Android Studio writes sdk.dir here. Do not commit this file.
+sdk.dir=/home/deck/Android/Sdk
+cab.mailboxOrigin=http://10.0.2.2:3000
+cab.googleWebClientId=
+# Optional Play / release keystore. Without these, assembleRelease is debug-signed (sideload).
+# cab.storeFile=/path/to/cab.jks
+# cab.storePassword=
+# cab.keyAlias=
+# cab.keyPassword=
