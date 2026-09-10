@@ -18,3 +18,12 @@ fun chatSp(fontId: String): Float = when (parseFont(fontId)) {
   "xl" -> 24f
   else -> 14f
 }
+
+fun themeLabel(id: String): String = parseTheme(id).replaceFirstChar { it.uppercase() }
+
+fun fontLabel(id: String): String = when (parseFont(id)) {
+  "md" -> "Medium"
+  "lg" -> "Large"
+  "xl" -> "Extra large"
+  else -> "Small"
+}

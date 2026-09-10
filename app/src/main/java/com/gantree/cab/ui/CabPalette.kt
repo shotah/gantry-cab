@@ -1,8 +1,6 @@
 package com.gantree.cab.ui
 
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextFieldDefaults
-import androidx.compose.material3.TextFieldColors
 import androidx.compose.material3.Typography
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.runtime.Composable
@@ -128,38 +126,4 @@ fun CabTheme(themeId: String = "boom", fontId: String = "sm", content: @Composab
       content = content,
     )
   }
-}
-
-@Composable
-fun fieldColors(): TextFieldColors {
-  val colors = LocalCabColors.current
-  return OutlinedTextFieldDefaults.colors(
-    focusedTextColor = colors.fg,
-    unfocusedTextColor = colors.fg,
-    focusedBorderColor = colors.accent,
-    unfocusedBorderColor = colors.line,
-    focusedLabelColor = colors.muted,
-    unfocusedLabelColor = colors.muted,
-    cursorColor = colors.accent,
-    focusedPlaceholderColor = colors.muted,
-    unfocusedPlaceholderColor = colors.muted,
-  )
-}
-
-@Composable
-fun composeFieldColors(): TextFieldColors {
-  val colors = LocalCabColors.current
-  return OutlinedTextFieldDefaults.colors(
-    focusedTextColor = colors.fg,
-    unfocusedTextColor = colors.fg,
-    disabledTextColor = colors.muted,
-    focusedBorderColor = Color.Transparent,
-    unfocusedBorderColor = Color.Transparent,
-    disabledBorderColor = Color.Transparent,
-    focusedLabelColor = colors.muted,
-    unfocusedLabelColor = colors.muted,
-    cursorColor = colors.accent,
-    focusedPlaceholderColor = colors.muted,
-    unfocusedPlaceholderColor = colors.muted,
-  )
 }

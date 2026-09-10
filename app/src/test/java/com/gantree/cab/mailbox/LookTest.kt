@@ -25,4 +25,15 @@ class LookTest {
     assertEquals(24f, chatSp("xl"), 0.01f)
     assertEquals(14f, chatSp("nope"), 0.01f)
   }
+
+  @Test
+  fun labelsMatchPendant() {
+    assertEquals("Boom", themeLabel("boom"))
+    assertEquals("Boom", themeLabel("nope"))
+    assertEquals("Inlay", themeLabel("inlay"))
+    assertEquals("Small", fontLabel("sm"))
+    assertEquals("Medium", fontLabel("md"))
+    assertEquals("Large", fontLabel("lg"))
+    assertEquals("Extra large", fontLabel("xl"))
+  }
 }

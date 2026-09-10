@@ -1,9 +1,11 @@
 package com.gantree.cab.ui
 
 import android.graphics.BitmapFactory
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -15,12 +17,17 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -34,6 +41,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.semantics.contentDescription
@@ -124,13 +132,20 @@ fun CabScreen(
         modifier = Modifier
           .size(32.dp)
           .clip(RoundedCornerShape(8.dp))
+          .background(if (settingsOpen) colors.track else Color.Transparent)
           .clickable { settingsOpen = !settingsOpen }
           .semantics { contentDescription = "settings" },
         contentAlignment = Alignment.Center,
       ) {
-        Text("⚙", color = if (settingsOpen) colors.fg else colors.muted, fontSize = 18.sp)
+        Icon(
+          Icons.Outlined.Settings,
+          contentDescription = null,
+          tint = if (settingsOpen) colors.fg else colors.muted,
+          modifier = Modifier.size(20.dp),
+        )
       }
     }
+    HorizontalDivider(color = colors.line, thickness = 1.dp)
     if (dev && !compact) {
       Row(
         horizontalArrangement = Arrangement.spacedBy(6.dp),
@@ -139,30 +154,6 @@ fun CabScreen(
       ) {
         for (id in SAMPLE_IDS) {
           TextButton(onClick = { onSample(id) }) { Text(id, color = colors.accent) }
-        }
-      }
-    }
-    if (settingsOpen && !compact) {
-      Surface(color = colors.panel, modifier = Modifier.fillMaxWidth()) {
-        Box(modifier = Modifier.padding(12.dp)) {
-          CabSettings(
-            origin = origin,
-            slug = slug,
-            spike = spike,
-            email = email,
-            googleReady = googleReady,
-            cranes = cranes,
-            themeId = themeId,
-            fontId = fontId,
-            onOrigin = onOrigin,
-            onSlug = onSlug,
-            onSpike = onSpike,
-            onTheme = onTheme,
-            onFont = onFont,
-            onConnect = onConnect,
-            onGoogle = onGoogle,
-            onSignOut = onSignOut,
-          )
         }
       }
     }
@@ -177,77 +168,130 @@ fun CabScreen(
           .padding(horizontal = 12.dp, vertical = 4.dp),
       )
     }
-    if (!googleDoor && hint.isNotBlank()) {
-      Text(
-        hint,
-        color = colors.muted,
-        fontSize = 12.sp,
-        modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp),
-      )
-    }
-    if (googleDoor) {
-      Column(
-        modifier = Modifier.weight(1f).fillMaxWidth().padding(24.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center,
-      ) {
-        KitAvatar(slug = slug, bytes = avatarBytes, size = 64.dp)
-        Text("Sign in with Google to talk.", color = colors.body, modifier = Modifier.padding(top = 12.dp))
-        Button(
-          onClick = onGoogle,
-          modifier = Modifier.padding(top = 12.dp),
-          colors = ButtonDefaults.buttonColors(containerColor = colors.accentSoft, contentColor = colors.mark),
+    Box(modifier = Modifier.weight(1f).fillMaxWidth()) {
+      if (googleDoor) {
+        Column(
+          modifier = Modifier.fillMaxSize().padding(24.dp),
+          horizontalAlignment = Alignment.CenterHorizontally,
+          verticalArrangement = Arrangement.Center,
         ) {
-          Text("Continue with Google")
-        }
-      }
-    } else {
-      LazyColumn(
-        state = list,
-        modifier = Modifier.weight(1f).fillMaxWidth(),
-        verticalArrangement = Arrangement.spacedBy(8.dp),
-        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp),
-      ) {
-        if (lines.isEmpty()) {
-          item {
-            Column(
-              modifier = Modifier.fillMaxWidth().padding(top = 40.dp),
-              horizontalAlignment = Alignment.CenterHorizontally,
-            ) {
-              KitAvatar(slug = slug, bytes = avatarBytes, size = 64.dp)
-              Text(
-                "Nothing yet. Type below — or / for harness commands.",
-                color = colors.dim,
-                style = MaterialTheme.typography.bodyLarge,
-                modifier = Modifier.padding(top = 12.dp, start = 16.dp, end = 16.dp),
-              )
-            }
+          KitAvatar(slug = slug, bytes = avatarBytes, size = 64.dp)
+          Text("Sign in with Google to talk.", color = colors.body, modifier = Modifier.padding(top = 12.dp))
+          Button(
+            onClick = onGoogle,
+            modifier = Modifier.padding(top = 12.dp),
+            colors = ButtonDefaults.buttonColors(containerColor = colors.accentSoft, contentColor = colors.mark),
+          ) {
+            Text("Continue with Google")
           }
         }
-        items(lines, key = { it.id }) { line ->
-          val mine = line.fromYou
-          Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = if (mine) Arrangement.End else Arrangement.Start,
+      } else {
+        Column(modifier = Modifier.fillMaxSize()) {
+          if (hint.isNotBlank()) {
+            Text(
+              hint,
+              color = colors.muted,
+              fontSize = 12.sp,
+              modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp),
+            )
+          }
+          LazyColumn(
+            state = list,
+            modifier = Modifier.weight(1f).fillMaxWidth(),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp),
           ) {
-            Surface(
-              color = if (mine) colors.you else colors.kit,
-              shape = RoundedCornerShape(16.dp),
-              modifier = Modifier.fillMaxWidth(0.85f),
-            ) {
-              Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                if (line.kind == "push") {
-                  Text("PING", color = colors.dim, fontSize = 11.sp)
+            if (lines.isEmpty()) {
+              item {
+                Column(
+                  modifier = Modifier.fillMaxWidth().padding(top = 40.dp),
+                  horizontalAlignment = Alignment.CenterHorizontally,
+                ) {
+                  KitAvatar(slug = slug, bytes = avatarBytes, size = 64.dp)
+                  Text(
+                    "Nothing yet. Type below — or / for harness commands.",
+                    color = colors.dim,
+                    style = MaterialTheme.typography.bodyLarge,
+                    modifier = Modifier.padding(top = 12.dp, start = 16.dp, end = 16.dp),
+                  )
                 }
-                line.photo?.let { ChatPhoto(it) }
-                if (line.text.isNotBlank()) {
-                  Text(line.text, color = colors.fg, style = MaterialTheme.typography.bodyLarge)
+              }
+            }
+            items(lines, key = { it.id }) { line ->
+              val mine = line.fromYou
+              Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = if (mine) Arrangement.End else Arrangement.Start,
+              ) {
+                Surface(
+                  color = if (mine) colors.you else colors.kit,
+                  shape = RoundedCornerShape(16.dp),
+                  border = BorderStroke(1.dp, if (mine) colors.accentLine else colors.line),
+                  modifier = Modifier.fillMaxWidth(0.85f),
+                ) {
+                  Column(
+                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+                    verticalArrangement = Arrangement.spacedBy(6.dp),
+                  ) {
+                    if (line.kind == "push") {
+                      Text("PING", color = colors.dim, fontSize = 11.sp)
+                    }
+                    line.photo?.let { ChatPhoto(it) }
+                    if (line.text.isNotBlank()) {
+                      Text(line.text, color = colors.fg, style = MaterialTheme.typography.bodyLarge)
+                    }
+                  }
                 }
               }
             }
           }
         }
       }
+      if (settingsOpen && !compact) {
+        Box(
+          modifier = Modifier
+            .fillMaxSize()
+            .clickable(
+              interactionSource = remember { MutableInteractionSource() },
+              indication = null,
+            ) { settingsOpen = false },
+        )
+        Surface(
+          color = colors.panel,
+          shape = RoundedCornerShape(12.dp),
+          shadowElevation = 8.dp,
+          border = BorderStroke(1.dp, colors.line),
+          modifier = Modifier
+            .align(Alignment.TopEnd)
+            .padding(12.dp)
+            .width(256.dp)
+            .semantics { contentDescription = "Settings" },
+        ) {
+          Box(modifier = Modifier.padding(12.dp)) {
+            CabSettings(
+              origin = origin,
+              slug = slug,
+              spike = spike,
+              email = email,
+              googleReady = googleReady,
+              cranes = cranes,
+              themeId = themeId,
+              fontId = fontId,
+              onOrigin = onOrigin,
+              onSlug = onSlug,
+              onSpike = onSpike,
+              onTheme = onTheme,
+              onFont = onFont,
+              onConnect = onConnect,
+              onGoogle = onGoogle,
+              onSignOut = onSignOut,
+            )
+          }
+        }
+      }
+    }
+    if (!googleDoor) {
+      HorizontalDivider(color = colors.line, thickness = 1.dp)
       Box(modifier = Modifier.background(colors.panel).padding(12.dp)) {
         CabCompose(
           disabled = !up,

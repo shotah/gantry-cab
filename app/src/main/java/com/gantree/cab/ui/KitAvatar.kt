@@ -7,8 +7,12 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.SentimentSatisfied
+import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.asImageBitmap
@@ -46,7 +50,14 @@ fun KitAvatar(
         modifier = mod.then(base),
       )
     } else {
-      Box(modifier = mod.then(base))
+      Box(modifier = mod.then(base), contentAlignment = Alignment.Center) {
+        Icon(
+          Icons.Outlined.SentimentSatisfied,
+          contentDescription = null,
+          tint = colors.muted,
+          modifier = Modifier.size(size * 0.55f),
+        )
+      }
     }
   }
   if (!editable) {

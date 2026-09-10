@@ -4,18 +4,23 @@ import com.gantree.cab.dev.sampleScene
 import com.gantree.cab.drive.carRows
 import com.gantree.cab.mailbox.displaySlug
 import com.gantree.cab.mailbox.searchEmoji
+import java.awt.AlphaComposite
 import java.awt.BasicStroke
 import java.awt.Color
 import java.awt.Font
 import java.awt.Graphics2D
 import java.awt.RenderingHints
-import java.awt.geom.Arc2D
 import java.awt.geom.Ellipse2D
-import java.awt.geom.Path2D
 import java.awt.geom.RoundRectangle2D
 import java.awt.image.BufferedImage
 import java.io.File
 import javax.imageio.ImageIO
+import org.kordamp.ikonli.Ikon
+import org.kordamp.ikonli.fontawesome6.FontAwesomeRegular
+import org.kordamp.ikonli.fontawesome6.FontAwesomeSolid
+import org.kordamp.ikonli.material2.Material2OutlinedAL
+import org.kordamp.ikonli.material2.Material2OutlinedMZ
+import org.kordamp.ikonli.swing.FontIcon
 
 private val Canvas = Color(0x0E1316)
 private val Panel = Color(0x171D22)
@@ -29,8 +34,10 @@ private val Live = Color(0x3DB8A0)
 private val You = Color(0x3A1E16)
 private val Kit = Color(0x232B32)
 private val Field = Color(0x3A4550)
+private val AccentLine = Color(0xC24A28)
 private val AccentSoft = Color(0x2A1612)
 private val Mark = Color(0xF3B199)
+private val Edge = Color(0x5C6772)
 private val CarBg = Color(0x121212)
 private val CarLine = Color(0x2A2A2A)
 private val CarTitle = Color(0xF2F2F2)
@@ -48,6 +55,7 @@ val DOCS_SHOT_NAMES = listOf(
   "phone-down",
   "phone-settings",
   "phone-emoji",
+  "phone-attach",
   "auto-empty",
   "auto-thread",
 )
@@ -59,6 +67,7 @@ fun renderDocsShot(name: String): BufferedImage = when (name) {
   "phone-down" -> renderPhone("down")
   "phone-settings" -> renderPhone("empty", settings = true)
   "phone-emoji" -> renderPhone("thread", emoji = true)
+  "phone-attach" -> renderPhone("thread", attach = true)
   "auto-empty" -> renderAuto("empty")
   "auto-thread" -> renderAuto("thread")
   else -> error("unknown shot $name")
@@ -71,7 +80,7 @@ fun writeDocsShots(dir: File) {
   }
 }
 
-fun renderPhone(sampleId: String, settings: Boolean = false, emoji: Boolean = false): BufferedImage {
+fun renderPhone(sampleId: String, settings: Boolean = false, emoji: Boolean = false, attach: Boolean = false): BufferedImage {
   val scene = sampleScene(sampleId) ?: error("sample $sampleId")
   val img = BufferedImage(PHONE_W, PHONE_H, BufferedImage.TYPE_INT_ARGB)
   val g = img.graphics2d()
@@ -81,12 +90,20 @@ fun renderPhone(sampleId: String, settings: Boolean = false, emoji: Boolean = fa
   g.fillRect(0, 0, PHONE_W, PHONE_H)
   paintHeader(g, font, scene.slug, scene.up, settings)
   var y = 64
-  if (!door && !settings && scene.hint.isNotBlank()) {
+  if (!door && scene.hint.isNotBlank()) {
     g.font = font.deriveFont(12f)
     g.color = Muted
     y = g.drawLine(scene.hint, 16, y + 4, 12)
   }
-  val composerTop = if (emoji) PHONE_H - 268 else PHONE_H - 84
+  val fieldH = 52
+  val pad = 12
+  val composerTop = PHONE_H - pad - fieldH
+  val overlayH = when {
+    emoji -> 176
+    attach -> 172
+    else -> 0
+  }
+  val overlayTop = composerTop - 8 - overlayH
   if (door) {
     paintAvatar(g, (PHONE_W - 64) / 2f, 280f, 64f)
     g.font = font.deriveFont(16f)
@@ -99,12 +116,13 @@ fun renderPhone(sampleId: String, settings: Boolean = false, emoji: Boolean = fa
     val bx = (PHONE_W - bw) / 2
     g.color = AccentSoft
     g.fill(RoundRectangle2D.Float(bx.toFloat(), 386f, bw.toFloat(), 40f, 12f, 12f))
+    g.color = AccentLine
+    g.stroke = BasicStroke(1.2f)
+    g.draw(RoundRectangle2D.Float(bx.toFloat(), 386f, bw.toFloat(), 40f, 12f, 12f))
     g.color = Mark
     g.drawString(btn, bx + 16, 412)
   } else {
-    if (settings) {
-      y = paintSettings(g, font, scene.slug, scene.email, y)
-    } else if (scene.lines.isEmpty()) {
+    if (scene.lines.isEmpty()) {
       paintAvatar(g, (PHONE_W - 64) / 2f, 180f, 64f)
       g.font = font.deriveFont(14f)
       g.color = Dim
@@ -125,6 +143,9 @@ fun renderPhone(sampleId: String, settings: Boolean = false, emoji: Boolean = fa
         val x = if (line.fromYou) PHONE_W - 16 - bw else 16
         g.color = if (line.fromYou) You else Kit
         g.fill(RoundRectangle2D.Float(x.toFloat(), y.toFloat(), bw.toFloat(), bh.toFloat(), 24f, 24f))
+        g.color = if (line.fromYou) AccentLine else Field
+        g.stroke = BasicStroke(1f)
+        g.draw(RoundRectangle2D.Float(x.toFloat(), y.toFloat(), bw.toFloat(), bh.toFloat(), 24f, 24f))
         g.color = Fg
         var ty = y + 12
         for (w in wrapped) {
@@ -132,11 +153,17 @@ fun renderPhone(sampleId: String, settings: Boolean = false, emoji: Boolean = fa
           ty += 20
         }
         y += bh + 8
-        if (y > composerTop - 8) break
+        if (y > (if (overlayH > 0) overlayTop else composerTop) - 8) break
       }
     }
+    if (settings) {
+      paintSettings(g, font, scene.slug, scene.email)
+    }
     if (emoji) {
-      paintEmojiPanel(g, font, composerTop - 176)
+      paintEmojiPanel(g, font, overlayTop)
+    }
+    if (attach) {
+      paintAttachPanel(g, font, overlayTop, scene.hint)
     }
     paintComposer(g, font, composerTop, scene.slug, emoji)
   }
@@ -190,97 +217,141 @@ private fun paintHeader(g: Graphics2D, font: Font, slug: String, up: Boolean, se
   g.color = if (up) Live else Dim
   g.drawString(if (up) "live" else "down", 60, 44)
   paintCog(g, PHONE_W - 26f, 28f, if (settingsOpen) Fg else Muted)
+  g.color = Field
+  g.stroke = BasicStroke(1f)
+  g.drawLine(0, 56, PHONE_W, 56)
 }
 
 private fun paintAvatar(g: Graphics2D, x: Float, y: Float, size: Float) {
   g.color = Track
   g.fill(Ellipse2D.Float(x, y, size, size))
-  val cx = x + size / 2f
-  val cy = y + size / 2f
-  val s = size / 40f
-  g.color = Muted
-  g.fill(Ellipse2D.Float(cx - 5.5f * s, cy - 4f * s, 4f * s, 4f * s))
-  g.fill(Ellipse2D.Float(cx + 1.5f * s, cy - 4f * s, 4f * s, 4f * s))
-  g.stroke = BasicStroke((1.6f * s).coerceAtLeast(1.2f), BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND)
-  g.draw(Arc2D.Float(cx - 8f * s, cy - 2f * s, 16f * s, 14f * s, 200f, 140f, Arc2D.OPEN))
+  paintIkon(
+    g,
+    Material2OutlinedMZ.SENTIMENT_SATISFIED,
+    x + size / 2f,
+    y + size / 2f,
+    (size * 0.55f).toInt().coerceAtLeast(12),
+    Muted,
+  )
 }
 
 private fun paintCog(g: Graphics2D, cx: Float, cy: Float, color: Color) {
-  val r = 8f
-  val saved = g.transform
-  g.color = color
-  for (i in 0 until 6) {
-    g.rotate(Math.PI / 3.0 * i, cx.toDouble(), cy.toDouble())
-    g.fill(RoundRectangle2D.Float(cx - 2.2f, cy - r - 3.5f, 4.4f, 7.5f, 1.5f, 1.5f))
-    g.transform = saved
-  }
-  g.fill(Ellipse2D.Float(cx - r, cy - r, r * 2, r * 2))
-  g.color = Panel
-  g.fill(Ellipse2D.Float(cx - 3.4f, cy - 3.4f, 6.8f, 6.8f))
+  paintIkon(g, Material2OutlinedMZ.SETTINGS, cx, cy, 18, color)
 }
 
-private fun paintSettings(g: Graphics2D, font: Font, slug: String, email: String, startY: Int): Int {
+private fun paintSettings(g: Graphics2D, font: Font, slug: String, email: String) {
+  val cardW = 256f
+  val cardX = PHONE_W - 12f - cardW
+  val cardY = 64f
+  val cardH = 392f
   g.color = Panel
-  g.fillRect(0, 56, PHONE_W, 380)
-  var y = startY
-  y = g.field(font, "Mailbox origin", "http://10.0.2.2:3000", 12, y)
-  y = g.field(font, "Agent name", slug, 12, y + 6)
-  y = g.field(font, "Agent access secret", "••••••••", 12, y + 6)
+  g.fill(RoundRectangle2D.Float(cardX, cardY, cardW, cardH, 12f, 12f))
+  g.color = Field
+  g.stroke = BasicStroke(1.2f)
+  g.draw(RoundRectangle2D.Float(cardX, cardY, cardW, cardH, 12f, 12f))
+  val inset = cardX.toInt() + 12
+  val fieldW = cardW - 24f
+  var y = cardY.toInt() + 10
+  y = g.field(font, "Mailbox origin", "http://10.0.2.2:3000", inset, y, fieldW)
+  y = g.field(font, "Agent name", slug, inset, y + 6, fieldW)
+  y = g.field(font, "Agent access secret", "••••••••", inset, y + 6, fieldW)
   g.font = font.deriveFont(12f)
   g.color = Muted
-  y = g.drawLine("Theme", 16, y + 10, 12)
-  var x = 16
+  y = g.drawLine("Theme", inset, y + 8, 12)
+  val chipW = (fieldW - 12f) / 3f
+  var x = inset.toFloat()
   for (label in listOf("Boom", "Inlay", "Lamp")) {
     val on = label == "Boom"
-    g.color = if (on) Accent else Field
+    g.color = if (on) Track else Canvas
+    g.fill(RoundRectangle2D.Float(x, y.toFloat(), chipW, 32f, 8f, 8f))
+    g.color = if (on) AccentLine else Edge
     g.stroke = BasicStroke(1.2f)
-    g.draw(RoundRectangle2D.Float(x.toFloat(), y.toFloat(), 72f, 26f, 8f, 8f))
+    g.draw(RoundRectangle2D.Float(x, y.toFloat(), chipW, 32f, 8f, 8f))
+    paintThemeSwatch(g, x + 8f, y + 10f, label.lowercase())
+    g.font = font.deriveFont(11f)
     g.color = Body
-    g.font = font.deriveFont(12f)
-    g.drawString(label, x + 10, y + 18)
-    x += 80
+    g.drawString(label, x.toInt() + 24, y + 21)
+    x += chipW + 6f
   }
-  y += 36
+  y += 40
   g.color = Muted
-  y = g.drawLine("Font size", 16, y, 12)
-  x = 16
+  g.font = font.deriveFont(12f)
+  y = g.drawLine("Font size", inset, y, 12)
+  val fontW = (fieldW - 18f) / 4f
+  x = inset.toFloat()
   for (size in listOf(12f, 14f, 16f, 18f)) {
     val on = size == 12f
-    g.color = if (on) Field else Canvas
-    g.fill(RoundRectangle2D.Float(x.toFloat(), y.toFloat(), 78f, 32f, 8f, 8f))
-    g.color = if (on) Accent else Field
+    g.color = if (on) Track else Canvas
+    g.fill(RoundRectangle2D.Float(x, y.toFloat(), fontW, 32f, 8f, 8f))
+    g.color = if (on) AccentLine else Edge
     g.stroke = BasicStroke(1.2f)
-    g.draw(RoundRectangle2D.Float(x.toFloat(), y.toFloat(), 78f, 32f, 8f, 8f))
+    g.draw(RoundRectangle2D.Float(x, y.toFloat(), fontW, 32f, 8f, 8f))
     g.font = font.deriveFont(size)
     g.color = Fg
     val aa = "Aa"
-    g.drawString(aa, x + (78 - g.fontMetrics.stringWidth(aa)) / 2, y + 22)
-    x += 86
+    g.drawString(aa, x.toInt() + ((fontW - g.fontMetrics.stringWidth(aa)) / 2).toInt(), y + 22)
+    x += fontW + 6f
   }
   y += 44
-  g.color = Accent
-  g.fill(RoundRectangle2D.Float(16f, y.toFloat(), 88f, 36f, 12f, 12f))
+  g.color = Field
+  g.stroke = BasicStroke(1f)
+  g.drawLine(inset, y, (inset + fieldW).toInt(), y)
+  y += 10
+  val listenH = 32f
+  g.color = AccentSoft
+  g.fill(RoundRectangle2D.Float(inset.toFloat(), y.toFloat(), 72f, listenH, 12f, 12f))
+  g.color = AccentLine
+  g.stroke = BasicStroke(1.2f)
+  g.draw(RoundRectangle2D.Float(inset.toFloat(), y.toFloat(), 72f, listenH, 12f, 12f))
   g.font = font.deriveFont(14f)
-  g.color = Canvas
-  g.drawString("Listen", 36, y + 24)
+  g.color = Mark
+  g.drawString("Listen", inset + 16, y + 21)
   if (email.isNotBlank()) {
     g.font = font.deriveFont(12f)
     g.color = Dim
-    g.drawString("sign out", 120, y + 24)
-    y += 40
-    g.color = Muted
-    y = g.drawLine(email, 16, y, 12)
+    g.drawString("sign out", inset + 84, y + 21)
   }
-  return y + 8
+  y += listenH.toInt() + 14
+  if (email.isNotBlank()) {
+    g.font = font.deriveFont(12f)
+    g.color = Muted
+    g.drawString(email, inset, y)
+  }
 }
 
-private fun Graphics2D.field(font: Font, label: String, value: String, x: Int, y: Int): Int {
+private fun paintThemeSwatch(g: Graphics2D, x: Float, y: Float, themeId: String) {
+  val size = 12f
+  val canvas = when (themeId) {
+    "inlay" -> Color(0x0C110F)
+    "lamp" -> Color(0x0C0C16)
+    else -> Canvas
+  }
+  val accent = when (themeId) {
+    "inlay" -> Color(0xE6D3B0)
+    "lamp" -> Color(0xC5D24A)
+    else -> Accent
+  }
+  val clip = g.clip
+  g.clip = Ellipse2D.Float(x, y, size, size)
+  g.color = canvas
+  g.fillRect(x.toInt(), y.toInt(), (size / 2).toInt() + 1, size.toInt())
+  g.color = accent
+  g.fillRect((x + size / 2).toInt(), y.toInt(), (size / 2).toInt() + 1, size.toInt())
+  g.clip = clip
+  g.color = Field
+  g.stroke = BasicStroke(1f)
+  g.draw(Ellipse2D.Float(x, y, size, size))
+}
+
+private fun Graphics2D.field(font: Font, label: String, value: String, x: Int, y: Int, width: Float = (PHONE_W - 32).toFloat()): Int {
   this.font = font.deriveFont(11f)
   color = Muted
   val afterLabel = drawLine(label, x, y, 11)
-  color = Field
+  color = Canvas
+  fill(RoundRectangle2D.Float(x.toFloat(), afterLabel.toFloat(), width, 32f, 8f, 8f))
+  color = Edge
   stroke = BasicStroke(1.2f)
-  draw(RoundRectangle2D.Float(x.toFloat(), afterLabel.toFloat(), (PHONE_W - 32).toFloat(), 32f, 8f, 8f))
+  draw(RoundRectangle2D.Float(x.toFloat(), afterLabel.toFloat(), width, 32f, 8f, 8f))
   this.font = font.deriveFont(14f)
   color = Fg
   drawString(value, x + 10, afterLabel + 22)
@@ -296,6 +367,8 @@ private fun paintEmojiPanel(g: Graphics2D, font: Font, top: Int) {
   g.draw(RoundRectangle2D.Float(12f, top.toFloat(), (PHONE_W - 24).toFloat(), 168f, 12f, 12f))
   g.color = Canvas
   g.fill(RoundRectangle2D.Float(22f, (top + 10).toFloat(), (PHONE_W - 44).toFloat(), 30f, 8f, 8f))
+  g.color = Edge
+  g.draw(RoundRectangle2D.Float(22f, (top + 10).toFloat(), (PHONE_W - 44).toFloat(), 30f, 8f, 8f))
   g.font = font.deriveFont(13f)
   g.color = Muted
   g.drawString("Search or :shrug:", 32, top + 30)
@@ -305,54 +378,86 @@ private fun paintEmojiPanel(g: Graphics2D, font: Font, top: Int) {
       if (i >= faces.size) break
       val x = 26f + col * 44f
       val ey = top + 58f + row * 36f
-      paintEmojiGlyph(g, faces[i].name, x, ey, 24f)
+      paintEmoji(g, faces[i].name, x, ey, 24)
       i += 1
     }
   }
+}
+
+private fun paintAttachPanel(g: Graphics2D, font: Font, top: Int, hint: String) {
+  val w = 208f
+  val h = 164f
+  val x = 16f
+  g.color = Panel
+  g.fill(RoundRectangle2D.Float(x, top.toFloat(), w, h, 12f, 12f))
+  g.color = Field
+  g.stroke = BasicStroke(1.2f)
+  g.draw(RoundRectangle2D.Float(x, top.toFloat(), w, h, 12f, 12f))
+  g.font = font.deriveFont(12f)
+  var y = top + 18
+  g.color = Body
+  g.drawString("Photo", x.toInt() + 14, y)
+  y += 28
+  g.drawString("Commands", x.toInt() + 14, y)
+  y += 28
+  if (hint.isNotBlank()) {
+    g.font = font.deriveFont(11f)
+    g.color = Dim
+    g.drawString(hint, x.toInt() + 14, y)
+    y += 24
+  }
+  g.font = font.deriveFont(12f)
+  g.color = Body
+  g.drawString("GPS", x.toInt() + 14, y)
+  g.color = Live
+  g.drawString("on", x.toInt() + 168, y)
+  y += 28
+  g.color = Body
+  g.drawString("Drop a silent pin", x.toInt() + 14, y)
 }
 
 private fun paintComposer(g: Graphics2D, font: Font, composerTop: Int, slug: String, emojiOpen: Boolean) {
   g.color = Panel
   g.fillRect(0, composerTop - 12, PHONE_W, PHONE_H - composerTop + 12)
   g.color = Field
-  g.stroke = BasicStroke(1.5f)
-  val sendW = 76
-  val fieldX = 16f
-  val fieldW = (PHONE_W - 16 - sendW - 12).toFloat()
+  g.stroke = BasicStroke(1f)
+  g.drawLine(0, composerTop - 12, PHONE_W, composerTop - 12)
+  val sendW = 68
+  val pad = 12
+  val gap = 8
+  val fieldX = pad.toFloat()
+  val fieldW = (PHONE_W - pad - gap - sendW - pad).toFloat()
+  val sendX = PHONE_W - pad - sendW
+  g.color = Canvas
+  g.fill(RoundRectangle2D.Float(fieldX, composerTop.toFloat(), fieldW, 52f, 12f, 12f))
+  g.color = Edge
+  g.stroke = BasicStroke(1.2f)
   g.draw(RoundRectangle2D.Float(fieldX, composerTop.toFloat(), fieldW, 52f, 12f, 12f))
-  paintFace(g, 26f, composerTop + 6f, emojiOpen)
-  paintClip(g, 26f, composerTop + 28f)
+  paintIkon(
+    g,
+    Material2OutlinedMZ.SENTIMENT_SATISFIED,
+    30f,
+    composerTop + 14f,
+    16,
+    if (emojiOpen) Mark else Muted,
+  )
+  paintIkon(g, Material2OutlinedAL.ATTACH_FILE, 30f, composerTop + 36f, 14, Muted)
+  g.color = Live
+  g.fill(Ellipse2D.Float(33f, composerTop + 30f, 7f, 7f))
   g.font = font.deriveFont(14f)
   g.color = Muted
   g.drawString("Message ${displaySlug(slug)}", 48, composerTop + 32)
-  val sendX = PHONE_W - 16 - sendW
-  g.color = Accent
-  g.fill(RoundRectangle2D.Float(sendX.toFloat(), composerTop.toFloat(), sendW.toFloat(), 52f, 22f, 22f))
+  val saved = g.composite
+  g.composite = AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 0.4f)
+  g.color = AccentSoft
+  g.fill(RoundRectangle2D.Float(sendX.toFloat(), composerTop.toFloat(), sendW.toFloat(), 52f, 12f, 12f))
+  g.color = AccentLine
+  g.draw(RoundRectangle2D.Float(sendX.toFloat(), composerTop.toFloat(), sendW.toFloat(), 52f, 12f, 12f))
   g.font = font.deriveFont(14f)
-  g.color = Canvas
+  g.color = Mark
   val send = "Send"
   g.drawString(send, sendX + (sendW - g.fontMetrics.stringWidth(send)) / 2, composerTop + 32)
-}
-
-private fun paintFace(g: Graphics2D, x: Float, y: Float, on: Boolean) {
-  g.color = if (on) Accent else Muted
-  g.stroke = BasicStroke(1.5f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND)
-  g.draw(Ellipse2D.Float(x, y, 16f, 16f))
-  g.fill(Ellipse2D.Float(x + 4.2f, y + 5f, 2.4f, 2.4f))
-  g.fill(Ellipse2D.Float(x + 9.4f, y + 5f, 2.4f, 2.4f))
-  g.draw(Arc2D.Float(x + 3.5f, y + 6f, 9f, 7f, 200f, 140f, Arc2D.OPEN))
-}
-
-private fun paintClip(g: Graphics2D, x: Float, y: Float) {
-  g.color = Muted
-  g.stroke = BasicStroke(1.5f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND)
-  val path = Path2D.Float()
-  path.moveTo(x + 4f, y + 9f)
-  path.curveTo(x + 4f, y + 4f, x + 12f, y + 4f, x + 12f, y + 9f)
-  path.lineTo(x + 12f, y + 13f)
-  path.curveTo(x + 12f, y + 16.5f, x + 7f, y + 16.5f, x + 7f, y + 13f)
-  path.lineTo(x + 7f, y + 7.5f)
-  g.draw(path)
+  g.composite = saved
 }
 
 private fun Graphics2D.drawLine(text: String, x: Int, y: Int, size: Int): Int {
@@ -387,186 +492,51 @@ private fun BufferedImage.graphics2d(): Graphics2D {
 }
 
 private val Face = Color(0xF5C542)
-private val Skin = Color(0xF3C6A0)
 private val Heart = Color(0xE24B4A)
 private val FireHi = Color(0xF07848)
-private val Ink = Color(0x2A2420)
 
-private fun paintEmojiGlyph(g: Graphics2D, name: String, x: Float, y: Float, size: Float) {
-  val saved = g.stroke
-  g.stroke = BasicStroke((size / 12f).coerceAtLeast(1.2f), BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND)
-  when (name) {
-    "thumbsup" -> paintThumb(g, x, y, size, true)
-    "thumbsdown" -> paintThumb(g, x, y, size, false)
-    "ok_hand" -> paintOkHand(g, x, y, size)
-    "clap" -> paintClap(g, x, y, size)
-    "pray" -> paintPray(g, x, y, size)
-    "wave" -> paintWave(g, x, y, size)
-    "muscle" -> paintMuscle(g, x, y, size)
-    "heart" -> paintHeart(g, x + size * 0.08f, y + size * 0.12f, size * 0.84f)
-    "fire" -> paintFire(g, x, y, size)
-    "shrug" -> paintShrug(g, x, y, size)
-    "facepalm" -> paintFacepalm(g, x, y, size)
-    else -> paintFaceGlyph(g, name, x, y, size)
-  }
-  g.stroke = saved
+private fun paintIkon(g: Graphics2D, ikon: Ikon, cx: Float, cy: Float, size: Int, color: Color) {
+  val icon = FontIcon.of(ikon, size, color)
+  icon.paintIcon(null, g, (cx - icon.iconWidth / 2f).toInt(), (cy - icon.iconHeight / 2f).toInt())
 }
 
-private fun paintFaceGlyph(g: Graphics2D, name: String, x: Float, y: Float, size: Float) {
-  val fill = when (name) {
-    "rage" -> Color(0xE05A32)
-    else -> Face
-  }
-  g.color = fill
-  g.fill(Ellipse2D.Float(x, y, size, size))
-  val cx = x + size / 2f
-  val cy = y + size / 2f
-  val s = size / 24f
-  if (name == "sunglasses") {
-    g.color = Ink
-    g.fill(RoundRectangle2D.Float(cx - 9f * s, cy - 3.2f * s, 7.2f * s, 5.2f * s, 2f * s, 2f * s))
-    g.fill(RoundRectangle2D.Float(cx + 1.8f * s, cy - 3.2f * s, 7.2f * s, 5.2f * s, 2f * s, 2f * s))
-    g.stroke = BasicStroke(1.4f * s, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND)
-    g.drawLine((cx - 1.8f * s).toInt(), (cy - 0.6f * s).toInt(), (cx + 1.8f * s).toInt(), (cy - 0.6f * s).toInt())
-  } else if (name == "heart_eyes") {
-    paintHeart(g, cx - 8.6f * s, cy - 6.2f * s, 6.4f * s)
-    paintHeart(g, cx + 2.2f * s, cy - 6.2f * s, 6.4f * s)
-  } else if (name == "wink") {
-    g.color = Ink
-    g.fill(Ellipse2D.Float(cx - 6.4f * s, cy - 3.6f * s, 3.2f * s, 3.2f * s))
-    g.drawLine((cx + 3.2f * s).toInt(), (cy - 2.4f * s).toInt(), (cx + 6.8f * s).toInt(), (cy - 1.4f * s).toInt())
-  } else if (name == "thinking") {
-    g.color = Ink
-    g.fill(Ellipse2D.Float(cx - 6.4f * s, cy - 3.8f * s, 3f * s, 3.6f * s))
-    g.fill(Ellipse2D.Float(cx + 3.2f * s, cy - 3.2f * s, 3f * s, 3f * s))
-    g.draw(Arc2D.Float(cx - 5f * s, cy + 1f * s, 8f * s, 6f * s, 200f, 90f, Arc2D.OPEN))
-    g.color = Skin
-    g.fill(Ellipse2D.Float(cx + 6.5f * s, cy + 5.5f * s, 5.5f * s, 5.5f * s))
-  } else {
-    g.color = Ink
-    val eyeH = if (name == "joy" || name == "sob") 1.6f * s else 3.1f * s
-    g.fill(Ellipse2D.Float(cx - 6.2f * s, cy - 4.2f * s, 3.1f * s, eyeH))
-    g.fill(Ellipse2D.Float(cx + 3.1f * s, cy - 4.2f * s, 3.1f * s, eyeH))
-  }
-  if (name == "blush") {
-    g.color = Color(0xE89A8A)
-    g.fill(Ellipse2D.Float(cx - 9.5f * s, cy + 1.2f * s, 5.5f * s, 3.2f * s))
-    g.fill(Ellipse2D.Float(cx + 4f * s, cy + 1.2f * s, 5.5f * s, 3.2f * s))
-  }
-  if (name == "partying") {
-    g.color = Accent
-    val hat = Path2D.Float()
-    hat.moveTo(cx, y - 1.5f * s)
-    hat.lineTo(cx + 8f * s, cy - 6f * s)
-    hat.lineTo(cx - 2f * s, cy - 8f * s)
-    hat.closePath()
-    g.fill(hat)
-  }
-  if (name != "sunglasses" && name != "thinking") {
-    g.color = Ink
-    when (name) {
-      "smile", "grinning" -> g.draw(Arc2D.Float(cx - 7f * s, cy - 1f * s, 14f * s, 12f * s, 200f, 140f, Arc2D.OPEN))
-      "joy" -> {
-        g.fill(Ellipse2D.Float(cx - 5.5f * s, cy + 1.5f * s, 11f * s, 7f * s))
-        g.color = Color(0x6EC8E8)
-        g.fill(Ellipse2D.Float(cx - 9.5f * s, cy + 2f * s, 2.6f * s, 5.5f * s))
-        g.fill(Ellipse2D.Float(cx + 6.8f * s, cy + 2f * s, 2.6f * s, 5.5f * s))
-      }
-      "cry" -> {
-        g.draw(Arc2D.Float(cx - 6f * s, cy + 2f * s, 12f * s, 8f * s, 20f, 140f, Arc2D.OPEN))
-        g.color = Color(0x6EC8E8)
-        g.fill(Ellipse2D.Float(cx - 6.4f * s, cy + 1.5f * s, 2.4f * s, 6f * s))
-      }
-      "sob" -> {
-        g.fill(Ellipse2D.Float(cx - 5f * s, cy + 1.2f * s, 11f * s, 7.5f * s))
-        g.color = Color(0x6EC8E8)
-        g.fill(Ellipse2D.Float(cx - 9.2f * s, cy, 2.8f * s, 7f * s))
-        g.fill(Ellipse2D.Float(cx + 6.4f * s, cy, 2.8f * s, 7f * s))
-      }
-      "rage", "scream" -> g.fill(Ellipse2D.Float(cx - 5.5f * s, cy + 1.8f * s, 11f * s, 8f * s))
-      else -> g.draw(Arc2D.Float(cx - 6.5f * s, cy - 0.5f * s, 13f * s, 11f * s, 200f, 140f, Arc2D.OPEN))
-    }
-  }
+private fun paintEmoji(g: Graphics2D, name: String, x: Float, y: Float, size: Int) {
+  paintIkon(g, emojiIkon(name), x + size / 2f, y + size / 2f, size, emojiColor(name))
 }
 
-private fun paintHeart(g: Graphics2D, x: Float, y: Float, size: Float) {
-  g.color = Heart
-  val path = Path2D.Float()
-  val w = size
-  val h = size
-  path.moveTo(x + w / 2f, y + h * 0.82f)
-  path.curveTo(x - w * 0.12f, y + h * 0.48f, x + w * 0.02f, y, x + w / 2f, y + h * 0.28f)
-  path.curveTo(x + w * 0.98f, y, x + w * 1.12f, y + h * 0.48f, x + w / 2f, y + h * 0.82f)
-  g.fill(path)
+private fun emojiColor(name: String): Color = when (name) {
+  "heart" -> Heart
+  "fire" -> FireHi
+  "rage" -> Color(0xE05A32)
+  else -> Face
 }
 
-private fun paintFire(g: Graphics2D, x: Float, y: Float, size: Float) {
-  g.color = FireHi
-  val path = Path2D.Float()
-  path.moveTo(x + size * 0.5f, y)
-  path.curveTo(x + size * 0.95f, y + size * 0.35f, x + size * 0.9f, y + size * 0.85f, x + size * 0.5f, y + size)
-  path.curveTo(x + size * 0.08f, y + size * 0.78f, x + size * 0.12f, y + size * 0.32f, x + size * 0.5f, y)
-  g.fill(path)
-  g.color = Face
-  g.fill(Ellipse2D.Float(x + size * 0.32f, y + size * 0.42f, size * 0.36f, size * 0.42f))
-}
-
-private fun paintThumb(g: Graphics2D, x: Float, y: Float, size: Float, up: Boolean) {
-  val saved = g.transform
-  if (!up) {
-    g.rotate(Math.PI, (x + size / 2f).toDouble(), (y + size / 2f).toDouble())
-  }
-  g.color = Skin
-  g.fill(RoundRectangle2D.Float(x + size * 0.28f, y + size * 0.38f, size * 0.52f, size * 0.48f, 6f, 6f))
-  g.fill(RoundRectangle2D.Float(x + size * 0.42f, y + size * 0.08f, size * 0.22f, size * 0.42f, 6f, 6f))
-  g.transform = saved
-}
-
-private fun paintOkHand(g: Graphics2D, x: Float, y: Float, size: Float) {
-  g.color = Skin
-  g.fill(Ellipse2D.Float(x + size * 0.12f, y + size * 0.18f, size * 0.76f, size * 0.76f))
-  g.color = Panel
-  g.fill(Ellipse2D.Float(x + size * 0.32f, y + size * 0.34f, size * 0.28f, size * 0.28f))
-}
-
-private fun paintClap(g: Graphics2D, x: Float, y: Float, size: Float) {
-  g.color = Skin
-  g.fill(RoundRectangle2D.Float(x + size * 0.08f, y + size * 0.22f, size * 0.42f, size * 0.62f, 8f, 8f))
-  g.fill(RoundRectangle2D.Float(x + size * 0.48f, y + size * 0.12f, size * 0.42f, size * 0.62f, 8f, 8f))
-}
-
-private fun paintPray(g: Graphics2D, x: Float, y: Float, size: Float) {
-  g.color = Skin
-  g.fill(RoundRectangle2D.Float(x + size * 0.22f, y + size * 0.08f, size * 0.24f, size * 0.82f, 8f, 8f))
-  g.fill(RoundRectangle2D.Float(x + size * 0.52f, y + size * 0.08f, size * 0.24f, size * 0.82f, 8f, 8f))
-}
-
-private fun paintWave(g: Graphics2D, x: Float, y: Float, size: Float) {
-  g.color = Skin
-  g.fill(Ellipse2D.Float(x + size * 0.18f, y + size * 0.28f, size * 0.64f, size * 0.64f))
-  g.fill(RoundRectangle2D.Float(x + size * 0.18f, y + size * 0.08f, size * 0.16f, size * 0.42f, 6f, 6f))
-  g.fill(RoundRectangle2D.Float(x + size * 0.42f, y, size * 0.16f, size * 0.42f, 6f, 6f))
-  g.fill(RoundRectangle2D.Float(x + size * 0.66f, y + size * 0.1f, size * 0.16f, size * 0.4f, 6f, 6f))
-}
-
-private fun paintMuscle(g: Graphics2D, x: Float, y: Float, size: Float) {
-  g.color = Skin
-  g.fill(Ellipse2D.Float(x + size * 0.08f, y + size * 0.18f, size * 0.55f, size * 0.55f))
-  g.fill(RoundRectangle2D.Float(x + size * 0.48f, y + size * 0.38f, size * 0.42f, size * 0.28f, 8f, 8f))
-}
-
-private fun paintShrug(g: Graphics2D, x: Float, y: Float, size: Float) {
-  paintFaceGlyph(g, "slightly_smiling", x + size * 0.18f, y + size * 0.08f, size * 0.64f)
-  g.color = Skin
-  g.stroke = BasicStroke(2.2f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND)
-  g.draw(Arc2D.Float(x, y + size * 0.42f, size * 0.32f, size * 0.4f, 40f, 120f, Arc2D.OPEN))
-  g.draw(Arc2D.Float(x + size * 0.68f, y + size * 0.42f, size * 0.32f, size * 0.4f, 20f, 120f, Arc2D.OPEN))
-}
-
-private fun paintFacepalm(g: Graphics2D, x: Float, y: Float, size: Float) {
-  paintFaceGlyph(g, "weary", x, y, size)
-  g.color = Skin
-  g.fill(RoundRectangle2D.Float(x + size * 0.08f, y + size * 0.28f, size * 0.84f, size * 0.38f, 8f, 8f))
+private fun emojiIkon(name: String): Ikon = when (name) {
+  "grinning" -> FontAwesomeRegular.GRIN
+  "smile" -> FontAwesomeRegular.SMILE
+  "joy" -> FontAwesomeRegular.GRIN_TEARS
+  "blush" -> FontAwesomeRegular.SMILE_BEAM
+  "wink" -> FontAwesomeRegular.SMILE_WINK
+  "heart_eyes" -> FontAwesomeRegular.GRIN_HEARTS
+  "thinking" -> FontAwesomeRegular.MEH
+  "sunglasses" -> FontAwesomeRegular.GRIN_STARS
+  "cry" -> FontAwesomeRegular.SAD_TEAR
+  "sob" -> FontAwesomeRegular.SAD_CRY
+  "rage" -> FontAwesomeRegular.ANGRY
+  "scream" -> FontAwesomeRegular.SURPRISE
+  "partying" -> FontAwesomeRegular.LAUGH_BEAM
+  "shrug" -> FontAwesomeRegular.MEH_BLANK
+  "facepalm" -> FontAwesomeRegular.FLUSHED
+  "thumbsup" -> FontAwesomeRegular.THUMBS_UP
+  "thumbsdown" -> FontAwesomeRegular.THUMBS_DOWN
+  "ok_hand" -> FontAwesomeRegular.HAND_PEACE
+  "clap" -> FontAwesomeSolid.HANDS
+  "pray" -> FontAwesomeSolid.PRAYING_HANDS
+  "wave" -> FontAwesomeRegular.HAND_PAPER
+  "muscle" -> FontAwesomeRegular.HAND_ROCK
+  "heart" -> FontAwesomeRegular.HEART
+  "fire" -> FontAwesomeSolid.FIRE
+  else -> FontAwesomeRegular.SMILE
 }
 
 private fun noto(): Font {

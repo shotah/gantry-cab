@@ -28,6 +28,8 @@ Samples are canned Ada/Kit turns — not a live crane. Release builds ignore
   <img src="../assets/docs/phone-settings.png" alt="Settings cog open" width="180">
   &nbsp;
   <img src="../assets/docs/phone-emoji.png" alt="Emoji picker" width="180">
+  &nbsp;
+  <img src="../assets/docs/phone-attach.png" alt="Attach menu" width="180">
 </p>
 
 ## Android Auto
@@ -46,7 +48,8 @@ ListTemplate stand-in (DHU looks like this). Voice reply is Auto's.
 | `phone-empty` | `empty` | Live, nothing said yet. |
 | `phone-thread` | `thread` | Ada ↔ Kit. Same copy as pendant. |
 | `phone-down` | `down` | Socket down. |
-| `phone-settings` | `empty` | Cog open: origin, slug, theme, font. |
+| `phone-settings` | `empty` | Cog open: compact card, origin, slug, theme, font. |
 | `phone-emoji` | `thread` | Emoji picker over compose. |
+| `phone-attach` | `thread` | Paperclip menu: photo, commands, GPS, pin. |
 | `auto-empty` | `empty` | Auto list, empty. |
 | `auto-thread` | `thread` | Auto list, last six turns. |
