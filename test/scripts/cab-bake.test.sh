@@ -96,6 +96,12 @@ grep -q 'hosts_allowlist_sample' "$car" || {
   exit 1
 }
 
+manifest="$root/app/src/main/AndroidManifest.xml"
+grep -q 'android.permission.INTERNET' "$manifest" || {
+  echo "FAIL: AndroidManifest must declare INTERNET (socket + Google)" >&2
+  exit 1
+}
+
 debug_ns="$root/app/src/debug/res/xml/network_security_config.xml"
 if grep -q 'base-config cleartextTrafficPermitted="true"' "$debug_ns"; then
   echo "FAIL: debug cleartext must not be allowed for all hosts" >&2
