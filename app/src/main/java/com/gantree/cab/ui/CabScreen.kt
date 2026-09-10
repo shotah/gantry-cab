@@ -1,11 +1,9 @@
 package com.gantree.cab.ui
 
 import android.graphics.BitmapFactory
-import androidx.compose.foundation.BorderStroke
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -17,21 +15,25 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.outlined.Settings
+import androidx.compose.material3.AssistChip
 import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
+import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -41,19 +43,19 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.gantree.cab.ChatLine
 import com.gantree.cab.dev.SAMPLE_IDS
 import com.gantree.cab.mailbox.SlashCommand
 import com.gantree.cab.mailbox.decodeDataUrl
 import com.gantree.cab.mailbox.displaySlug
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CabScreen(
   origin: String,
@@ -89,110 +91,170 @@ fun CabScreen(
   onPin: () -> Unit = {},
   onEngage: () -> Unit = {},
 ) {
-  val colors = LocalCabColors.current
+  val scheme = MaterialTheme.colorScheme
   var settingsOpen by remember { mutableStateOf(false) }
   val list = rememberLazyListState()
   val title = displaySlug(slug)
   val googleDoor = googleReady && email.isBlank() && spike.isBlank() && lines.isEmpty()
+  val showSettings = settingsOpen && !compact
+  val barColors = TopAppBarDefaults.topAppBarColors(
+    containerColor = scheme.surface,
+    titleContentColor = scheme.onSurface,
+    actionIconContentColor = scheme.onSurfaceVariant,
+    navigationIconContentColor = scheme.onSurface,
+  )
+  BackHandler(enabled = showSettings) { settingsOpen = false }
   LaunchedEffect(lines.size) {
     if (lines.isNotEmpty()) {
       list.animateScrollToItem(lines.lastIndex)
     }
   }
-  Column(
-    modifier = Modifier
-      .fillMaxSize()
-      .background(colors.canvas)
-      .imePadding(),
-  ) {
-    Row(
-      modifier = Modifier
-        .fillMaxWidth()
-        .background(colors.panel)
-        .padding(horizontal = 12.dp, vertical = 8.dp),
-      verticalAlignment = Alignment.CenterVertically,
-      horizontalArrangement = Arrangement.spacedBy(8.dp),
-    ) {
-      KitAvatar(
-        slug = slug,
-        bytes = avatarBytes,
-        size = 40.dp,
-        editable = !googleDoor,
-        onClick = onAvatar,
-      )
-      Column(modifier = Modifier.weight(1f)) {
-        Text(title, color = colors.fg, style = MaterialTheme.typography.titleMedium)
-        Text(
-          if (up) "live" else "down",
-          color = if (up) colors.ok else colors.dim,
-          fontSize = 11.sp,
+  Scaffold(
+    modifier = Modifier.fillMaxSize().imePadding(),
+    containerColor = scheme.background,
+    topBar = {
+      if (showSettings) {
+        TopAppBar(
+          navigationIcon = {
+            IconButton(
+              onClick = { settingsOpen = false },
+              modifier = Modifier.semantics { contentDescription = "close settings" },
+            ) {
+              Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null)
+            }
+          },
+          title = { Text("Settings") },
+          colors = barColors,
+        )
+      } else {
+        TopAppBar(
+          navigationIcon = {
+            Box(modifier = Modifier.padding(start = 8.dp)) {
+              KitAvatar(
+                slug = slug,
+                bytes = avatarBytes,
+                size = 40.dp,
+                editable = !googleDoor,
+                onClick = onAvatar,
+              )
+            }
+          },
+          title = {
+            Column {
+              Text(title, style = MaterialTheme.typography.titleLarge, maxLines = 1)
+              Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(6.dp),
+              ) {
+                Box(
+                  modifier = Modifier
+                    .size(8.dp)
+                    .clip(CircleShape)
+                    .background(if (up) scheme.tertiary else scheme.outline),
+                )
+                Text(
+                  if (up) "Live" else "Offline",
+                  style = MaterialTheme.typography.labelSmall,
+                  color = if (up) scheme.tertiary else scheme.outline,
+                )
+              }
+            }
+          },
+          actions = {
+            IconButton(
+              onClick = { settingsOpen = true },
+              modifier = Modifier.semantics { contentDescription = "settings" },
+            ) {
+              Icon(Icons.Outlined.Settings, contentDescription = null)
+            }
+          },
+          colors = barColors,
         )
       }
-      Box(
-        modifier = Modifier
-          .size(32.dp)
-          .clip(RoundedCornerShape(8.dp))
-          .background(if (settingsOpen) colors.track else Color.Transparent)
-          .clickable { settingsOpen = !settingsOpen }
-          .semantics { contentDescription = "settings" },
-        contentAlignment = Alignment.Center,
-      ) {
-        Icon(
-          Icons.Outlined.Settings,
-          contentDescription = null,
-          tint = if (settingsOpen) colors.fg else colors.muted,
-          modifier = Modifier.size(20.dp),
+    },
+    bottomBar = {
+      if (!googleDoor && !showSettings) {
+        CabCompose(
+          disabled = !up,
+          placeholder = "Message $title",
+          gpsOn = gpsOn,
+          catalog = catalog,
+          onSend = onSend,
+          onPhoto = onPhoto,
+          onPin = onPin,
+          onGpsToggle = onGpsToggle,
+          onEngage = onEngage,
         )
       }
-    }
-    HorizontalDivider(color = colors.line, thickness = 1.dp)
-    if (dev && !compact) {
-      Row(
-        horizontalArrangement = Arrangement.spacedBy(6.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        modifier = Modifier.padding(horizontal = 12.dp),
-      ) {
-        for (id in SAMPLE_IDS) {
-          TextButton(onClick = { onSample(id) }) { Text(id, color = colors.accent) }
-        }
-      }
-    }
-    if (faceHint.isNotBlank()) {
-      Text(
-        faceHint,
-        color = colors.danger,
-        fontSize = 11.sp,
-        modifier = Modifier
-          .fillMaxWidth()
-          .background(colors.panel)
-          .padding(horizontal = 12.dp, vertical = 4.dp),
-      )
-    }
-    Box(modifier = Modifier.weight(1f).fillMaxWidth()) {
-      if (googleDoor) {
+    },
+  ) { padding ->
+    Box(modifier = Modifier.fillMaxSize().padding(padding)) {
+      if (showSettings) {
+        CabSettings(
+          origin = origin,
+          slug = slug,
+          spike = spike,
+          email = email,
+          googleReady = googleReady,
+          cranes = cranes,
+          themeId = themeId,
+          fontId = fontId,
+          onOrigin = onOrigin,
+          onSlug = onSlug,
+          onSpike = onSpike,
+          onTheme = onTheme,
+          onFont = onFont,
+          onConnect = onConnect,
+          onGoogle = onGoogle,
+          onSignOut = onSignOut,
+        )
+      } else if (googleDoor) {
         Column(
           modifier = Modifier.fillMaxSize().padding(24.dp),
           horizontalAlignment = Alignment.CenterHorizontally,
           verticalArrangement = Arrangement.Center,
         ) {
-          KitAvatar(slug = slug, bytes = avatarBytes, size = 64.dp)
-          Text("Sign in with Google to talk.", color = colors.body, modifier = Modifier.padding(top = 12.dp))
-          Button(
-            onClick = onGoogle,
-            modifier = Modifier.padding(top = 12.dp),
-            colors = ButtonDefaults.buttonColors(containerColor = colors.accentSoft, contentColor = colors.mark),
-          ) {
+          KitAvatar(slug = slug, bytes = avatarBytes, size = 72.dp)
+          Text(
+            "Sign in with Google to talk.",
+            style = MaterialTheme.typography.bodyLarge,
+            color = scheme.onSurfaceVariant,
+            modifier = Modifier.padding(top = 16.dp),
+            textAlign = TextAlign.Center,
+          )
+          Button(onClick = onGoogle, modifier = Modifier.padding(top = 20.dp)) {
             Text("Continue with Google")
           }
         }
       } else {
         Column(modifier = Modifier.fillMaxSize()) {
+          if (dev && !compact) {
+            Row(
+              horizontalArrangement = Arrangement.spacedBy(8.dp),
+              modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
+            ) {
+              for (id in SAMPLE_IDS) {
+                AssistChip(onClick = { onSample(id) }, label = { Text(id) })
+              }
+            }
+          }
+          if (faceHint.isNotBlank()) {
+            Text(
+              faceHint,
+              color = scheme.error,
+              style = MaterialTheme.typography.labelMedium,
+              modifier = Modifier
+                .fillMaxWidth()
+                .background(scheme.errorContainer)
+                .padding(horizontal = 16.dp, vertical = 8.dp),
+            )
+          }
           if (hint.isNotBlank()) {
             Text(
               hint,
-              color = colors.muted,
-              fontSize = 12.sp,
-              modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp),
+              style = MaterialTheme.typography.bodySmall,
+              color = scheme.onSurfaceVariant,
+              modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
             )
           }
           LazyColumn(
@@ -204,15 +266,16 @@ fun CabScreen(
             if (lines.isEmpty()) {
               item {
                 Column(
-                  modifier = Modifier.fillMaxWidth().padding(top = 40.dp),
+                  modifier = Modifier.fillMaxWidth().padding(top = 48.dp),
                   horizontalAlignment = Alignment.CenterHorizontally,
                 ) {
-                  KitAvatar(slug = slug, bytes = avatarBytes, size = 64.dp)
+                  KitAvatar(slug = slug, bytes = avatarBytes, size = 72.dp)
                   Text(
-                    "Nothing yet. Type below — or / for harness commands.",
-                    color = colors.dim,
+                    "No messages yet. Say hello, or type / for commands.",
+                    color = scheme.onSurfaceVariant,
                     style = MaterialTheme.typography.bodyLarge,
-                    modifier = Modifier.padding(top = 12.dp, start = 16.dp, end = 16.dp),
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.padding(top = 16.dp, start = 24.dp, end = 24.dp),
                   )
                 }
               }
@@ -224,21 +287,26 @@ fun CabScreen(
                 horizontalArrangement = if (mine) Arrangement.End else Arrangement.Start,
               ) {
                 Surface(
-                  color = if (mine) colors.you else colors.kit,
-                  shape = RoundedCornerShape(16.dp),
-                  border = BorderStroke(1.dp, if (mine) colors.accentLine else colors.line),
-                  modifier = Modifier.fillMaxWidth(0.85f),
+                  color = if (mine) scheme.primaryContainer else scheme.surfaceContainerHighest,
+                  contentColor = if (mine) scheme.onPrimaryContainer else scheme.onSurface,
+                  shape = if (mine) {
+                    RoundedCornerShape(20.dp, 20.dp, 4.dp, 20.dp)
+                  } else {
+                    RoundedCornerShape(20.dp, 20.dp, 20.dp, 4.dp)
+                  },
+                  tonalElevation = 1.dp,
+                  modifier = Modifier.fillMaxWidth(0.82f),
                 ) {
                   Column(
-                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+                    modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
                     verticalArrangement = Arrangement.spacedBy(6.dp),
                   ) {
                     if (line.kind == "push") {
-                      Text("PING", color = colors.dim, fontSize = 11.sp)
+                      Text("Ping", style = MaterialTheme.typography.labelSmall, color = scheme.onSurfaceVariant)
                     }
                     line.photo?.let { ChatPhoto(it) }
                     if (line.text.isNotBlank()) {
-                      Text(line.text, color = colors.fg, style = MaterialTheme.typography.bodyLarge)
+                      Text(line.text, style = MaterialTheme.typography.bodyLarge)
                     }
                   }
                 }
@@ -246,65 +314,6 @@ fun CabScreen(
             }
           }
         }
-      }
-      if (settingsOpen && !compact) {
-        Box(
-          modifier = Modifier
-            .fillMaxSize()
-            .clickable(
-              interactionSource = remember { MutableInteractionSource() },
-              indication = null,
-            ) { settingsOpen = false },
-        )
-        Surface(
-          color = colors.panel,
-          shape = RoundedCornerShape(12.dp),
-          shadowElevation = 8.dp,
-          border = BorderStroke(1.dp, colors.line),
-          modifier = Modifier
-            .align(Alignment.TopEnd)
-            .padding(12.dp)
-            .width(256.dp)
-            .semantics { contentDescription = "Settings" },
-        ) {
-          Box(modifier = Modifier.padding(12.dp)) {
-            CabSettings(
-              origin = origin,
-              slug = slug,
-              spike = spike,
-              email = email,
-              googleReady = googleReady,
-              cranes = cranes,
-              themeId = themeId,
-              fontId = fontId,
-              onOrigin = onOrigin,
-              onSlug = onSlug,
-              onSpike = onSpike,
-              onTheme = onTheme,
-              onFont = onFont,
-              onConnect = onConnect,
-              onGoogle = onGoogle,
-              onSignOut = onSignOut,
-            )
-          }
-        }
-      }
-    }
-    if (!googleDoor) {
-      HorizontalDivider(color = colors.line, thickness = 1.dp)
-      Box(modifier = Modifier.background(colors.panel).padding(12.dp)) {
-        CabCompose(
-          disabled = !up,
-          placeholder = "Message $title · / for commands",
-          gpsOn = gpsOn,
-          gpsHint = hint,
-          catalog = catalog,
-          onSend = onSend,
-          onPhoto = onPhoto,
-          onPin = onPin,
-          onGpsToggle = onGpsToggle,
-          onEngage = onEngage,
-        )
       }
     }
   }
@@ -321,7 +330,7 @@ private fun ChatPhoto(url: String) {
       bitmap = bmp,
       contentDescription = null,
       contentScale = ContentScale.Crop,
-      modifier = Modifier.fillMaxWidth().heightIn(max = 192.dp).clip(RoundedCornerShape(8.dp)),
+      modifier = Modifier.fillMaxWidth().heightIn(max = 192.dp).clip(RoundedCornerShape(12.dp)),
     )
   }
 }

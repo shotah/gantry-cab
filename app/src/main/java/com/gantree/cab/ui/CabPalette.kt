@@ -7,7 +7,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.sp
 import com.gantree.cab.mailbox.chatSp
 import com.gantree.cab.mailbox.parseFont
@@ -101,28 +100,63 @@ private fun lampColors() = CabColors(
   kit = Color(0xFF1E1E2E),
 )
 
+fun CabColors.toColorScheme() = darkColorScheme(
+  primary = accent,
+  onPrimary = canvas,
+  primaryContainer = accentSoft,
+  onPrimaryContainer = mark,
+  secondary = ok,
+  onSecondary = canvas,
+  secondaryContainer = track,
+  onSecondaryContainer = ok,
+  tertiary = ok,
+  onTertiary = canvas,
+  background = canvas,
+  onBackground = body,
+  surface = panel,
+  onSurface = fg,
+  surfaceVariant = track,
+  onSurfaceVariant = muted,
+  surfaceContainerLowest = canvas,
+  surfaceContainerLow = panel,
+  surfaceContainer = track,
+  surfaceContainerHigh = line,
+  surfaceContainerHighest = kit,
+  outline = edge,
+  outlineVariant = line,
+  error = danger,
+  onError = fg,
+  inversePrimary = accentLine,
+)
+
+private fun cabTypography(chat: Float): Typography {
+  val base = Typography()
+  return Typography(
+    displayLarge = base.displayLarge.copy(fontFamily = CabSans),
+    displayMedium = base.displayMedium.copy(fontFamily = CabSans),
+    displaySmall = base.displaySmall.copy(fontFamily = CabSans),
+    headlineLarge = base.headlineLarge.copy(fontFamily = CabSans),
+    headlineMedium = base.headlineMedium.copy(fontFamily = CabSans),
+    headlineSmall = base.headlineSmall.copy(fontFamily = CabSans),
+    titleLarge = base.titleLarge.copy(fontFamily = CabSans),
+    titleMedium = base.titleMedium.copy(fontFamily = CabSans),
+    titleSmall = base.titleSmall.copy(fontFamily = CabSans),
+    bodyLarge = base.bodyLarge.copy(fontFamily = CabSans, fontSize = chat.sp),
+    bodyMedium = base.bodyMedium.copy(fontFamily = CabSans),
+    bodySmall = base.bodySmall.copy(fontFamily = CabSans),
+    labelLarge = base.labelLarge.copy(fontFamily = CabSans),
+    labelMedium = base.labelMedium.copy(fontFamily = CabSans),
+    labelSmall = base.labelSmall.copy(fontFamily = CabSans),
+  )
+}
+
 @Composable
 fun CabTheme(themeId: String = "boom", fontId: String = "sm", content: @Composable () -> Unit) {
   val colors = cabColors(themeId)
-  val chat = chatSp(parseFont(fontId)).sp
-  val type = Typography(
-    titleLarge = TextStyle(fontFamily = CabSans, fontSize = 22.sp, color = colors.fg),
-    titleMedium = TextStyle(fontFamily = CabSans, fontSize = 16.sp, color = colors.fg),
-    bodyLarge = TextStyle(fontFamily = CabSans, fontSize = chat, color = colors.body),
-    bodySmall = TextStyle(fontFamily = CabSans, fontSize = 12.sp, color = colors.muted),
-    labelLarge = TextStyle(fontFamily = CabSans, fontSize = 14.sp, color = colors.fg),
-  )
   CompositionLocalProvider(LocalCabColors provides colors) {
     MaterialTheme(
-      colorScheme = darkColorScheme(
-        background = colors.canvas,
-        surface = colors.panel,
-        primary = colors.accent,
-        onPrimary = colors.canvas,
-        onBackground = colors.body,
-        onSurface = colors.fg,
-      ),
-      typography = type,
+      colorScheme = colors.toColorScheme(),
+      typography = cabTypography(chatSp(parseFont(fontId))),
       content = content,
     )
   }

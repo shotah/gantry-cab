@@ -46,9 +46,9 @@ ListTemplate stand-in (DHU looks like this). Voice reply is Auto's.
 | --- | --- | --- |
 | `phone-unsigned` | `unsigned` | Google door. Avatar + cog. |
 | `phone-empty` | `empty` | Live, nothing said yet. |
-| `phone-thread` | `thread` | Ada ↔ Kit. Same copy as pendant. |
+| `phone-thread` | `thread` | Ada ↔ Kit. |
 | `phone-down` | `down` | Socket down. |
-| `phone-settings` | `empty` | Cog open: compact card, origin, slug, theme, font. |
+| `phone-settings` | `empty` | Settings screen: origin, slug, theme, font size. |
 | `phone-emoji` | `thread` | Emoji picker over compose. |
 | `phone-attach` | `thread` | Paperclip menu: photo, commands, GPS, pin. |
 | `auto-empty` | `empty` | Auto list, empty. |

@@ -10,6 +10,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.SentimentSatisfied
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -39,8 +40,8 @@ fun KitAvatar(
     }
   }
   val name = displaySlug(slug)
-  val colors = LocalCabColors.current
-  val base = Modifier.size(size).clip(CircleShape).background(colors.track)
+  val scheme = MaterialTheme.colorScheme
+  val base = Modifier.size(size).clip(CircleShape).background(scheme.surfaceContainer)
   val face: @Composable (Modifier) -> Unit = { mod ->
     if (bmp != null) {
       Image(
@@ -54,7 +55,7 @@ fun KitAvatar(
         Icon(
           Icons.Outlined.SentimentSatisfied,
           contentDescription = null,
-          tint = colors.muted,
+          tint = scheme.onSurfaceVariant,
           modifier = Modifier.size(size * 0.55f),
         )
       }

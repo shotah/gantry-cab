@@ -4,7 +4,7 @@ set -euo pipefail
 
 root="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$root"
-CAB_WRITE_SHOTS=1 ./gradlew :app:testDebugUnitTest --tests com.gantree.cab.ui.DocsShotTest
+CAB_WRITE_SHOTS=1 ./gradlew :app:testDebugUnitTest --tests com.gantree.cab.ui.DocsShotTest --rerun
 
 copied=0
 for name in phone-unsigned phone-empty phone-thread phone-down phone-settings phone-emoji phone-attach auto-empty auto-thread; do
