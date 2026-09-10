@@ -11,6 +11,12 @@ if (localFile.exists()) {
   localFile.inputStream().use { localProps.load(it) }
 }
 
+val envFileProps = Properties()
+val envFile = rootProject.file(".env")
+if (envFile.exists()) {
+  envFile.inputStream().use { envFileProps.load(it) }
+}
+
 fun esc(value: String): String = "\"${value.replace("\\", "\\\\").replace("\"", "\\\"")}\""
 
 fun cabVersionName(): String {
@@ -29,7 +35,13 @@ val cabName = cabVersionName()
 val cabCode = cabVersionCode(cabName)
 
 fun propOrEnv(key: String, env: String): String? =
-  System.getenv(env)?.takeIf { it.isNotBlank() } ?: localProps.getProperty(key)?.takeIf { it.isNotBlank() }
+  System.getenv(env)?.takeIf { it.isNotBlank() }
+    ?: envFileProps.getProperty(env)?.takeIf { it.isNotBlank() }
+    ?: envFileProps.getProperty(key)?.takeIf { it.isNotBlank() }
+    ?: localProps.getProperty(key)?.takeIf { it.isNotBlank() }
+
+val mailboxOrigin = propOrEnv("cab.mailboxOrigin", "CAB_MAILBOX_ORIGIN") ?: "http://10.0.2.2:3000"
+val googleWebClientId = propOrEnv("cab.googleWebClientId", "CAB_GOOGLE_WEB_CLIENT_ID") ?: ""
 
 val playStore = propOrEnv("cab.storeFile", "CAB_STORE_FILE")
 val playStorePassword = propOrEnv("cab.storePassword", "CAB_STORE_PASSWORD")
@@ -48,8 +60,8 @@ android {
     versionCode = cabCode
     versionName = cabName
     testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
-    buildConfigField("String", "MAILBOX_ORIGIN", esc(localProps.getProperty("cab.mailboxOrigin", "http://10.0.2.2:3000")))
-    buildConfigField("String", "GOOGLE_WEB_CLIENT_ID", esc(localProps.getProperty("cab.googleWebClientId", "")))
+    buildConfigField("String", "MAILBOX_ORIGIN", esc(mailboxOrigin))
+    buildConfigField("String", "GOOGLE_WEB_CLIENT_ID", esc(googleWebClientId))
     buildConfigField("boolean", "DEV", "false")
   }
 

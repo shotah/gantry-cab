@@ -41,6 +41,8 @@ jobs:
           CAB_STORE_PASSWORD: ${{ secrets.CAB_STORE_PASSWORD }}
           CAB_KEY_ALIAS: ${{ secrets.CAB_KEY_ALIAS }}
           CAB_KEY_PASSWORD: ${{ secrets.CAB_KEY_PASSWORD }}
+          CAB_MAILBOX_ORIGIN: ${{ secrets.CAB_MAILBOX_ORIGIN || vars.CAB_MAILBOX_ORIGIN }}
+          CAB_GOOGLE_WEB_CLIENT_ID: ${{ secrets.CAB_GOOGLE_WEB_CLIENT_ID || vars.CAB_GOOGLE_WEB_CLIENT_ID }}
         run: ./gradlew --no-daemon assembleRelease
 
       - name: Name APK

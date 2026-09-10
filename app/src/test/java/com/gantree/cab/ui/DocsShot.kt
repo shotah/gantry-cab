@@ -238,9 +238,9 @@ private fun paintSettings(g: Graphics2D, font: Font, slug: String, email: String
   val inset = 24
   val fieldW = (PHONE_W - 48).toFloat()
   var y = BAR_H + 16
-  y = g.outlinedField(font, "Mailbox origin", "http://10.0.2.2:3000", inset, y, fieldW)
-  y = g.outlinedField(font, "Agent name", slug, inset, y + 8, fieldW)
-  y = g.outlinedField(font, "Access secret", "••••••••", inset, y + 8, fieldW)
+  y = g.outlinedField(font, "Mailbox", "https://pendant.example.com", inset, y, fieldW)
+  y = g.outlinedField(font, "Talking to", slug, inset, y + 8, fieldW)
+  y = g.outlinedField(font, "Phone secret", "••••••••", inset, y + 8, fieldW)
   g.font = font.deriveFont(12f)
   g.color = Muted
   y = g.drawLine("Theme", inset, y + 12, 12)

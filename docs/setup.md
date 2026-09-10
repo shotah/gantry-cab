@@ -53,7 +53,9 @@ Sideload that APK (or Play **internal** testing). Walk:
 [sideload_to_android.md](sideload_to_android.md). Without a Play
 keystore the APK is debug-signed. Optional repo secrets:
 `CAB_KEYSTORE_BASE64`, `CAB_STORE_PASSWORD`, `CAB_KEY_ALIAS`,
-`CAB_KEY_PASSWORD`.
+`CAB_KEY_PASSWORD`. Bake the mailbox into the GitHub APK with
+`CAB_MAILBOX_ORIGIN` and `CAB_GOOGLE_WEB_CLIENT_ID` (Actions secrets;
+variables work too). Do not put a real Worker URL in git.
 
 Coverage badge: Actions pushes `badges/coverage.svg` to `gh-pages`.
 Repo Settings → Pages → branch `gh-pages` / root, once.
@@ -75,18 +77,24 @@ Same GCP project as pendant's **Web application** client.
 1. APIs & Services → Credentials → OAuth client ID → **Android**.
    Package `com.gantree.cab`. SHA-1 = debug keystore (Android Studio
    Gradle → signingReport) until you have a release key.
-2. `local.properties`:
+2. Bake the Worker host and Web client id at assemble time — not in
+   source. Copy `.env.example` to `.env`:
 
    ```
-   cab.mailboxOrigin=https://<pendant-worker>
-   cab.googleWebClientId=<pendant Web client id>
+   CAB_MAILBOX_ORIGIN=https://pendant.example.com
+   CAB_GOOGLE_WEB_CLIENT_ID=<pendant Web client id>
    ```
+
+   Same keys work as process env, or as `cab.mailboxOrigin` /
+   `cab.googleWebClientId` in `local.properties`. Release APKs on
+   GitHub read `CAB_MAILBOX_ORIGIN` and `CAB_GOOGLE_WEB_CLIENT_ID`
+   from repo Actions secrets (or variables).
 
    `setServerClientId` is the Web client, so the ID token `aud` is
    what `POST /api/auth/token` already verifies. The Android client is
    only so Play Services will issue the token.
 
-3. Cab: Google → Listen. Allowlist is still the crane's
+3. Cab: Google → Connect. Allowlist is still the crane's
    `PENDANT_ALLOWED_USERS` (Google `sub`), same as the PWA.
 
 ## Android Auto

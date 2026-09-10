@@ -83,10 +83,12 @@ In cab: origin `http://10.0.2.2:3000`, slug `kit`, spike secret from
 a real head unit with Android Auto → Developer settings → Unknown
 sources.
 
-Google Sign-In needs `cab.googleWebClientId` in `local.properties`
-(pendant's Web application client id) and an **Android** OAuth client
-on that same GCP project: package `com.gantree.cab`, debug SHA-1 from
-Android Studio's signing report.
+Google Sign-In needs `CAB_GOOGLE_WEB_CLIENT_ID` in a gitignored `.env`
+(or `cab.googleWebClientId` in `local.properties`): pendant's Web
+application client id, plus an **Android** OAuth client on that same
+GCP project: package `com.gantree.cab`, debug SHA-1 from Android
+Studio's signing report. GitHub Release bakes the same values from
+Actions secrets. The public tree only has fake example hosts.
 
 ## Auto
 

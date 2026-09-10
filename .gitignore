@@ -4,6 +4,7 @@
 .DS_Store
 build/
 local.properties
+.env
 captures/
 *.apk
 *.ap_

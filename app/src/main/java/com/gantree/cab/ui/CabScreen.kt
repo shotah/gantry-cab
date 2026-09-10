@@ -271,7 +271,11 @@ fun CabScreen(
                 ) {
                   KitAvatar(slug = slug, bytes = avatarBytes, size = 72.dp)
                   Text(
-                    "No messages yet. Say hello, or type / for commands.",
+                    if (up) {
+                      "No messages yet. Say hello, or type / for commands."
+                    } else {
+                      "Open Settings to connect. You are the operator; the name in the bar is the crane."
+                    },
                     color = scheme.onSurfaceVariant,
                     style = MaterialTheme.typography.bodyLarge,
                     textAlign = TextAlign.Center,

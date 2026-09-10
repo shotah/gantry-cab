@@ -42,4 +42,29 @@ class MailboxUrlTest {
   fun httpOriginTrimsSlash() {
     assertEquals("http://10.0.2.2:3000", httpOrigin("  http://10.0.2.2:3000/  "))
   }
+
+  @Test
+  fun normalizeMailboxOriginAcceptsWorkerAndCraneUrls() {
+    assertEquals(
+      "https://pendant.example.com",
+      normalizeMailboxOrigin("https://pendant.example.com/"),
+    )
+    assertEquals(
+      "https://pendant.example.com",
+      normalizeMailboxOrigin("https://pendant.example.com/ws/kit"),
+    )
+    assertEquals(
+      "https://pendant.example.com",
+      normalizeMailboxOrigin("wss://pendant.example.com/ws/kit"),
+    )
+    assertEquals(
+      "http://10.0.2.2:3000",
+      normalizeMailboxOrigin("ws://10.0.2.2:3000/ws/kit"),
+    )
+    assertEquals(
+      "https://gantry-pendant.example.workers.dev",
+      normalizeMailboxOrigin("gantry-pendant.example.workers.dev"),
+    )
+    assertEquals("http://10.0.2.2:3000", normalizeMailboxOrigin("http://10.0.2.2:3000"))
+  }
 }

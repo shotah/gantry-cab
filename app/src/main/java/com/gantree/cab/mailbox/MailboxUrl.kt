@@ -25,3 +25,26 @@ fun mailboxUrl(origin: String, slug: String, role: String = "phone"): String {
 }
 
 fun httpOrigin(origin: String): String = origin.trim().trimEnd('/')
+
+/**
+ * Operator paste → HTTP origin. Accepts the crane's `PENDANT_MAILBOX_URL`
+ * (`wss://host/ws/kit`) and a bare Worker host.
+ */
+fun normalizeMailboxOrigin(raw: String): String {
+  val s = raw.trim().trimEnd('/')
+  if (s.isEmpty()) {
+    return s
+  }
+  val u = Regex("""^(wss?|https?)://([^/]+)(/.*)?$""", RegexOption.IGNORE_CASE).matchEntire(s)
+  if (u != null) {
+    val scheme = u.groupValues[1].lowercase()
+    val host = u.groupValues[2]
+    val path = u.groupValues[3]
+    val http = if (scheme == "https" || scheme == "wss") "https" else "http"
+    if (path.isEmpty() || path == "/" || path.startsWith("/ws", ignoreCase = true)) {
+      return "$http://$host"
+    }
+    return "$http://$host$path".trimEnd('/')
+  }
+  return "https://$s"
+}

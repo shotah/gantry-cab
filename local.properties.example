@@ -1,5 +1,7 @@
 # Android Studio writes sdk.dir here. Do not commit this file.
 sdk.dir=/home/deck/Android/Sdk
+# Mailbox / Google: prefer a gitignored .env (see .env.example). These keys
+# also work here. Never put a real Worker URL in git.
 cab.mailboxOrigin=http://10.0.2.2:3000
 cab.googleWebClientId=
 # Optional Play / release keystore. Without these, assembleRelease is debug-signed (sideload).

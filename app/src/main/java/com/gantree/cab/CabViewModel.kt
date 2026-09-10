@@ -16,6 +16,7 @@ import com.gantree.cab.mailbox.CHAT_PHOTO_EDGE
 import com.gantree.cab.mailbox.IMAGE_BYTES_MAX
 import com.gantree.cab.mailbox.PhotoResult
 import com.gantree.cab.mailbox.jpegFromUri
+import com.gantree.cab.mailbox.normalizeMailboxOrigin
 import com.gantree.cab.mailbox.parseSlug
 import com.gantree.cab.mailbox.photoDataUrl
 import com.gantree.cab.ui.requestGoogleId
@@ -106,7 +107,9 @@ class CabViewModel(private val app: CabApp) : ViewModel() {
   }
 
   fun persist() {
-    app.prefs.origin = _origin.value
+    val origin = normalizeMailboxOrigin(_origin.value)
+    _origin.value = origin
+    app.prefs.origin = origin
     app.prefs.slug = parseSlug(_slug.value) ?: _slug.value
     app.prefs.spike = _spike.value
   }
@@ -162,7 +165,7 @@ class CabViewModel(private val app: CabApp) : ViewModel() {
   fun signIn(activity: Activity) {
     val web = BuildConfig.GOOGLE_WEB_CLIENT_ID
     if (web.isBlank()) {
-      app.mouth.setHint("set cab.googleWebClientId in local.properties")
+      app.mouth.setHint("rebuild with CAB_GOOGLE_WEB_CLIENT_ID")
       return
     }
     persist()
@@ -182,6 +185,7 @@ class CabViewModel(private val app: CabApp) : ViewModel() {
           app.prefs.slug = me.cranes.first()
         }
         app.mouth.setHint("signed in as ${session.email ?: session.sub}")
+        MailboxService.start(activity)
       } catch (e: AuthException) {
         app.mouth.setHint("auth ${e.code}")
       } catch (e: Exception) {

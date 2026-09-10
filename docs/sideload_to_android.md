@@ -64,7 +64,8 @@ Tap **Listen**. Stay on the screen until the socket comes up. Type
 on the phone; Kit's replies show in the thread and as a heads-up
 notification.
 
-The GitHub APK has no Google button. The access secret is the way in.
+The GitHub APK only has Google Sign-In if the release job was given
+`CAB_GOOGLE_WEB_CLIENT_ID`. Otherwise the phone secret is the way in.
 
 A leftover origin of `http://10.0.2.2:3000` is the emulator default.
 On a real phone that address is not the mailbox — replace it with the

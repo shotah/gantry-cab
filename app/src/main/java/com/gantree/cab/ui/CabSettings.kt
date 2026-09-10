@@ -8,10 +8,10 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.Button
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -62,8 +62,13 @@ fun CabSettings(
       .padding(bottom = 32.dp)
       .semantics { contentDescription = "Settings" },
   ) {
+    Text(
+      "You are the operator. The name in the chat bar is the crane.",
+      style = MaterialTheme.typography.bodyMedium,
+      color = scheme.onSurfaceVariant,
+    )
     if (cranes.isNotEmpty()) {
-      Text("Agent", style = MaterialTheme.typography.labelLarge, color = scheme.onSurfaceVariant)
+      Text("Talking to", style = MaterialTheme.typography.labelLarge, color = scheme.onSurfaceVariant)
       Row(
         horizontalArrangement = Arrangement.spacedBy(8.dp),
         modifier = Modifier.horizontalScroll(rememberScrollState()),
@@ -81,21 +86,47 @@ fun CabSettings(
       value = origin,
       onValueChange = onOrigin,
       modifier = Modifier.fillMaxWidth(),
-      label = { Text("Mailbox origin") },
+      label = { Text("Mailbox") },
+      placeholder = { Text("https://pendant.example.com") },
+      supportingText = {
+        Text("The pendant Worker host — same site as the PWA. Cloudflare URL, or Gantree’s PENDANT_MAILBOX_URL without /ws/kit.")
+      },
       singleLine = true,
     )
     OutlinedTextField(
       value = slug,
       onValueChange = { onSlug(it.lowercase()) },
       modifier = Modifier.fillMaxWidth(),
-      label = { Text("Agent name") },
+      label = { Text("Talking to") },
+      supportingText = { Text("The crane’s room, usually kit. Not your name.") },
       singleLine = true,
     )
+    if (googleReady && email.isBlank()) {
+      Button(onClick = onGoogle, modifier = Modifier.fillMaxWidth()) {
+        Text("Continue with Google")
+      }
+    }
+    if (!googleReady) {
+      Text(
+        "This APK has no Google Sign-In. Use a phone secret, or rebuild with CAB_GOOGLE_WEB_CLIENT_ID.",
+        style = MaterialTheme.typography.bodySmall,
+        color = scheme.onSurfaceVariant,
+      )
+    }
     OutlinedTextField(
       value = spike,
       onValueChange = onSpike,
       modifier = Modifier.fillMaxWidth(),
-      label = { Text("Access secret") },
+      label = { Text("Phone secret") },
+      supportingText = {
+        Text(
+          if (googleReady) {
+            "Optional. Lab MAILBOX_SECRET only — not the crane’s PENDANT_BEARER."
+          } else {
+            "MAILBOX_SECRET from pendant .dev.vars. Not PENDANT_BEARER (that’s Kit’s socket)."
+          },
+        )
+      },
       singleLine = true,
       visualTransformation = PasswordVisualTransformation(),
     )
@@ -149,9 +180,6 @@ fun CabSettings(
       verticalAlignment = Alignment.CenterVertically,
     ) {
       FilledTonalButton(onClick = onConnect) { Text("Connect") }
-      if (googleReady && email.isBlank()) {
-        OutlinedButton(onClick = onGoogle) { Text("Google") }
-      }
       if (email.isNotBlank()) {
         TextButton(onClick = onSignOut) { Text("Sign out") }
       }
