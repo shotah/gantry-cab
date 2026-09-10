@@ -38,17 +38,24 @@ class WireTest {
         geo = geoFromFix(47.6, -122.3, 12.0, altM = 12.5, heading = 90.0, speedMps = 4.2),
         battery = BatteryHint(80, true),
         net = "wifi",
+        surface = "car",
       ),
     )
     val raw = encodeFrame(frame)
     assertTrue(raw.contains("\"pct\":80"))
     assertTrue(raw.contains("\"charging\":true"))
     assertTrue(raw.contains("\"net\":\"wifi\""))
+    assertTrue(raw.contains("\"surface\":\"car\""))
     assertTrue(raw.contains("\"alt_m\":12.5"))
     assertTrue(raw.contains("\"heading\":90"))
     assertTrue(raw.contains("\"speed_mps\":4.2"))
     assertNull(netOnWire("bluetooth"))
     assertEquals("wifi", netOnWire("wifi"))
+    assertEquals("car", surfaceOnWire("car"))
+    assertEquals("phone", surfaceHint(false))
+    assertEquals("car", surfaceHint(true))
+    assertNull(surfaceOnWire("auto"))
+    assertNull(surfaceOnWire("watch"))
   }
 
   @Test

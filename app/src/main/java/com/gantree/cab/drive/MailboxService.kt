@@ -34,6 +34,7 @@ import com.gantree.cab.mailbox.parseSlug
 import com.gantree.cab.mailbox.sessionExpired
 import com.gantree.cab.mailbox.pinFrame
 import com.gantree.cab.mailbox.sendGeoHint
+import com.gantree.cab.mailbox.surfaceHint
 import com.gantree.cab.outbound
 import com.gantree.cab.spoken
 import com.google.android.gms.location.LocationServices
@@ -244,6 +245,7 @@ class MailboxService : LifecycleService() {
       geo = geo,
       battery = peekBattery(),
       net = peekNet(),
+      surface = surfaceHint((application as CabApp).carAttached),
     )
   }
 

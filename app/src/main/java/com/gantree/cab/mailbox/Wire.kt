@@ -23,6 +23,7 @@ data class PhoneContext(
   val geo: Geo? = null,
   val battery: BatteryHint? = null,
   val net: String? = null,
+  val surface: String? = null,
 )
 
 data class WireFrame(
@@ -67,6 +68,7 @@ fun encodeFrame(frame: WireFrame): String {
       c.put("battery", JSONObject().put("pct", b.pct).put("charging", b.charging))
     }
     netOnWire(ctx.net)?.let { c.put("net", it) }
+    surfaceOnWire(ctx.surface)?.let { c.put("surface", it) }
     if (c.length() > 0) {
       o.put("context", c)
     }
@@ -146,6 +148,11 @@ fun acceptInboundImage(url: String): Boolean {
 
 fun netOnWire(net: String?): String? =
   net.takeIf { it == "wifi" || it == "cellular" || it == "unknown" }
+
+fun surfaceOnWire(surface: String?): String? =
+  surface.takeIf { it == "car" || it == "phone" }
+
+fun surfaceHint(carAttached: Boolean): String = if (carAttached) "car" else "phone"
 
 fun batteryHint(pct: Int, charging: Boolean): BatteryHint? {
   if (pct !in 0..100) {
