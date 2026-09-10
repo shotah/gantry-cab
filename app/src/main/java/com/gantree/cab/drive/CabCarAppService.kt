@@ -6,17 +6,23 @@ import androidx.car.app.CarContext
 import androidx.car.app.Screen
 import androidx.car.app.Session
 import androidx.car.app.SessionInfo
-import androidx.car.app.validation.HostValidator
+import androidx.car.app.messaging.model.CarMessage
+import androidx.car.app.messaging.model.ConversationCallback
+import androidx.car.app.messaging.model.ConversationItem
+import androidx.car.app.model.Action
+import androidx.car.app.model.CarText
+import androidx.car.app.model.Header
 import androidx.car.app.model.ItemList
 import androidx.car.app.model.ListTemplate
-import androidx.car.app.model.Row
 import androidx.car.app.model.Template
+import androidx.car.app.validation.HostValidator
+import androidx.core.app.Person
 import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import com.gantree.cab.BuildConfig
 import com.gantree.cab.CabApp
-import com.gantree.cab.R
 import kotlinx.coroutines.launch
 
 class CabCarAppService : CarAppService() {
@@ -33,12 +39,41 @@ class CabCarAppService : CarAppService() {
 }
 
 class CabSession : Session() {
-  override fun onCreateScreen(intent: Intent): Screen = CabThreadScreen(carContext)
+  override fun onCreateScreen(intent: Intent): Screen {
+    val app = carContext.applicationContext as CabApp
+    if (app.prefs.signedIn) {
+      MailboxService.start(carContext)
+    }
+    return CabThreadScreen(carContext)
+  }
 }
 
 class CabThreadScreen(carContext: CarContext) : Screen(carContext) {
+  private val you = Person.Builder().setName("You").setKey("you").build()
+  private val conversationCallback = object : ConversationCallback {
+    override fun onMarkAsRead() {
+      CabNotifier.dismissKit(carContext)
+    }
+
+    override fun onTextReply(replyText: String) {
+      val text = replyText.trim()
+      if (text.isNotEmpty()) {
+        MailboxService.sendText(carContext, text)
+      }
+    }
+  }
+
   init {
     val app = carContext.applicationContext as CabApp
+    lifecycle.addObserver(
+      LifecycleEventObserver { _, event ->
+        when (event) {
+          Lifecycle.Event.ON_START -> app.carThreadVisible = true
+          Lifecycle.Event.ON_STOP, Lifecycle.Event.ON_DESTROY -> app.carThreadVisible = false
+          else -> {}
+        }
+      },
+    )
     lifecycleScope.launch {
       lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
         app.mouth.lines.collect { invalidate() }
@@ -49,16 +84,31 @@ class CabThreadScreen(carContext: CarContext) : Screen(carContext) {
   override fun onGetTemplate(): Template {
     val app = carContext.applicationContext as CabApp
     val slug = app.prefs.slug.ifBlank { "cab" }
-    val rows = carRows(app.mouth.lines.value, slug, carContext.getString(R.string.car_empty))
-    val items = ItemList.Builder()
-    for (row in rows) {
-      val builder = Row.Builder().setTitle(row.title)
-      row.text?.let { builder.addText(it) }
-      items.addItem(builder.build())
+    val kit = Person.Builder().setName(slug).setKey(CabNotifier.conversationId(slug)).build()
+    val messages = carTurns(app.mouth.lines.value).map { turn ->
+      val body = CarText.create(turn.text)
+      CarMessage.Builder()
+        .setSender(if (turn.fromYou) you else kit)
+        .setBody(body)
+        .setReceivedTimeEpochMillis(turn.at)
+        .setRead(turn.fromYou)
+        .build()
     }
+    val conversation = ConversationItem.Builder(
+      CabNotifier.conversationId(slug),
+      CarText.create(slug),
+      you,
+      messages,
+      conversationCallback,
+    ).build()
     return ListTemplate.Builder()
-      .setTitle(slug)
-      .setSingleList(items.build())
+      .setHeader(
+        Header.Builder()
+          .setStartHeaderAction(Action.APP_ICON)
+          .setTitle(slug)
+          .build(),
+      )
+      .setSingleList(ItemList.Builder().addItem(conversation).build())
       .build()
   }
 }

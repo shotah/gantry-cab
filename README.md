@@ -99,9 +99,10 @@ has fake example hosts.
 
 ## Auto
 
-Notification messaging (`MessagingStyle` + reply + mark-as-read).
-A small `CarAppService` so the app can appear in the Auto launcher.
-Voice-to-text is Auto's. We send the transcript.
+Notification messaging (`MessagingStyle` + reply + mark-as-read) is
+the heads-up while maps or music are up. Opening Cab in the Auto app
+list is a `ConversationItem` (Car API 7): Auto's Reply button uses
+host voice, not Google Assistant. We send the transcript as `inbound`.
 
 Foreground socket while the app is signed in. FCM lock-screen when
 the process is dead is later — same later as pendant Web Push.

@@ -21,6 +21,9 @@ class CabApp : Application() {
   @Volatile
   var carAttached = false
     private set
+  /** Cab's Auto conversation screen is in the foreground (not maps / launcher). */
+  @Volatile
+  var carThreadVisible = false
 
   override fun onCreate() {
     super.onCreate()

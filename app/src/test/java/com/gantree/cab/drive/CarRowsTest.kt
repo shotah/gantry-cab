@@ -53,6 +53,24 @@ class CarRowsTest {
   }
 
   @Test
+  fun carTurnsAreOldestFirstAndSkipDrafts() {
+    val turns = carTurns(
+      listOf(
+        ChatLine("1", true, "hello", "inbound", at = 1L),
+        ChatLine("__draft__", false, "⏳", "draft", at = 2L),
+        ChatLine("2", false, "", "reply", photo = "data:image/jpeg;base64,QQ", at = 3L),
+      ),
+    )
+    assertEquals(2, turns.size)
+    assertEquals("hello", turns[0].text)
+    assertEquals(true, turns[0].fromYou)
+    assertEquals("(photo)", turns[1].text)
+    assertEquals(emptyList<CarTurn>(), carTurns(emptyList()))
+    val many = (1..8).map { ChatLine("$it", false, "n$it", "reply", at = it.toLong()) }
+    assertEquals(listOf("n3", "n4", "n5", "n6", "n7", "n8"), carTurns(many).map { it.text })
+  }
+
+  @Test
   fun blankSlugFallsBackAndOnlyTheLastSixShow() {
     val lines = (1..8).map { ChatLine("$it", it % 2 == 0, "n$it", "reply") }
     val rows = carRows(lines, "  ", "empty")

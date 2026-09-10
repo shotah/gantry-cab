@@ -227,9 +227,10 @@ Do not build these "to catch up"; they are open on pendant's own list
 ## Cab has that pendant does not (for the record)
 
 `MessagingStyle` with six turns of history, `RemoteInput` reply,
-mark-as-read, conversation shortcut, Android Auto `ListTemplate`, a
-foreground socket that outlives the screen, native Google token flow
-without a browser. Nothing here to remove.
+mark-as-read, conversation shortcut, Android Auto `ConversationItem`
+(Car API 7) with host Reply, a foreground socket that outlives the
+screen, native Google token flow without a browser. Nothing here to
+remove. Google Assistant / maps / music are untouched.
 
 ## Order
 

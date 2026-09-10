@@ -24,7 +24,7 @@ private val CarTitle = Color(0xFFF2F2F2)
 private val CarBody = Color(0xFFB8B8B8)
 private val CarAccent = Color(0xFFF07848)
 
-/** DHU / Auto stand-in for shots. Live Auto still uses ListTemplate. */
+/** DHU / Auto stand-in for shots. Live Auto uses ConversationItem + host Reply. */
 @Composable
 fun CabCarPane(
   slug: String,

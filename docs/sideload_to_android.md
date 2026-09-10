@@ -93,9 +93,11 @@ Same install. After **Listen** is connected:
    moves this toggle; if it is missing, Cab will work on the phone
    but not in the car until that setting exists again.
 4. Plug the phone into the car.
-5. Cab should appear in the Auto app list. Kit is also read as a
-   message notification. Spoken replies use Auto's own voice typing;
-   Cab sends that text inbound.
+5. Cab should appear in the Auto app list. Open it and tap **Reply**
+   on the Kit conversation to speak first. Kit is also read as a
+   message notification while you are in maps or music. Spoken text
+   uses Auto's own voice typing (not Google Assistant); Cab sends
+   that inbound.
 
 If Cab never shows in the car: unknown sources is off, notifications
 were denied, or Listen never connected. The phone app can still

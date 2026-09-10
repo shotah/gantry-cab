@@ -7,6 +7,27 @@ data class CarRow(
   val text: String?,
 )
 
+/** Chronological turns for Auto `ConversationItem` (oldest first). Drafts stay off. */
+data class CarTurn(
+  val fromYou: Boolean,
+  val text: String,
+  val at: Long,
+)
+
+fun carTurns(lines: List<ChatLine>, cap: Int = 6): List<CarTurn> {
+  return lines.filter { it.kind != "draft" }.takeLast(cap).map { line ->
+    CarTurn(
+      fromYou = line.fromYou,
+      text = when {
+        line.text.isNotBlank() -> line.text
+        line.photo != null -> "(photo)"
+        else -> "(ping)"
+      },
+      at = line.at,
+    )
+  }
+}
+
 /** Same rows the Auto ListTemplate paints — newest last, shown newest-first. */
 fun carRows(lines: List<ChatLine>, slug: String, emptyTitle: String): List<CarRow> {
   val kit = slug.ifBlank { "kit" }

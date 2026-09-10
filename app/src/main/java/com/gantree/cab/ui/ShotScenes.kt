@@ -37,7 +37,7 @@ fun AutoShot(sampleId: String) {
   CabTheme {
     CabCarPane(
       slug = scene.slug,
-      rows = carRows(scene.lines, scene.slug, "No messages yet. Speak a reply when Kit pings you."),
+      rows = carRows(scene.lines, scene.slug, "No messages yet. Reply on this conversation to talk."),
     )
   }
 }

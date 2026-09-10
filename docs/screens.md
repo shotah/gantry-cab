@@ -34,7 +34,8 @@ Samples are canned Ada/Kit turns — not a live crane. Release builds ignore
 
 ## Android Auto
 
-ListTemplate stand-in (DHU looks like this). Voice reply is Auto's.
+ListTemplate + `ConversationItem` stand-in (DHU adds Reply / Play).
+Voice is Auto's host STT, not Assistant.
 
 <p align="center">
   <img src="../assets/docs/auto-empty.png" alt="Auto empty list" width="360">

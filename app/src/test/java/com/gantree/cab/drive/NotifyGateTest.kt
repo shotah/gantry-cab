@@ -14,10 +14,11 @@ class NotifyGateTest {
   }
 
   @Test
-  fun headUnitAlwaysGetsTheMouth() {
+  fun headUnitGetsTheMouthUnlessCabIsOpen() {
     assertTrue(shouldPost(resumed = true, carAttached = true, kind = "reply"))
     assertTrue(shouldPost(resumed = false, carAttached = true, kind = "push"))
     assertTrue(shouldPost(resumed = false, carAttached = false, kind = "reply"))
+    assertFalse(shouldPost(resumed = false, carAttached = true, kind = "reply", threadVisible = true))
   }
 
   @Test

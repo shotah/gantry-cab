@@ -175,7 +175,7 @@ fun renderPhone(sampleId: String, settings: Boolean = false, emoji: Boolean = fa
 
 fun renderAuto(sampleId: String): BufferedImage {
   val scene = sampleScene(sampleId) ?: error("sample $sampleId")
-  val rows = carRows(scene.lines, scene.slug, "No messages yet. Speak a reply when Kit pings you.")
+  val rows = carRows(scene.lines, scene.slug, "No messages yet. Reply on this conversation to talk.")
   val img = BufferedImage(AUTO_W, AUTO_H, BufferedImage.TYPE_INT_ARGB)
   val g = img.graphics2d()
   val font = noto()

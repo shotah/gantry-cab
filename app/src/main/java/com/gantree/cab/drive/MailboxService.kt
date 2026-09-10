@@ -132,7 +132,7 @@ class MailboxService : LifecycleService() {
         if (frame.spoken()) {
           val kind = frame.kind
           val body = notifyBody(frame.text, !frame.images.isNullOrEmpty())
-          if (shouldPost(app.phoneResumed, app.carAttached, kind)) {
+          if (shouldPost(app.phoneResumed, app.carAttached, kind, app.carThreadVisible)) {
             CabNotifier.kitMessage(this, slug, body)
           } else if (shouldBuzz(app.phoneResumed, app.carAttached, kind)) {
             CabNotifier.buzzPush(this)
