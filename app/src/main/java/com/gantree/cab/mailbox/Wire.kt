@@ -150,9 +150,9 @@ fun netOnWire(net: String?): String? =
   net.takeIf { it == "wifi" || it == "cellular" || it == "unknown" }
 
 fun surfaceOnWire(surface: String?): String? =
-  surface.takeIf { it == "car" || it == "phone" }
+  surface.takeIf { it == "pendant" || it == "android" || it == "android_auto" }
 
-fun surfaceHint(carAttached: Boolean): String = if (carAttached) "car" else "phone"
+fun surfaceHint(carAttached: Boolean): String = if (carAttached) "android_auto" else "android"
 
 fun batteryHint(pct: Int, charging: Boolean): BatteryHint? {
   if (pct !in 0..100) {
