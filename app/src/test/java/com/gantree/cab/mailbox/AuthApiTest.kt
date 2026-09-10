@@ -35,7 +35,7 @@ class AuthApiTest {
 
   @Test
   fun meReadsCranesAndSkipsBlanks() {
-    server.enqueue(MockResponse().setBody("""{"sub":"u1","email":"ada@example.com","cranes":["kit","", "dock"]}"""))
+    server.enqueue(MockResponse().setBody("""{"sub":"u1","email":"ada@example.com","cranes":["kit","", "dock","Nope!"]}"""))
     val got = api.me(server.url("/").toString(), "jwe")
     assertEquals("u1", got.sub)
     assertEquals("ada@example.com", got.email)

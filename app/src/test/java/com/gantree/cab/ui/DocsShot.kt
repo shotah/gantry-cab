@@ -53,6 +53,7 @@ val DOCS_SHOT_NAMES = listOf(
   "phone-unsigned",
   "phone-empty",
   "phone-thread",
+  "phone-stream",
   "phone-down",
   "phone-settings",
   "phone-emoji",
@@ -65,6 +66,7 @@ fun renderDocsShot(name: String): BufferedImage = when (name) {
   "phone-unsigned" -> renderPhone("unsigned")
   "phone-empty" -> renderPhone("empty")
   "phone-thread" -> renderPhone("thread")
+  "phone-stream" -> renderPhone("stream")
   "phone-down" -> renderPhone("down")
   "phone-settings" -> renderPhone("empty", settings = true)
   "phone-emoji" -> renderPhone("thread", emoji = true)
@@ -94,7 +96,7 @@ fun renderPhone(sampleId: String, settings: Boolean = false, emoji: Boolean = fa
     g.dispose()
     return img
   }
-  paintHeader(g, font, scene.slug, scene.up)
+  paintHeader(g, font, scene.slug, scene.up, scene.typing)
   var y = BAR_H + 8
   if (!door && scene.hint.isNotBlank()) {
     g.font = font.deriveFont(12f)
@@ -136,15 +138,20 @@ fun renderPhone(sampleId: String, settings: Boolean = false, emoji: Boolean = fa
       }
     } else {
       val bubbleMax = PHONE_W - 16 - 48 - 24
-      g.font = font.deriveFont(16f)
       for (line in scene.lines) {
+        val draft = line.kind == "draft"
+        g.font = if (draft) font.deriveFont(Font.ITALIC, 16f) else font.deriveFont(16f)
         val wrapped = wrap(g, line.text, bubbleMax)
         val bh = 12 + wrapped.size * 20 + 12
         val bw = (wrapped.maxOf { g.fontMetrics.stringWidth(it) } + 28).coerceAtMost(PHONE_W - 64)
         val x = if (line.fromYou) PHONE_W - 16 - bw else 16
         g.color = if (line.fromYou) You else Kit
         g.fill(RoundRectangle2D.Float(x.toFloat(), y.toFloat(), bw.toFloat(), bh.toFloat(), 20f, 20f))
-        g.color = if (line.fromYou) Mark else Fg
+        g.color = when {
+          draft -> Dim
+          line.fromYou -> Mark
+          else -> Fg
+        }
         var ty = y + 12
         for (w in wrapped) {
           g.drawString(w, x + 14, ty + g.fontMetrics.ascent)
@@ -201,7 +208,7 @@ fun renderAuto(sampleId: String): BufferedImage {
   return img
 }
 
-private fun paintHeader(g: Graphics2D, font: Font, slug: String, up: Boolean) {
+private fun paintHeader(g: Graphics2D, font: Font, slug: String, up: Boolean, typing: Boolean = false) {
   g.color = Panel
   g.fillRect(0, 0, PHONE_W, BAR_H)
   paintAvatar(g, 12f, 12f, 40f)
@@ -211,7 +218,12 @@ private fun paintHeader(g: Graphics2D, font: Font, slug: String, up: Boolean) {
   g.color = if (up) Live else Dim
   g.fill(Ellipse2D.Float(64f, 42f, 8f, 8f))
   g.font = font.deriveFont(11f)
-  g.drawString(if (up) "Live" else "Offline", 78, 50)
+  val subtitle = when {
+    !up -> "Offline"
+    typing -> "Live · typing…"
+    else -> "Live"
+  }
+  g.drawString(subtitle, 78, 50)
   paintIkon(g, Material2OutlinedMZ.SETTINGS, PHONE_W - 28f, 32f, 22, Muted)
 }
 

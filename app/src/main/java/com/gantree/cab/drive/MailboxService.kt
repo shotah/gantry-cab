@@ -3,22 +3,37 @@ package com.gantree.cab.drive
 import android.Manifest
 import android.content.Context
 import android.content.Intent
+import android.content.IntentFilter
 import android.content.pm.PackageManager
 import android.content.pm.ServiceInfo
+import android.location.Location
+import android.net.ConnectivityManager
+import android.net.NetworkCapabilities
+import android.os.BatteryManager
 import android.os.Build
-import android.os.Looper
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.LifecycleService
 import com.gantree.cab.CabApp
+import com.gantree.cab.mailbox.BatteryHint
+import com.gantree.cab.mailbox.GEO_CACHE_MS
+import com.gantree.cab.mailbox.GEO_LAST_KNOWN_MS
 import com.gantree.cab.mailbox.Geo
 import com.gantree.cab.mailbox.MailboxClient
 import com.gantree.cab.mailbox.PhoneContext
+import com.gantree.cab.mailbox.WireFrame
 import com.gantree.cab.mailbox.applyEmoji
+import com.gantree.cab.mailbox.batteryHint
+import com.gantree.cab.mailbox.geoFromFix
 import com.gantree.cab.mailbox.geoHint
 import com.gantree.cab.mailbox.mailboxConnectError
 import com.gantree.cab.mailbox.mailboxSocketHint
+import com.gantree.cab.mailbox.mailboxTimeoutHint
+import com.gantree.cab.mailbox.netHint
+import com.gantree.cab.mailbox.notifyBody
 import com.gantree.cab.mailbox.parseSlug
+import com.gantree.cab.mailbox.sessionExpired
 import com.gantree.cab.mailbox.pinFrame
+import com.gantree.cab.mailbox.sendGeoHint
 import com.gantree.cab.outbound
 import com.gantree.cab.spoken
 import com.google.android.gms.location.LocationServices
@@ -30,10 +45,14 @@ import java.util.concurrent.TimeUnit
 
 class MailboxService : LifecycleService() {
   private var client: MailboxClient? = null
+  private var target: Triple<String, String, String>? = null
+  @Volatile
+  private var geoCache: Pair<Geo, Long>? = null
+  private val outbox = ArrayDeque<WireFrame>()
+  private val outboxLock = Any()
 
   override fun onCreate() {
     super.onCreate()
-    instance = this
     CabNotifier.ensureChannel(this)
     if (Build.VERSION.SDK_INT >= 34) {
       startForeground(CabNotifier.CONNECTED_ID, CabNotifier.connected(this), ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC)
@@ -44,45 +63,81 @@ class MailboxService : LifecycleService() {
 
   override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
     super.onStartCommand(intent, flags, startId)
-    connect()
+    if (!connect()) {
+      return START_NOT_STICKY
+    }
+    instance = this
+    takePending().forEach { it(this) }
     return START_STICKY
+  }
+
+  override fun onTimeout(startId: Int) {
+    giveUp(mailboxTimeoutHint())
+  }
+
+  override fun onTimeout(startId: Int, fgsType: Int) {
+    giveUp(mailboxTimeoutHint())
   }
 
   override fun onDestroy() {
     client?.stop()
     client = null
+    target = null
     if (instance === this) {
       instance = null
     }
     super.onDestroy()
   }
 
-  private fun connect() {
+  private fun giveUp(hint: String) {
     val app = application as CabApp
     client?.stop()
     client = null
+    target = null
+    app.mouth.setUp(false)
+    app.mouth.setHint(hint)
+    stopSelf()
+  }
+
+  /** @return false if this start should not stay foreground. */
+  private fun connect(): Boolean {
+    val app = application as CabApp
     val slugRaw = app.prefs.slug
+    val nowSec = System.currentTimeMillis() / 1000L
+    val expired = app.prefs.session.isNotBlank() &&
+      sessionExpired(app.prefs.sessionExp, nowSec)
     val bearer = app.prefs.bearer
-    val blocked = mailboxConnectError(slugRaw, bearer)
+    val origin = app.prefs.origin
+    val blocked = mailboxConnectError(slugRaw, bearer, expired)
     if (blocked != null) {
       app.mouth.setUp(false)
       app.mouth.setHint(blocked)
-      return
+      stopSelf()
+      return false
     }
-    val slug = parseSlug(slugRaw) ?: return
+    val slug = parseSlug(slugRaw) ?: run {
+      stopSelf()
+      return false
+    }
+    val next = Triple(origin, slug, bearer)
+    if (client != null && target == next) {
+      return true
+    }
+    client?.stop()
+    client = null
     app.mouth.setHint("Connecting to mailbox…")
     val mailbox = MailboxClient(
       onFrame = { frame ->
         app.mouth.ingest(frame)
         if (frame.spoken()) {
-          val text = frame.text?.trim().orEmpty().ifEmpty { "ping" }
-          CabNotifier.kitMessage(this, slug, text)
+          CabNotifier.kitMessage(this, slug, notifyBody(frame.text, !frame.images.isNullOrEmpty()))
         }
       },
       onState = { up ->
         app.mouth.setUp(up)
         if (up) {
           app.mouth.setHint("")
+          flushOutbox()
         }
       },
       onError = { err, res ->
@@ -90,7 +145,9 @@ class MailboxService : LifecycleService() {
       },
     )
     client = mailbox
-    mailbox.start(app.prefs.origin, slug, bearer)
+    target = next
+    mailbox.start(origin, slug, bearer)
+    return true
   }
 
   fun send(text: String, photo: String? = null) {
@@ -112,14 +169,12 @@ class MailboxService : LifecycleService() {
     }
     val app = application as CabApp
     val gpsOn = app.prefs.gps
-    val geo = if (gpsOn) lastGeo() else null
+    val geo = if (gpsOn) peekGeo() else null
     val ctx = phoneContext(geo)
-    app.mouth.setHint(geoHint(gpsOn, geo))
+    sendGeoHint(gpsOn, geo)?.let { app.mouth.setHint(it) }
     val frame = app.outbound(trimmed, ctx, photo?.let { listOf(it) })
     client?.remember(frame.id ?: return)
-    if (client?.send(frame) != true) {
-      app.mouth.setHint("socket down — reconnecting")
-    }
+    sendOrQueue(frame)
   }
 
   private fun pinBlocking() {
@@ -128,7 +183,7 @@ class MailboxService : LifecycleService() {
       app.mouth.setHint("GPS off")
       return
     }
-    val geo = lastGeo()
+    val geo = freshGeo() ?: peekGeo()
     app.mouth.setHint(geoHint(true, geo))
     if (geo == null) {
       return
@@ -139,15 +194,117 @@ class MailboxService : LifecycleService() {
     }
   }
 
+  private fun sendOrQueue(frame: WireFrame) {
+    if (client?.send(frame) == true) {
+      return
+    }
+    synchronized(outboxLock) {
+      while (outbox.size >= 50) {
+        outbox.removeFirst()
+      }
+      outbox.addLast(frame)
+    }
+    (application as CabApp).mouth.setHint("socket down — reconnecting")
+  }
+
+  private fun flushOutbox() {
+    val frames = synchronized(outboxLock) {
+      val all = outbox.toList()
+      outbox.clear()
+      all
+    }
+    val leftover = ArrayDeque<WireFrame>()
+    var sending = true
+    for (frame in frames) {
+      if (sending && client?.send(frame) == true) {
+        continue
+      }
+      sending = false
+      leftover.addLast(frame)
+    }
+    if (leftover.isNotEmpty()) {
+      synchronized(outboxLock) {
+        leftover.addAll(outbox)
+        outbox.clear()
+        outbox.addAll(leftover)
+      }
+    }
+  }
+
   private fun phoneContext(geo: Geo?): PhoneContext {
     return PhoneContext(
       at = Instant.now().toString(),
       tz = TimeZone.getDefault().id,
       geo = geo,
+      battery = peekBattery(),
+      net = peekNet(),
     )
   }
 
-  private fun lastGeo(): Geo? {
+  private fun peekBattery(): BatteryHint? {
+    val bm = getSystemService(Context.BATTERY_SERVICE) as? BatteryManager ?: return null
+    val pct = bm.getIntProperty(BatteryManager.BATTERY_PROPERTY_CAPACITY)
+    val sticky = runCatching {
+      registerReceiver(null, IntentFilter(Intent.ACTION_BATTERY_CHANGED))
+    }.getOrNull()
+    val status = sticky?.getIntExtra(BatteryManager.EXTRA_STATUS, -1) ?: -1
+    val plugged = (sticky?.getIntExtra(BatteryManager.EXTRA_PLUGGED, 0) ?: 0) != 0
+    val charging = plugged ||
+      status == BatteryManager.BATTERY_STATUS_CHARGING ||
+      status == BatteryManager.BATTERY_STATUS_FULL
+    return batteryHint(pct, charging)
+  }
+
+  private fun peekNet(): String {
+    val cm = getSystemService(Context.CONNECTIVITY_SERVICE) as? ConnectivityManager
+      ?: return "unknown"
+    val caps = cm.getNetworkCapabilities(cm.activeNetwork) ?: return "unknown"
+    return netHint(
+      caps.hasTransport(NetworkCapabilities.TRANSPORT_WIFI),
+      caps.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR),
+    )
+  }
+
+  private fun hasLocationPermission(): Boolean {
+    val fine = ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION)
+    val coarse = ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION)
+    return fine == PackageManager.PERMISSION_GRANTED || coarse == PackageManager.PERMISSION_GRANTED
+  }
+
+  /** Cached or last-known only. Never waits for a satellite lock on the send path. */
+  private fun peekGeo(): Geo? {
+    if (!hasLocationPermission()) {
+      geoCache = null
+      return null
+    }
+    val now = System.currentTimeMillis()
+    geoCache?.let { (geo, at) ->
+      if (now - at <= GEO_CACHE_MS) {
+        return geo
+      }
+    }
+    val got = lastKnownGeo() ?: return null
+    geoCache = got to now
+    return got
+  }
+
+  private fun lastKnownGeo(): Geo? {
+    val fine = ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION)
+    val coarse = ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION)
+    if (fine != PackageManager.PERMISSION_GRANTED && coarse != PackageManager.PERMISSION_GRANTED) {
+      return null
+    }
+    return try {
+      val fused = LocationServices.getFusedLocationProviderClient(this)
+      val loc = Tasks.await(fused.lastLocation, GEO_LAST_KNOWN_MS, TimeUnit.MILLISECONDS) ?: return null
+      geoFromAndroid(loc)
+    } catch (_: Exception) {
+      null
+    }
+  }
+
+  /** Explicit pin: one short current-location attempt, then last known. */
+  private fun freshGeo(): Geo? {
     val fine = ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION)
     val coarse = ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION)
     if (fine != PackageManager.PERMISSION_GRANTED && coarse != PackageManager.PERMISSION_GRANTED) {
@@ -157,18 +314,31 @@ class MailboxService : LifecycleService() {
       val fused = LocationServices.getFusedLocationProviderClient(this)
       val loc = Tasks.await(
         fused.getCurrentLocation(Priority.PRIORITY_BALANCED_POWER_ACCURACY, null),
-        4,
+        8,
         TimeUnit.SECONDS,
       ) ?: return null
-      Geo(lat = loc.latitude, lon = loc.longitude, accuracyM = loc.accuracy.toDouble())
+      val geo = geoFromAndroid(loc)
+      geoCache = geo to System.currentTimeMillis()
+      geo
     } catch (_: Exception) {
       null
     }
   }
 
+  private fun geoFromAndroid(loc: Location): Geo = geoFromFix(
+    lat = loc.latitude,
+    lon = loc.longitude,
+    accuracyM = loc.accuracy.toDouble(),
+    altM = loc.altitude.takeIf { loc.hasAltitude() },
+    heading = loc.bearing.toDouble().takeIf { loc.hasBearing() },
+    speedMps = loc.speed.toDouble().takeIf { loc.hasSpeed() },
+  )
+
   companion object {
     @Volatile
     private var instance: MailboxService? = null
+    private val pending = ArrayDeque<(MailboxService) -> Unit>()
+    private val pendingLock = Any()
 
     fun start(ctx: Context) {
       val i = Intent(ctx, MailboxService::class.java)
@@ -197,10 +367,16 @@ class MailboxService : LifecycleService() {
         fn(svc)
         return
       }
+      synchronized(pendingLock) { pending.addLast(fn) }
       start(ctx)
-      android.os.Handler(Looper.getMainLooper()).postDelayed({
-        instance?.let(fn)
-      }, 400)
+    }
+
+    private fun takePending(): List<(MailboxService) -> Unit> {
+      synchronized(pendingLock) {
+        val jobs = pending.toList()
+        pending.clear()
+        return jobs
+      }
     }
   }
 }

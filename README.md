@@ -62,7 +62,9 @@ Android Studio works. So does make, same shape as
 make test            # script tests + JVM unit tests
 make lint            # Android lint
 make coverage        # JaCoCo + 70% bar (mailbox + mouth)
-make install-hooks   # pre-commit: lint + test + 70% coverage
+make check-app       # lint + test + coverage (one Gradle invocation)
+make install-hooks   # pre-commit: tests; pre-push: lint + coverage
+make watch           # continuous mailbox JVM tests
 make shot            # phone + Auto PNGs → assets/docs
 make build           # debug APK
 make apk             # sideload APK (GitHub Release uses this)

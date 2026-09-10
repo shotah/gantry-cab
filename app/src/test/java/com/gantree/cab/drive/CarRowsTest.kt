@@ -37,6 +37,22 @@ class CarRowsTest {
   }
 
   @Test
+  fun draftBecomesOneTypingRow() {
+    val rows = carRows(
+      listOf(
+        ChatLine("s1", true, "On the dock — is the gate still open?", "inbound"),
+        ChatLine("__draft__", false, "⏳ Gate's on the latch", "draft"),
+      ),
+      "kit",
+      "empty",
+    )
+    assertEquals(2, rows.size)
+    assertEquals("kit", rows[0].title)
+    assertEquals("typing…", rows[0].text)
+    assertEquals("You", rows[1].title)
+  }
+
+  @Test
   fun blankSlugFallsBackAndOnlyTheLastSixShow() {
     val lines = (1..8).map { ChatLine("$it", it % 2 == 0, "n$it", "reply") }
     val rows = carRows(lines, "  ", "empty")

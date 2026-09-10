@@ -28,6 +28,30 @@ class WireTest {
   }
 
   @Test
+  fun contextCarriesBatteryNetAndMotion() {
+    val frame = inbound(
+      "hi",
+      "id-ctx",
+      PhoneContext(
+        at = "2026-09-10T12:00:00.000Z",
+        tz = "UTC",
+        geo = geoFromFix(47.6, -122.3, 12.0, altM = 12.5, heading = 90.0, speedMps = 4.2),
+        battery = BatteryHint(80, true),
+        net = "wifi",
+      ),
+    )
+    val raw = encodeFrame(frame)
+    assertTrue(raw.contains("\"pct\":80"))
+    assertTrue(raw.contains("\"charging\":true"))
+    assertTrue(raw.contains("\"net\":\"wifi\""))
+    assertTrue(raw.contains("\"alt_m\":12.5"))
+    assertTrue(raw.contains("\"heading\":90"))
+    assertTrue(raw.contains("\"speed_mps\":4.2"))
+    assertNull(netOnWire("bluetooth"))
+    assertEquals("wifi", netOnWire("wifi"))
+  }
+
+  @Test
   fun photoOnlyInboundKeepsTheDataUrl() {
     val frame = inbound("", "id-2", null, listOf("data:image/jpeg;base64,QQ"))
     val got = parseFrame(encodeFrame(frame))!!
@@ -127,5 +151,47 @@ class WireTest {
     assertNull(got.text)
     assertNull(got.kind)
     assertEquals(listOf("https://a"), got.images)
+  }
+
+  @Test
+  fun inboundTextIsCapped() {
+    val t = "x".repeat(TEXT_CHARS_MAX + 40)
+    val got = parseFrame("""{"kind":"reply","text":"$t"}""")!!
+    assertEquals(TEXT_CHARS_MAX, got.text!!.length)
+  }
+
+  @Test
+  fun inboundTextIsCappedByUtf8Bytes() {
+    val t = "é".repeat((TEXT_BYTES_MAX / 2) + 4)
+    val got = capUtf8(t)
+    assertTrue(got.toByteArray(Charsets.UTF_8).size <= TEXT_BYTES_MAX)
+    assertTrue(got.length < t.length)
+  }
+
+  @Test
+  fun notifyBodyPrefersTextThenPhotoThenPing() {
+    assertEquals("hi", notifyBody(" hi ", true))
+    assertEquals("Photo", notifyBody("  ", true))
+    assertEquals("ping", notifyBody(null, false))
+  }
+
+  @Test
+  fun batteryAndNetHintsMatchTheWire() {
+    assertEquals(BatteryHint(1, false), batteryHint(1, false))
+    assertNull(batteryHint(-1, false))
+    assertNull(batteryHint(101, true))
+    assertEquals("wifi", netHint(true, true))
+    assertEquals("cellular", netHint(false, true))
+    assertEquals("unknown", netHint(false, false))
+  }
+
+  @Test
+  fun inboundImagesRejectOversizeDataAndLongHttp() {
+    val huge = "data:image/jpeg;base64," + "A".repeat(2_100_000)
+    assertFalse(acceptInboundImage(huge))
+    val longHttp = "https://x/" + "a".repeat(3_000)
+    assertFalse(acceptInboundImage(longHttp))
+    assertTrue(acceptInboundImage("https://example.test/a.jpg"))
+    assertFalse(acceptInboundImage("http://example.test/a.jpg"))
   }
 }

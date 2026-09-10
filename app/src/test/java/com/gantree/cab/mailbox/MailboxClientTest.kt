@@ -86,6 +86,43 @@ class MailboxClientTest {
   }
 
   @Test
+  fun onStateFiresAfterAckSinceSoAnOutboxSendIsSecond() {
+    val got = CopyOnWriteArrayList<String>()
+    val two = CountDownLatch(1)
+    val up = CountDownLatch(1)
+    lateinit var client: MailboxClient
+    server.enqueue(
+      MockResponse().withWebSocketUpgrade(
+        object : WebSocketListener() {
+          override fun onMessage(webSocket: WebSocket, text: String) {
+            got.add(text)
+            if (got.size >= 2) two.countDown()
+          }
+        },
+      ),
+    )
+    client = MailboxClient(
+      onFrame = {},
+      onState = {
+        if (it) {
+          client.send(inbound("queued", "q1", null))
+          up.countDown()
+        }
+      },
+    )
+    client.remember("old")
+    client.start(server.url("/").toString(), "kit", "tok")
+    try {
+      assertTrue(up.await(5, TimeUnit.SECONDS))
+      assertTrue(two.await(5, TimeUnit.SECONDS))
+      assertTrue(got[0].contains("\"since\":\"old\""))
+      assertTrue(got[1].contains("queued"))
+    } finally {
+      client.stop()
+    }
+  }
+
+  @Test
   fun pingGetsPongAndJunkIsDropped() {
     val pong = CountDownLatch(1)
     val frames = CopyOnWriteArrayList<WireFrame>()

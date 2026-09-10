@@ -42,11 +42,11 @@ class AuthApi(
   fun me(origin: String, token: String): Me {
     val body = get(httpOrigin(origin) + "/api/auth/me", token)
     val cranes = body.optJSONArray("cranes")
-    val list = buildList {
+      val list = buildList {
       if (cranes != null) {
         for (i in 0 until cranes.length()) {
-          val s = cranes.optString(i)
-          if (s.isNotEmpty()) add(s)
+          val s = parseSlug(cranes.optString(i)) ?: continue
+          add(s)
         }
       }
     }

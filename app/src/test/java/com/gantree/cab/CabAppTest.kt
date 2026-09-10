@@ -18,6 +18,7 @@ class CabAppTest {
     assertEquals(true, line.fromYou)
     assertEquals("hi", line.text)
     assertEquals("data:image/jpeg;base64,aa", line.photo)
+    assertTrue(line.pending)
     assertFalse(frame.spoken())
   }
 

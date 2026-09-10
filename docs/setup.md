@@ -10,7 +10,9 @@ phone. Android Auto is a `MessagingStyle` notification + a small
 make test            # no SDK: make test-scripts
 make lint
 make coverage        # JaCoCo + 70% bar
-make install-hooks   # pre-commit: lint + test + coverage
+make check-app       # lint + test + coverage (one Gradle invocation)
+make install-hooks   # pre-commit: tests; pre-push: lint + coverage
+make watch           # continuous mailbox JVM tests
 make build           # debug APK → app/build/outputs/apk/debug/
 make apk             # sideload APK → app/build/outputs/apk/release/
 ```
@@ -31,8 +33,9 @@ those into `assets/docs`. Release ignores the `sample` extra.
 The 70% bar is line coverage of the JVM mailbox wire (`Wire` +
 `MailboxUrl`), same idea as gantree gating `lib/yard`. Android UI and
 the OkHttp client are out of that number. `make install-hooks` copies
-`scripts/pre-commit` into this checkout's `.git/hooks` (own remote,
-not the parent gantree tree).
+`scripts/pre-commit` (tests) and `scripts/pre-push` (lint + coverage)
+into this checkout's `.git/hooks` (own remote, not the parent gantree
+tree).
 
 ## Publish (GitHub Release)
 
@@ -52,13 +55,16 @@ make release TAG=v0.2.0
 make release DRY_RUN=1
 ```
 
-Sideload that APK (or Play **internal** testing). Walk:
-[sideload_to_android.md](sideload_to_android.md). Without a Play
-keystore the APK is debug-signed. Optional repo secrets:
+Sideload that APK onto a phone. Walk:
+[sideload_to_android.md](sideload_to_android.md). That is the install
+path — no emulator, no Play Store. The workflow always produces an
+APK. Without `CAB_KEYSTORE_*` it is debug-signed (SHA-1 changes each
+tag; uninstall to update if the key changed). Optional repo secrets
 `CAB_KEYSTORE_BASE64`, `CAB_STORE_PASSWORD`, `CAB_KEY_ALIAS`,
-`CAB_KEY_PASSWORD`. Bake the mailbox into the GitHub APK with
-`CAB_MAILBOX_ORIGIN` and `CAB_GOOGLE_WEB_CLIENT_ID` (Actions secrets;
-variables work too). Do not put a real Worker URL in git.
+`CAB_KEY_PASSWORD` keep one fingerprint. Bake the mailbox into the
+GitHub APK with `CAB_MAILBOX_ORIGIN` and `CAB_GOOGLE_WEB_CLIENT_ID`
+(Actions secrets; variables work too). Do not put a real Worker URL
+in git.
 
 Coverage badge: Actions pushes `badges/coverage.svg` to `gh-pages`.
 Repo Settings → Pages → branch `gh-pages` / root, once.
@@ -141,6 +147,5 @@ then Cab `POST`s `{ id_token, nonce }` to
 
 - Desktop Head Unit from Android Studio, or a car.
 - Real car: Android Auto app → tap Version 10× → Developer settings →
-  **Unknown sources**. Google keeps tightening this; Play **internal
-  testing** is the less-fragile path for a family list.
+  **Unknown sources**. That is how a sideloaded GitHub APK talks to Auto.
 - Voice reply is Auto's STT. We never run `SpeechRecognition` in the dash.

@@ -28,7 +28,13 @@ fun cabVersionName(): String {
 
 fun cabVersionCode(name: String): Int {
   val parts = name.split(".")
-  return parts[0].toInt() * 10_000 + parts[1].toInt() * 100 + parts[2].toInt()
+  require(parts.size == 3)
+  val minor = parts[1].toInt()
+  val patch = parts[2].toInt()
+  require(minor in 0..99 && patch in 0..99) {
+    "VERSION minor and patch must be 0-99 (versionCode is major*10000+minor*100+patch), got $name"
+  }
+  return parts[0].toInt() * 10_000 + minor * 100 + patch
 }
 
 val cabName = cabVersionName()
@@ -85,7 +91,8 @@ android {
     release {
       isMinifyEnabled = false
       proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
-      // Sideload / GitHub Release until a Play key is in local.properties or CI secrets.
+      // GitHub Release sideload is the product. Play Store is not a goal.
+      // Optional CAB_KEYSTORE_* keeps one SHA-1 for Google Sign-In.
       signingConfig = if (hasPlayKey) {
         signingConfigs.getByName("play")
       } else {
@@ -133,6 +140,10 @@ dependencies {
   implementation("androidx.credentials:credentials-play-services-auth:1.3.0")
   implementation("com.google.android.libraries.identity.googleid:googleid:1.1.1")
   implementation("com.google.android.gms:play-services-location:21.3.0")
+  implementation("com.mikepenz:multiplatform-markdown-renderer:0.43.0")
+  implementation("com.mikepenz:multiplatform-markdown-renderer-m3:0.43.0")
+  implementation("io.coil-kt.coil3:coil-compose:3.3.0")
+  implementation("io.coil-kt.coil3:coil-network-okhttp:3.3.0")
   testImplementation("junit:junit:4.13.2")
   testImplementation("org.json:json:20240303")
   testImplementation("com.squareup.okhttp3:mockwebserver:4.12.0")

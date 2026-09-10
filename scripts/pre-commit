@@ -1,6 +1,5 @@
 #!/usr/bin/env sh
-# Pre-commit: script tests → lint → unit tests → 70% coverage bar
-# Same shape as ai-gantry scripts/pre-commit / pendant .husky/pre-commit.
+# Pre-commit: script tests + JVM unit tests. Lint + coverage are pre-push / CI.
 set -eu
 
 ROOT=$(git rev-parse --show-toplevel)
@@ -9,9 +8,7 @@ cd "$ROOT"
 echo "==> Script tests"
 make test-scripts
 
-echo "==> Lint + unit tests + coverage"
-make lint
+echo "==> JVM unit tests"
 make test-app
-make coverage
 
 echo "Pre-commit checks passed."

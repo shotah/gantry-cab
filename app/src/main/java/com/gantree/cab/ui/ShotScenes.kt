@@ -26,6 +26,7 @@ fun PhoneShot(sampleId: String) {
       onSignOut = {},
       onSend = {},
       compact = true,
+      typingUntil = if (scene.typing) System.currentTimeMillis() + 60_000L else 0L,
     )
   }
 }
@@ -45,6 +46,12 @@ fun AutoShot(sampleId: String) {
 @Composable
 private fun PreviewPhoneThread() {
   PhoneShot("thread")
+}
+
+@Preview(name = "phone-stream", widthDp = 390, heightDp = 844)
+@Composable
+private fun PreviewPhoneStream() {
+  PhoneShot("stream")
 }
 
 @Preview(name = "auto-thread", widthDp = 1024, heightDp = 576)

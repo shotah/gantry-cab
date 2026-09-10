@@ -6,7 +6,12 @@ root="$(cd "$(dirname "$0")/../.." && pwd)"
 file_ver="$(tr -d '[:space:]' < "$root/VERSION")"
 want="$("$root/scripts/semver.sh" next "$file_ver" patch)"
 
-out="$(DRY_RUN=1 "$root/scripts/release.sh")"
+grep -q 'SKIP_FETCH' "$root/scripts/release.sh" || {
+  echo "FAIL: release.sh should honour SKIP_FETCH" >&2
+  exit 1
+}
+
+out="$(DRY_RUN=1 SKIP_FETCH=1 "$root/scripts/release.sh")"
 echo "$out"
 
 echo "$out" | grep -q "using VERSION only" || {

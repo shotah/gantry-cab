@@ -14,6 +14,7 @@ itself.
 On the phone, open
 [github.com/shotah/gantry-cab/releases](https://github.com/shotah/gantry-cab/releases)
 in a browser. Latest release → Assets → `gantry-cab-<version>.apk`.
+That is the intended install: a real phone, no emulator, no Play Store.
 
 If there is no APK on that page, there is nothing to sideload yet.
 Ask the person who maintains this repo, or build from source
@@ -107,6 +108,8 @@ work.
 | Install blocked | Allow unknown apps on Chrome / Files, then reopen the `.apk`. |
 | Continue with Google opens then “cancelled” | Need a **new Android** OAuth client (package `com.gantree.cab` + this APK’s cert SHA-1 from the GitHub Release notes). GitHub’s SHA-256 next to the APK is the file hash, not that fingerprint. See [setup.md](setup.md#google-production-worker). |
 | Continue with Google works, but Offline and Message is dead | Google is identity. Live is the mailbox socket. Sideload a build that reconnects after sign-in (0.1.5 could start the service before the session was saved). If the hint says HTTP 403, you’re not on that crane’s room list. |
+| Live, send works, Kit never answers | The phone is in the Worker room. The **crane** still has to be running, and your Google email/`sub` must be on that crane’s `PENDANT_ALLOWED_USERS` (recreate the crane after changing it). GPS omitted is not a failed send. |
+| Message hangs / “GPS omitted” after send | Old APK waited up to 4s for a fresh GPS fix before painting the bubble. Sideload a build that uses last-known location on send. |
 | `http://` origin | This release APK blocks plain HTTP. Use the https Worker URL. |
 | Cab missing in Android Auto | Unknown sources off, or notifications off. |
 | Update over an older Cab fails | Uninstall Cab, then install the new APK. |

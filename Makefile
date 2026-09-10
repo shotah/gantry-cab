@@ -6,6 +6,15 @@ COVERAGE_XML ?= app/build/reports/coverage/test/debug/report.xml
 COVERAGE_SVG ?= badges/coverage.svg
 COVERAGE_MIN ?= 70
 SDK_DIR     ?= $(or $(ANDROID_HOME),$(ANDROID_SDK_ROOT),$(HOME)/Android/Sdk)
+ADB         ?= $(SDK_DIR)/platform-tools/adb
+DHU         ?= $(SDK_DIR)/extras/google/auto/desktop-head-unit
+
+# Inner loop: make test-fast TESTS=com.gantree.cab.MouthTest
+#             make watch WATCH_TESTS='com.gantree.cab.mailbox.*'
+#             make run-sample S=thread
+TESTS       ?=
+WATCH_TESTS ?= com.gantree.cab.mailbox.*
+S           ?= thread
 
 # Release bump: patch (default), minor, or major. Or set TAG=v0.2.0 explicitly.
 BUMP ?= patch
@@ -22,11 +31,18 @@ help: ## Show available targets
 	@echo "  make test           Script tests + JVM unit tests"
 	@echo "  make test-scripts   Semver + badge + release + hooks (no Android SDK)"
 	@echo "  make test-app       ./gradlew testDebugUnitTest"
+	@echo "  make test-fast      JVM tests; TESTS=com.gantree.cab.MouthTest"
+	@echo "  make watch          Continuous mailbox tests (Gradle -t)"
+	@echo "  make run            installDebug + launch"
+	@echo "  make run-sample     installDebug + launch with sample extra (S=thread)"
+	@echo "  make dhu            Android Auto Desktop Head Unit"
+	@echo "  make logs           logcat for the running cab process"
 	@echo "  make lint           Android lint (lintDebug)"
 	@echo "  make coverage       JaCoCo XML + 70% mailbox + mouth bar"
-	@echo "  make check          lint + test + coverage bar"
+	@echo "  make check-app      lint + test + coverage (one Gradle invocation)"
+	@echo "  make check          script tests + check-app"
 	@echo "  make ci             lint, test, coverage, debug APK"
-	@echo "  make install-hooks  Pre-commit: lint + test + 70% coverage"
+	@echo "  make install-hooks  Pre-commit: tests. Pre-push: lint + coverage."
 	@echo "  make version        Show VERSION + next tag (dry-run)"
 	@echo "  make release        Bump tag + latest, update VERSION, push"
 	@echo "  make clean          Remove build artifacts"
@@ -94,6 +110,35 @@ test-scripts: ## Semver + coverage-badge tests (no Android SDK)
 test-app: ensure-sdk ## JVM unit tests
 	$(GRADLE) testDebugUnitTest
 
+.PHONY: test-fast
+test-fast: ensure-sdk ## JVM unit tests; optional TESTS=com.gantree.cab.MouthTest
+	$(GRADLE) testDebugUnitTest $(if $(TESTS),--tests "$(TESTS)")
+
+.PHONY: watch
+watch: ensure-sdk ## Re-run mailbox JVM tests on save (Gradle continuous)
+	$(GRADLE) -t testDebugUnitTest --tests "$(WATCH_TESTS)"
+
+.PHONY: run
+run: ensure-sdk ## Install debug APK and launch
+	$(GRADLE) installDebug
+	"$(ADB)" shell am start -n com.gantree.cab/.MainActivity
+
+.PHONY: run-sample
+run-sample: ensure-sdk ## Install debug APK and launch a sample scene (S=thread)
+	$(GRADLE) installDebug
+	"$(ADB)" shell am start -n com.gantree.cab/.MainActivity --es sample "$(S)"
+
+.PHONY: dhu
+dhu: ## Android Auto Desktop Head Unit (needs a running emulator)
+	@test -x "$(DHU)" || (echo "missing $(DHU) — install extras; Google Android Auto Desktop Head Unit" >&2; exit 1)
+	"$(DHU)"
+
+.PHONY: logs
+logs: ## logcat for the running cab process
+	@pid=$$("$(ADB)" shell pidof com.gantree.cab | tr -d '\r'); \
+	test -n "$$pid" || (echo "cab is not running" >&2; exit 1); \
+	"$(ADB)" logcat --pid="$$pid"
+
 .PHONY: test
 test: test-scripts test-app ## Script tests + JVM unit tests
 
@@ -121,14 +166,19 @@ coverage-badge: coverage ## Write badges/coverage.svg from the JaCoCo report
 	mkdir -p badges
 	./scripts/coverage-badge.sh "$(COVERAGE_XML)" "$(COVERAGE_SVG)"
 
+.PHONY: check-app
+check-app: ensure-sdk ## Lint + JVM tests + 70% coverage (one Gradle invocation)
+	$(GRADLE) lintDebug testDebugUnitTest createDebugUnitTestCoverageReport
+	@$(MAKE) coverage-gate
+
 .PHONY: check
-check: test-scripts lint test-app coverage ## Lint, test, 70% coverage (matches pre-commit)
+check: test-scripts check-app ## Script tests + lint + test + 70% coverage (matches pre-push)
 
 .PHONY: ci
 ci: check build ## Local stand-in for CI checks
 
 .PHONY: install-hooks
-install-hooks: ## Install git pre-commit hook (lint + test + 70% coverage)
+install-hooks: ## Install pre-commit (tests) and pre-push (lint + coverage)
 	@top=$$(git rev-parse --show-toplevel 2>/dev/null); \
 	here=$$(cd "$(dir $(abspath $(lastword $(MAKEFILE_LIST))))" && pwd); \
 	if [ -z "$$top" ] || [ "$$top" != "$$here" ]; then \
@@ -138,7 +188,9 @@ install-hooks: ## Install git pre-commit hook (lint + test + 70% coverage)
 	fi
 	cp scripts/pre-commit .git/hooks/pre-commit
 	chmod +x .git/hooks/pre-commit
-	@echo "Installed .git/hooks/pre-commit"
+	cp scripts/pre-push .git/hooks/pre-push
+	chmod +x .git/hooks/pre-push
+	@echo "Installed .git/hooks/pre-commit and pre-push"
 
 .PHONY: version
 version: ## Show VERSION file and next tag (dry-run)

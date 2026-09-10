@@ -4,7 +4,6 @@ import android.app.Service
 import android.content.Intent
 import android.os.IBinder
 import androidx.core.app.RemoteInput
-import com.gantree.cab.CabApp
 
 class ReplyService : Service() {
   override fun onBind(intent: Intent?): IBinder? = null
@@ -30,6 +29,5 @@ class ReplyService : Service() {
   companion object {
     const val ACTION_REPLY = "com.gantree.cab.REPLY"
     const val ACTION_READ = "com.gantree.cab.READ"
-    const val EXTRA_SLUG = "slug"
   }
 }

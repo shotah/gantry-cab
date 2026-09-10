@@ -9,6 +9,7 @@ import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
+import kotlinx.coroutines.runBlocking
 
 class AvatarApiTest {
   private lateinit var server: MockWebServer
@@ -31,7 +32,7 @@ class AvatarApiTest {
     val jpeg = fakeJpeg()
     server.enqueue(MockResponse().setBody(Buffer().write(jpeg)))
     val origin = server.url("/").toString()
-    val got = api.fetch(origin, "kit", "jwe", 3)
+    val got = runBlocking { api.fetch(origin, "kit", "jwe", 3) }
     assertTrue(got.contentEquals(jpeg))
     val req = server.takeRequest()
     assertEquals("/api/avatar?slug=kit&v=3", req.path)
@@ -41,7 +42,7 @@ class AvatarApiTest {
   @Test
   fun fetchMissIsNull() {
     server.enqueue(MockResponse().setResponseCode(404))
-    assertNull(api.fetch(server.url("/").toString(), "kit", "", 0))
+    assertNull(runBlocking { api.fetch(server.url("/").toString(), "kit", "", 0) })
     assertNull(server.takeRequest().getHeader("Authorization"))
   }
 

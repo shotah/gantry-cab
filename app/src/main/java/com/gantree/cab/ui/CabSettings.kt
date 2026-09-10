@@ -16,16 +16,24 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.gantree.cab.mailbox.allowlistCopy
 import com.gantree.cab.mailbox.FONT_IDS
 import com.gantree.cab.mailbox.THEME_IDS
 import com.gantree.cab.mailbox.chatSp
@@ -41,6 +49,7 @@ fun CabSettings(
   email: String,
   googleReady: Boolean,
   cranes: List<String>,
+  sub: String = "",
   themeId: String,
   fontId: String,
   onOrigin: (String) -> Unit,
@@ -55,6 +64,8 @@ fun CabSettings(
   signingIn: Boolean = false,
 ) {
   val scheme = MaterialTheme.colorScheme
+  val clipboard = LocalClipboardManager.current
+  var copied by remember { mutableStateOf(false) }
   Column(
     verticalArrangement = Arrangement.spacedBy(16.dp),
     modifier = Modifier
@@ -203,6 +214,27 @@ fun CabSettings(
     }
     if (email.isNotBlank()) {
       Text(email, style = MaterialTheme.typography.bodySmall, color = scheme.onSurfaceVariant)
+    }
+    if (email.isNotBlank() && cranes.isEmpty() && sub.isNotBlank()) {
+      Text(
+        "Not on any crane yet — give this to your yard admin",
+        style = MaterialTheme.typography.bodySmall,
+        color = scheme.onSurfaceVariant,
+      )
+      Text(
+        sub,
+        style = MaterialTheme.typography.bodySmall.copy(fontFamily = FontFamily.Monospace),
+        color = scheme.onSurface,
+        modifier = Modifier.semantics { contentDescription = "google sub" },
+      )
+      TextButton(
+        onClick = {
+          clipboard.setText(AnnotatedString(allowlistCopy(email, sub)))
+          copied = true
+        },
+      ) {
+        Text(if (copied) "Copied" else "Copy")
+      }
     }
   }
 }

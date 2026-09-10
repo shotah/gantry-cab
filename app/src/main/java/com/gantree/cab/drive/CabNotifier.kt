@@ -21,6 +21,10 @@ object CabNotifier {
   const val MESSAGE_ID = 42
   const val KEY_REPLY = "cab.reply"
 
+  @Volatile
+  private var historySlug = ""
+  private var history = emptyList<KitTurn>()
+
   fun conversationId(slug: String): String = "cab-$slug"
 
   fun ensureChannel(ctx: Context) {
@@ -45,19 +49,26 @@ object CabNotifier {
       .build()
   }
 
+  @Synchronized
   fun kitMessage(ctx: Context, slug: String, text: String) {
     ensureChannel(ctx)
     val shortcutId = conversationId(slug)
     val you = Person.Builder().setName("You").setKey("you").build()
     val kit = Person.Builder().setName(slug).setKey(shortcutId).build()
     publishConversation(ctx, slug, kit)
+    val next = pushKitTurn(history, historySlug, slug, text, System.currentTimeMillis())
+    historySlug = next.first
+    history = next.second
     val style = NotificationCompat.MessagingStyle(you)
       .setConversationTitle(slug)
-      .addMessage(text, System.currentTimeMillis(), kit)
+      .setGroupConversation(false)
+    for (turn in history) {
+      style.addMessage(turn.text, turn.at, kit)
+    }
     val reply = NotificationCompat.Action.Builder(
       R.drawable.ic_stat_cab,
       ctx.getString(R.string.reply_label),
-      serviceIntent(ctx, ReplyService.ACTION_REPLY, slug),
+      serviceIntent(ctx, ReplyService.ACTION_REPLY),
     )
       .addRemoteInput(
         RemoteInput.Builder(KEY_REPLY).setLabel(ctx.getString(R.string.reply_label)).build(),
@@ -68,7 +79,7 @@ object CabNotifier {
     val read = NotificationCompat.Action.Builder(
       R.drawable.ic_stat_cab,
       ctx.getString(R.string.mark_read),
-      serviceIntent(ctx, ReplyService.ACTION_READ, slug),
+      serviceIntent(ctx, ReplyService.ACTION_READ),
     )
       .setSemanticAction(NotificationCompat.Action.SEMANTIC_ACTION_MARK_AS_READ)
       .setShowsUserInterface(false)
@@ -91,7 +102,10 @@ object CabNotifier {
     ctx.getSystemService(NotificationManager::class.java).notify(MESSAGE_ID, n)
   }
 
+  @Synchronized
   fun dismissKit(ctx: Context) {
+    history = emptyList()
+    historySlug = ""
     ctx.getSystemService(NotificationManager::class.java).cancel(MESSAGE_ID)
   }
 
@@ -120,8 +134,8 @@ object CabNotifier {
     )
   }
 
-  private fun serviceIntent(ctx: Context, action: String, slug: String): PendingIntent {
-    val i = Intent(ctx, ReplyService::class.java).setAction(action).putExtra(ReplyService.EXTRA_SLUG, slug)
+  private fun serviceIntent(ctx: Context, action: String): PendingIntent {
+    val i = Intent(ctx, ReplyService::class.java).setAction(action)
     return PendingIntent.getService(
       ctx,
       action.hashCode(),

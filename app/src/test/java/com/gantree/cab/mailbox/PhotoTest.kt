@@ -34,5 +34,7 @@ class PhotoTest {
     assertNull(decodeDataUrl("data:image/jpeg;base64,!!!!"))
     val wrapped = "data:image/png;base64,\nAQID"
     assertTrue(decodeDataUrl(wrapped)!!.contentEquals(byteArrayOf(1, 2, 3)))
+    val huge = "data:image/jpeg;base64," + "A".repeat(2_100_000)
+    assertNull(decodeDataUrl(huge))
   }
 }

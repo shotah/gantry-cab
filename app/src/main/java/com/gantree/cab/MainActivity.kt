@@ -32,7 +32,7 @@ class MainActivity : ComponentActivity() {
   override fun onCreate(savedInstanceState: Bundle?) {
     super.onCreate(savedInstanceState)
     enableEdgeToEdge()
-    requestBits()
+    requestNotify()
     if (BuildConfig.DEV) {
       intent.getStringExtra(EXTRA_SAMPLE)?.let { vm.showSample(it) }
     }
@@ -56,6 +56,8 @@ class MainActivity : ComponentActivity() {
       val faceHint by vm.faceHint.collectAsStateWithLifecycle()
       val signingIn by vm.signingIn.collectAsStateWithLifecycle()
       val authHint by vm.authHint.collectAsStateWithLifecycle()
+      val typingUntil by vm.typingUntil.collectAsStateWithLifecycle()
+      val sub by vm.sub.collectAsStateWithLifecycle()
       CabTheme(themeId = theme, fontId = font) {
         CabScreen(
           origin = origin,
@@ -92,7 +94,12 @@ class MainActivity : ComponentActivity() {
           cranes = cranes,
           onTheme = vm::setTheme,
           onFont = vm::setFont,
-          onGpsToggle = vm::toggleGps,
+          onGpsToggle = {
+            if (!gps) {
+              requestLoc()
+            }
+            vm.toggleGps()
+          },
           onPhoto = {
             pickPhoto.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
           },
@@ -103,18 +110,23 @@ class MainActivity : ComponentActivity() {
             vm.persist()
             MailboxService.sendPin(this)
           },
+          typingUntil = typingUntil,
+          sub = sub,
         )
       }
     }
   }
 
-  private fun requestBits() {
+  private fun requestNotify() {
     if (Build.VERSION.SDK_INT >= 33
       && ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS)
       != PackageManager.PERMISSION_GRANTED
     ) {
       askNotify.launch(Manifest.permission.POST_NOTIFICATIONS)
     }
+  }
+
+  private fun requestLoc() {
     val fine = Manifest.permission.ACCESS_FINE_LOCATION
     val coarse = Manifest.permission.ACCESS_COARSE_LOCATION
     if (ContextCompat.checkSelfPermission(this, fine) != PackageManager.PERMISSION_GRANTED) {

@@ -3,6 +3,7 @@ package com.gantree.cab
 import com.gantree.cab.mailbox.SlashCommand
 import com.gantree.cab.mailbox.WireFrame
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -24,15 +25,25 @@ class MouthTest {
     mouth.replace(listOf(ChatLine("1", true, "hi", "inbound")), true, "ok")
     assertEquals(emptyList<SlashCommand>(), mouth.catalog.value)
     assertEquals(true, mouth.up.value)
+    assertEquals(0L, mouth.typingUntil.value)
   }
 
   @Test
   fun silentKindsStayOffTheThread() {
     val mouth = Mouth()
-    for (kind in listOf("ack", "typing", "draft", "allow", "pin")) {
+    for (kind in listOf("ack", "allow", "pin")) {
       mouth.ingest(WireFrame(kind = kind, text = "nope"))
     }
     assertTrue(mouth.lines.value.isEmpty())
+    assertEquals(0L, mouth.typingUntil.value)
+  }
+
+  @Test
+  fun mailboxErrorIsAHintNotABubble() {
+    val mouth = Mouth()
+    mouth.ingest(WireFrame(kind = "error", text = "bad frame"))
+    assertTrue(mouth.lines.value.isEmpty())
+    assertEquals("bad frame", mouth.hint.value)
   }
 
   @Test
@@ -63,5 +74,114 @@ class MouthTest {
     }
     assertEquals(80, mouth.lines.value.size)
     assertEquals("n10", mouth.lines.value.first().text)
+  }
+
+  @Test
+  fun draftReplacesInPlaceAndBlankClears() {
+    val mouth = Mouth()
+    mouth.ingest(WireFrame(kind = "draft", text = "Gate"))
+    mouth.ingest(WireFrame(kind = "draft", text = "Gate's on the latch"))
+    assertEquals(1, mouth.lines.value.size)
+    val draft = mouth.lines.value.single()
+    assertEquals(DRAFT_ID, draft.id)
+    assertEquals(false, draft.fromYou)
+    assertEquals("draft", draft.kind)
+    assertEquals("Gate's on the latch", draft.text)
+    mouth.ingest(WireFrame(kind = "draft", text = "  "))
+    assertTrue(mouth.lines.value.isEmpty())
+  }
+
+  @Test
+  fun replyClearsTheDraftBubble() {
+    val mouth = Mouth()
+    mouth.ingest(WireFrame(kind = "draft", text = "⏳…"))
+    mouth.ingest(WireFrame(kind = "reply", id = "r1", text = "Gate's on the latch until 21:00."))
+    assertEquals(1, mouth.lines.value.size)
+    assertEquals("r1", mouth.lines.value.single().id)
+    assertEquals("reply", mouth.lines.value.single().kind)
+  }
+
+  @Test
+  fun emptyReplyStillDropsTheDraft() {
+    val mouth = Mouth()
+    mouth.ingest(WireFrame(kind = "draft", text = "⏳…"))
+    mouth.ingest(WireFrame(kind = "reply", text = "  "))
+    assertTrue(mouth.lines.value.isEmpty())
+  }
+
+  @Test
+  fun socketDownDropsDraftAndTyping() {
+    var t = 1_000L
+    val mouth = Mouth { t }
+    mouth.setUp(true)
+    mouth.ingest(WireFrame(kind = "draft", text = "⏳…"))
+    mouth.ingest(WireFrame(kind = "typing"))
+    assertEquals(1, mouth.lines.value.size)
+    assertEquals(t + TYPING_TTL_MS, mouth.typingUntil.value)
+    mouth.setUp(false)
+    assertTrue(mouth.lines.value.isEmpty())
+    assertEquals(0L, mouth.typingUntil.value)
+    assertFalse(mouth.up.value)
+  }
+
+  @Test
+  fun draftStaysLastPastTheEightyCap() {
+    val mouth = Mouth()
+    for (i in 0 until 80) {
+      mouth.add(ChatLine("$i", false, "n$i", "reply"))
+    }
+    mouth.ingest(WireFrame(kind = "draft", text = "live"))
+    assertEquals(80, mouth.lines.value.size)
+    assertEquals(DRAFT_ID, mouth.lines.value.last().id)
+    assertEquals("live", mouth.lines.value.last().text)
+    assertEquals("n1", mouth.lines.value.first().text)
+  }
+
+  @Test
+  fun typingTtlAndClearingKinds() {
+    var t = 10_000L
+    val mouth = Mouth { t }
+    mouth.ingest(WireFrame(kind = "typing"))
+    assertEquals(16_000L, mouth.typingUntil.value)
+    t = 12_000L
+    mouth.ingest(WireFrame(kind = "typing"))
+    assertEquals(18_000L, mouth.typingUntil.value)
+    mouth.ingest(WireFrame(kind = "ack", id = "a1"))
+    assertEquals(18_000L, mouth.typingUntil.value)
+    mouth.ingest(WireFrame(kind = "reply", id = "r1", text = "done"))
+    assertEquals(0L, mouth.typingUntil.value)
+    mouth.ingest(WireFrame(kind = "typing"))
+    assertEquals(18_000L, mouth.typingUntil.value)
+    mouth.ingest(WireFrame(kind = "push", text = "20:40"))
+    assertEquals(0L, mouth.typingUntil.value)
+    mouth.ingest(WireFrame(kind = "typing"))
+    mouth.ingest(WireFrame(kind = "error", text = "rate"))
+    assertEquals(0L, mouth.typingUntil.value)
+    assertTrue(clearsTyping("reply"))
+    assertTrue(clearsTyping("push"))
+    assertTrue(clearsTyping("error"))
+    assertFalse(clearsTyping("ack"))
+    assertFalse(clearsTyping("draft"))
+  }
+
+  @Test
+  fun pushClearsTypingButLeavesTheDraft() {
+    val mouth = Mouth { 1L }
+    mouth.ingest(WireFrame(kind = "draft", text = "⏳…"))
+    mouth.ingest(WireFrame(kind = "typing"))
+    mouth.ingest(WireFrame(kind = "push", text = "still on the dock?"))
+    assertEquals(0L, mouth.typingUntil.value)
+    assertEquals(DRAFT_ID, mouth.lines.value.first().id)
+    assertEquals("push", mouth.lines.value.last().kind)
+  }
+
+  @Test
+  fun ackClearsPendingOnTheMatchingBubble() {
+    val mouth = Mouth()
+    mouth.add(ChatLine("a1", true, "hi", "inbound", pending = true))
+    mouth.ingest(WireFrame(kind = "ack", id = "nope"))
+    assertTrue(mouth.lines.value.single().pending)
+    mouth.ingest(WireFrame(kind = "ack", id = "a1"))
+    assertFalse(mouth.lines.value.single().pending)
   }
 }

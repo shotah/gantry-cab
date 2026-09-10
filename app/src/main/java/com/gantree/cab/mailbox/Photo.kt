@@ -4,6 +4,7 @@ import java.util.Base64
 
 const val IMAGE_BYTES_MAX = 1_500_000
 const val CHAT_PHOTO_EDGE = 1600
+private const val IMAGE_B64_MAX = IMAGE_BYTES_MAX / 3 * 4 + 64
 
 private val ALLOWED = setOf("image/jpeg", "image/jpg", "image/png", "image/webp")
 
@@ -49,7 +50,12 @@ fun decodeDataUrl(url: String): ByteArray? {
     return null
   }
   return try {
-    Base64.getDecoder().decode(url.substring(i + marker.length).replace("\n", ""))
+    val b64 = url.substring(i + marker.length).replace("\n", "")
+    if (b64.length > IMAGE_B64_MAX) {
+      return null
+    }
+    val bytes = Base64.getDecoder().decode(b64)
+    bytes.takeIf { it.size <= IMAGE_BYTES_MAX }
   } catch (_: Exception) {
     null
   }

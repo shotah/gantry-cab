@@ -45,7 +45,9 @@ git_live() {
   git "$@"
 }
 
-if [[ "$own_repo" -eq 1 ]]; then
+skip_fetch="${SKIP_FETCH:-}"
+
+if [[ "$own_repo" -eq 1 && -z "$skip_fetch" ]]; then
   git fetch --tags --quiet 2>/dev/null || true
 fi
 

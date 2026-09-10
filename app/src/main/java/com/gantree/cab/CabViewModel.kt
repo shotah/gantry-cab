@@ -20,8 +20,13 @@ import com.gantree.cab.mailbox.googleSignInHint
 import com.gantree.cab.mailbox.mailboxSignedInHint
 import com.gantree.cab.mailbox.normalizeMailboxOrigin
 import com.gantree.cab.mailbox.parseSlug
+import com.gantree.cab.mailbox.persistSpikeAllowed
 import com.gantree.cab.mailbox.photoDataUrl
+import com.gantree.cab.mailbox.WireFrame
 import com.gantree.cab.ui.requestGoogleId
+import androidx.credentials.exceptions.GetCredentialException
+import androidx.credentials.exceptions.NoCredentialException
+import kotlin.coroutines.cancellation.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -44,6 +49,8 @@ class CabViewModel(private val app: CabApp) : ViewModel() {
   private val _face = MutableStateFlow<ByteArray?>(null)
   private val _signingIn = MutableStateFlow(false)
   private val _authHint = MutableStateFlow("")
+  private val _sub = MutableStateFlow("")
+  private val _fetchOrigin = MutableStateFlow(app.prefs.origin)
   val origin = _origin.asStateFlow()
   val slug = _slug.asStateFlow()
   val spike = _spike.asStateFlow()
@@ -55,21 +62,24 @@ class CabViewModel(private val app: CabApp) : ViewModel() {
   val face = _face.asStateFlow()
   val signingIn = _signingIn.asStateFlow()
   val authHint = _authHint.asStateFlow()
+  val sub = _sub.asStateFlow()
   val up = app.mouth.up.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), false)
   val hint = app.mouth.hint.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), "")
   val lines = app.mouth.lines.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
   val catalog = app.mouth.catalog.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
   val avatarRev = app.mouth.avatarRev.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), 0)
   val faceHint = app.mouth.faceHint.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), "")
+  val typingUntil = app.mouth.typingUntil.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), 0L)
 
   init {
     viewModelScope.launch {
-      combine(_origin, _slug, app.mouth.avatarRev) { origin, slug, rev -> Triple(origin, slug, rev) }
+      combine(_fetchOrigin, _slug, app.mouth.avatarRev) { origin, slug, rev -> Triple(origin, slug, rev) }
         .collectLatest { (origin, slug, rev) ->
-          val room = parseSlug(slug) ?: slug
-          _face.value = withContext(Dispatchers.IO) {
-            app.avatar.fetch(origin, room, app.prefs.bearer, rev)
+          val room = parseSlug(slug) ?: return@collectLatest
+          if (origin.isBlank() || app.prefs.bearer.isBlank()) {
+            return@collectLatest
           }
+          _face.value = app.avatar.fetch(origin, room, app.prefs.bearer, rev)
         }
     }
   }
@@ -108,6 +118,9 @@ class CabViewModel(private val app: CabApp) : ViewModel() {
     _slug.value = scene.slug
     _email.value = scene.email
     app.mouth.replace(scene.lines, scene.up, scene.hint)
+    if (scene.typing) {
+      app.mouth.ingest(WireFrame(kind = "typing"))
+    }
     app.mouth.setAvatarRev(0)
     app.mouth.setFaceHint("")
   }
@@ -116,14 +129,24 @@ class CabViewModel(private val app: CabApp) : ViewModel() {
     val origin = normalizeMailboxOrigin(_origin.value)
     _origin.value = origin
     app.prefs.origin = origin
-    app.prefs.slug = parseSlug(_slug.value) ?: _slug.value
-    app.prefs.spike = _spike.value
+    parseSlug(_slug.value)?.let { app.prefs.slug = it }
+    if (app.prefs.session.isNotBlank()) {
+      _spike.value = ""
+      app.prefs.spike = ""
+    } else {
+      app.prefs.putSpike(
+        _spike.value,
+        persistSpikeAllowed(origin, false, BuildConfig.DEV),
+      )
+    }
+    _fetchOrigin.value = origin
   }
 
   fun signOut() {
     app.prefs.signOut()
     _email.value = ""
     _cranes.value = emptyList()
+    _sub.value = ""
     app.mouth.setHint("signed out")
     MailboxService.stop(app)
   }
@@ -153,7 +176,10 @@ class CabViewModel(private val app: CabApp) : ViewModel() {
         val jpeg = withContext(Dispatchers.IO) {
           jpegFromUri(ctx.contentResolver, uri, AVATAR_EDGE, AVATAR_MAX_BYTES)
         }
-        val room = parseSlug(_slug.value) ?: _slug.value
+        val room = parseSlug(_slug.value) ?: run {
+          app.mouth.setFaceHint("Talking to needs a crane slug like kit.")
+          return@launch
+        }
         when (val got = withContext(Dispatchers.IO) {
           app.avatar.upload(_origin.value, room, app.prefs.bearer, jpeg)
         }) {
@@ -188,10 +214,13 @@ class CabViewModel(private val app: CabApp) : ViewModel() {
           app.auth.token(_origin.value, google.idToken, google.nonce)
         }
         app.prefs.session = session.token
+        app.prefs.sessionExp = session.exp
         app.prefs.email = session.email.orEmpty()
+        _spike.value = ""
         _email.value = session.email.orEmpty()
         val me = withContext(Dispatchers.IO) { app.auth.me(_origin.value, session.token) }
         _cranes.value = me.cranes
+        _sub.value = me.sub.ifBlank { session.sub }
         if (me.cranes.isNotEmpty() && parseSlug(_slug.value) !in me.cranes) {
           _slug.value = me.cranes.first()
           app.prefs.slug = me.cranes.first()
@@ -199,6 +228,12 @@ class CabViewModel(private val app: CabApp) : ViewModel() {
         _authHint.value = mailboxSignedInHint(session.email.orEmpty(), me.cranes)
         app.mouth.setHint(mailboxSignedInHint(session.email.orEmpty(), me.cranes))
         MailboxService.start(activity)
+      } catch (e: CancellationException) {
+        throw e
+      } catch (e: NoCredentialException) {
+        _authHint.value = googleSignInHint(e)
+      } catch (e: GetCredentialException) {
+        _authHint.value = googleSignInHint(e)
       } catch (e: AuthException) {
         _authHint.value = "Mailbox auth ${e.code}\n${e.body.take(400)}"
       } catch (e: Exception) {

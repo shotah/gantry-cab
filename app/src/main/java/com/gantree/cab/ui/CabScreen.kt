@@ -1,9 +1,8 @@
 package com.gantree.cab.ui
 
-import android.graphics.BitmapFactory
 import androidx.activity.compose.BackHandler
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -18,6 +17,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -43,8 +43,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
@@ -52,8 +52,9 @@ import androidx.compose.ui.unit.dp
 import com.gantree.cab.ChatLine
 import com.gantree.cab.dev.SAMPLE_IDS
 import com.gantree.cab.mailbox.SlashCommand
-import com.gantree.cab.mailbox.decodeDataUrl
 import com.gantree.cab.mailbox.displaySlug
+import coil3.compose.AsyncImage
+import kotlinx.coroutines.delay
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -92,11 +93,14 @@ fun CabScreen(
   onAvatar: () -> Unit = {},
   onPin: () -> Unit = {},
   onEngage: () -> Unit = {},
+  typingUntil: Long = 0L,
+  sub: String = "",
 ) {
   val scheme = MaterialTheme.colorScheme
   var settingsOpen by remember { mutableStateOf(false) }
   val list = rememberLazyListState()
   val title = displaySlug(slug)
+  val view = LocalView.current
   val googleDoor = googleReady && email.isBlank() && spike.isBlank() && lines.isEmpty()
   val showSettings = settingsOpen && !compact
   val barColors = TopAppBarDefaults.topAppBarColors(
@@ -106,10 +110,31 @@ fun CabScreen(
     navigationIconContentColor = scheme.onSurface,
   )
   BackHandler(enabled = showSettings) { settingsOpen = false }
-  LaunchedEffect(lines.size) {
+  var typing by remember(up, typingUntil) {
+    mutableStateOf(up && typingUntil > System.currentTimeMillis())
+  }
+  LaunchedEffect(up, typingUntil) {
+    if (!up || typingUntil <= 0L) {
+      typing = false
+      return@LaunchedEffect
+    }
+    val wait = typingUntil - System.currentTimeMillis()
+    if (wait <= 0L) {
+      typing = false
+      return@LaunchedEffect
+    }
+    typing = true
+    delay(wait)
+    typing = false
+  }
+  LaunchedEffect(lines.lastOrNull()?.id, lines.lastOrNull()?.text) {
     if (lines.isNotEmpty()) {
       list.animateScrollToItem(lines.lastIndex)
     }
+  }
+  val keepScreen = typing || lines.any { it.pending }
+  LaunchedEffect(keepScreen) {
+    view.keepScreenOn = keepScreen
   }
   Scaffold(
     modifier = Modifier.fillMaxSize().imePadding(),
@@ -155,7 +180,11 @@ fun CabScreen(
                     .background(if (up) scheme.tertiary else scheme.outline),
                 )
                 Text(
-                  if (up) "Live" else "Offline",
+                  when {
+                    !up -> "Offline"
+                    typing -> "Live · typing…"
+                    else -> "Live"
+                  },
                   style = MaterialTheme.typography.labelSmall,
                   color = if (up) scheme.tertiary else scheme.outline,
                 )
@@ -199,6 +228,7 @@ fun CabScreen(
           email = email,
           googleReady = googleReady,
           cranes = cranes,
+          sub = sub,
           themeId = themeId,
           fontId = fontId,
           onOrigin = onOrigin,
@@ -252,7 +282,10 @@ fun CabScreen(
           if (dev && !compact) {
             Row(
               horizontalArrangement = Arrangement.spacedBy(8.dp),
-              modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
+              modifier = Modifier
+                .fillMaxWidth()
+                .horizontalScroll(rememberScrollState())
+                .padding(horizontal = 16.dp, vertical = 4.dp),
             ) {
               for (id in SAMPLE_IDS) {
                 AssistChip(onClick = { onSample(id) }, label = { Text(id) })
@@ -333,7 +366,10 @@ fun CabScreen(
                     }
                     line.photo?.let { ChatPhoto(it) }
                     if (line.text.isNotBlank()) {
-                      Text(line.text, style = MaterialTheme.typography.bodyLarge)
+                      ChatMarkdown(text = line.text, draft = line.kind == "draft")
+                    }
+                    if (mine && line.pending) {
+                      Text("sending", style = MaterialTheme.typography.labelSmall, color = scheme.onSurfaceVariant)
                     }
                   }
                 }
@@ -348,16 +384,10 @@ fun CabScreen(
 
 @Composable
 private fun ChatPhoto(url: String) {
-  val bmp = remember(url) {
-    val bytes = decodeDataUrl(url) ?: return@remember null
-    BitmapFactory.decodeByteArray(bytes, 0, bytes.size)?.asImageBitmap()
-  }
-  if (bmp != null) {
-    Image(
-      bitmap = bmp,
-      contentDescription = null,
-      contentScale = ContentScale.Crop,
-      modifier = Modifier.fillMaxWidth().heightIn(max = 192.dp).clip(RoundedCornerShape(12.dp)),
-    )
-  }
+  AsyncImage(
+    model = url,
+    contentDescription = null,
+    contentScale = ContentScale.Crop,
+    modifier = Modifier.fillMaxWidth().heightIn(max = 192.dp).clip(RoundedCornerShape(12.dp)),
+  )
 }
