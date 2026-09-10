@@ -1,6 +1,10 @@
 # <img src="assets/logo.svg" alt="" width="40" height="40"> gantry-cab
 
 <p align="center">
+  <img src="assets/banner.svg" alt="The seat — in-car mouth for the crane. Same mailbox. Nothing inbound on the Mini." width="100%">
+</p>
+
+<p align="center">
   <a href="https://github.com/shotah/gantry-cab/actions/workflows/ci.yml"><img src="https://github.com/shotah/gantry-cab/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
   <a href="https://github.com/shotah/gantry-cab/actions/workflows/ci.yml"><img src="https://github.com/shotah/gantry-cab/raw/gh-pages/badges/coverage.svg" alt="Coverage"></a>
   <a href="https://github.com/shotah/gantry-cab/releases"><img src="https://img.shields.io/github/v/tag/shotah/gantry-cab?label=version" alt="Version"></a>
