@@ -117,6 +117,16 @@ class MainActivity : ComponentActivity() {
     }
   }
 
+  override fun onResume() {
+    super.onResume()
+    (application as CabApp).phoneResumed = true
+  }
+
+  override fun onPause() {
+    (application as CabApp).phoneResumed = false
+    super.onPause()
+  }
+
   private fun requestNotify() {
     if (Build.VERSION.SDK_INT >= 33
       && ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS)

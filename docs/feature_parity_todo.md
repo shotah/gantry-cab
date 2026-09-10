@@ -25,7 +25,7 @@ Pendant references are relative to `repos/gantry-pendant`:
 | Google sign-in, `/api/auth/me` crane switcher, sign out | `LoginDoor.tsx`, `SettingsMenu.tsx` | `Google.kt`, `CabSettings.kt` |
 | Themes Boom / Inlay / Lamp; font sm → xl | `app/lib/theme.ts`, `app/lib/font.ts` | `Look.kt`, `CabPalette.kt` |
 | Avatar view + tap-to-replace | `KitAvatar.tsx`, `/api/avatar` | `KitAvatar.kt`, `AvatarApi.kt` |
-| Unread badge, vibration on ping | `lib/phone/badge.ts`, `lib/phone/haptic.ts` | `CabNotifier.ensureChannel` (`setShowBadge`, `enableVibration`, `DEFAULT_ALL`) |
+| Unread badge, vibration on ping | `lib/phone/badge.ts`, `lib/phone/haptic.ts` | `CabNotifier.ensureChannel` (`setShowBadge`, `enableVibration`, `DEFAULT_ALL`); 40 ms buzz on a visible `push` |
 | Lock-screen when the app is dead | Web Push (VAPID) | FCM — "later" in both READMEs |
 
 ## P0 — the thread is missing what the pendant paints
@@ -178,16 +178,19 @@ Pendant references are relative to `repos/gantry-pendant`:
   (`mailboxSignedInHint`, `MailboxConnect.kt:73-78`). Add a `sub` row +
   `ClipboardManager` copy in `CabSettings` for the empty-cranes case.
 
-- [ ] **Notification fires with the app in the foreground.** Pendant only
+- [x] **Notification fires with the app in the foreground.** Pendant only
   toasts / badges when the tab is hidden (`shouldNotify`,
-  `lib/phone/notify.ts:64-70`; `shouldBadge`, `badge.ts:7-9`). Cab posts
-  `kitMessage` for every `reply` / `push` (`MailboxService.kt:118-122`),
-  so on the phone you get the bubble and a heads-up for the same line.
-  In the car the notification *is* the mouth, so keep it whenever a head
-  unit is attached (`androidx.car.app.connection.CarConnection`) or the
-  Activity is not resumed. Pure function `shouldPost(resumed, carAttached,
-  kind)`; keep a 40 ms `VibrationEffect` for a visible `push` so the ping
-  still buzzes (pendant `haptic.ts`).
+  `lib/phone/notify.ts:64-70`; `shouldBadge`, `badge.ts:7-9`). Cab posted
+  `kitMessage` for every `reply` / `push`, so on the phone you got the
+  bubble and a heads-up for the same line. In the car the notification
+  *is* the mouth.
+  Fix: `shouldPost(resumed, carAttached, kind)` in `NotifyGate.kt`.
+  `MainActivity` onResume/onPause toggles `CabApp.phoneResumed` (not
+  `ProcessLifecycleOwner` — the Auto session would look like foreground
+  and swallow HUNs). `CarConnection` projection/native sets
+  `carAttached`. Post when a head unit is attached **or** the phone
+  thread is not resumed. Visible `push` with no car: 40 ms
+  `VibrationEffect` (`shouldBuzz`, pendant `haptic.ts`).
 
 - [x] **Dev samples missing `stream` and `photo`.** `SAMPLE_IDS` is
   `unsigned, empty, thread, ping, down` (`Samples.kt:5`); pendant also has

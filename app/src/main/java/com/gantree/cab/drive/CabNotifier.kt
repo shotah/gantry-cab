@@ -6,6 +6,8 @@ import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
+import android.os.VibrationEffect
+import android.os.Vibrator
 import androidx.core.app.NotificationCompat
 import androidx.core.app.Person
 import androidx.core.app.RemoteInput
@@ -100,6 +102,14 @@ object CabNotifier {
       .setDefaults(NotificationCompat.DEFAULT_ALL)
       .build()
     ctx.getSystemService(NotificationManager::class.java).notify(MESSAGE_ID, n)
+  }
+
+  fun buzzPush(ctx: Context) {
+    val v = ctx.getSystemService(Vibrator::class.java) ?: return
+    if (!v.hasVibrator()) {
+      return
+    }
+    v.vibrate(VibrationEffect.createOneShot(PUSH_BUZZ_MS, VibrationEffect.DEFAULT_AMPLITUDE))
   }
 
   @Synchronized

@@ -1,6 +1,8 @@
 package com.gantree.cab
 
 import android.app.Application
+import androidx.car.app.connection.CarConnection
+import com.gantree.cab.drive.carConnectionAttached
 import com.gantree.cab.mailbox.AuthApi
 import com.gantree.cab.mailbox.AvatarApi
 import com.gantree.cab.mailbox.PhoneContext
@@ -14,10 +16,18 @@ class CabApp : Application() {
   val mouth = Mouth()
   val auth = AuthApi()
   val avatar = AvatarApi()
+  @Volatile
+  var phoneResumed = false
+  @Volatile
+  var carAttached = false
+    private set
 
   override fun onCreate() {
     super.onCreate()
     prefs = CabPrefs(this)
+    CarConnection(this).type.observeForever { type ->
+      carAttached = carConnectionAttached(type)
+    }
   }
 }
 
