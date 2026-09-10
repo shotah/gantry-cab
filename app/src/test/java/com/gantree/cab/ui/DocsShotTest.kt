@@ -40,6 +40,18 @@ class DocsShotTest {
   }
 
   @Test
+  fun emojiPickerPaintsFaces() {
+    val img = renderDocsShot("phone-emoji")
+    var yellow = 0
+    for (y in 450 until 560) {
+      for (x in 20 until 370) {
+        if (img.getRGB(x, y) and 0xFFFFFF == 0xF5C542) yellow += 1
+      }
+    }
+    assertTrue(yellow > 80)
+  }
+
+  @Test
   fun writesNamedPngsWhenAsked() {
     if (System.getenv("CAB_WRITE_SHOTS") != "1") {
       return
