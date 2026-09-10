@@ -26,11 +26,14 @@ It does not wrap the Vinext PWA. It does not run React Native.
 <p align="center">
   <img src="assets/docs/phone-thread.png" alt="Cab on a phone" width="180">
   &nbsp;
+  <img src="assets/docs/phone-stream.png" alt="Kit drafting a reply" width="180">
+  &nbsp;
   <img src="assets/docs/auto-thread.png" alt="Cab in Android Auto" width="320">
 </p>
 
 Every screen: [docs/screens.md](docs/screens.md). `make shot` reshoots.
 Phone + Auto install: [docs/sideload_to_android.md](docs/sideload_to_android.md).
+Open work: [docs/todo.md](docs/todo.md).
 
 ## This is not
 

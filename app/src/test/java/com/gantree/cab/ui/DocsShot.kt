@@ -54,6 +54,7 @@ val DOCS_SHOT_NAMES = listOf(
   "phone-empty",
   "phone-thread",
   "phone-stream",
+  "phone-photo",
   "phone-down",
   "phone-settings",
   "phone-emoji",
@@ -67,6 +68,7 @@ fun renderDocsShot(name: String): BufferedImage = when (name) {
   "phone-empty" -> renderPhone("empty")
   "phone-thread" -> renderPhone("thread")
   "phone-stream" -> renderPhone("stream")
+  "phone-photo" -> renderPhone("photo")
   "phone-down" -> renderPhone("down")
   "phone-settings" -> renderPhone("empty", settings = true)
   "phone-emoji" -> renderPhone("thread", emoji = true)
@@ -140,22 +142,50 @@ fun renderPhone(sampleId: String, settings: Boolean = false, emoji: Boolean = fa
       val bubbleMax = PHONE_W - 16 - 48 - 24
       for (line in scene.lines) {
         val draft = line.kind == "draft"
+        val ping = line.kind == "push"
+        val sending = line.fromYou && line.pending
+        val photo = line.photo != null
         g.font = if (draft) font.deriveFont(Font.ITALIC, 16f) else font.deriveFont(16f)
-        val wrapped = wrap(g, line.text, bubbleMax)
-        val bh = 12 + wrapped.size * 20 + 12
-        val bw = (wrapped.maxOf { g.fontMetrics.stringWidth(it) } + 28).coerceAtMost(PHONE_W - 64)
+        val wrapped = if (line.text.isBlank()) emptyList() else wrap(g, line.text, bubbleMax)
+        val photoH = if (photo) 110 else 0
+        val pingH = if (ping) 16 else 0
+        val sendH = if (sending) 16 else 0
+        val textH = if (wrapped.isEmpty()) 0 else wrapped.size * 20
+        val gaps = listOf(pingH > 0, photoH > 0, textH > 0, sendH > 0).count { it }.let { maxOf(0, it - 1) } * 6
+        val bh = 12 + pingH + photoH + textH + sendH + gaps + 12
+        val textW = if (wrapped.isEmpty()) 0 else wrapped.maxOf { g.fontMetrics.stringWidth(it) } + 28
+        val bw = (maxOf(textW, if (photo) 220 else 0)).coerceAtMost(PHONE_W - 64).coerceAtLeast(96)
         val x = if (line.fromYou) PHONE_W - 16 - bw else 16
         g.color = if (line.fromYou) You else Kit
         g.fill(RoundRectangle2D.Float(x.toFloat(), y.toFloat(), bw.toFloat(), bh.toFloat(), 20f, 20f))
-        g.color = when {
-          draft -> Dim
-          line.fromYou -> Mark
-          else -> Fg
-        }
         var ty = y + 12
-        for (w in wrapped) {
-          g.drawString(w, x + 14, ty + g.fontMetrics.ascent)
-          ty += 20
+        if (ping) {
+          g.font = font.deriveFont(11f)
+          g.color = Dim
+          g.drawString("Ping", x + 14, ty + g.fontMetrics.ascent)
+          ty += pingH + 6
+        }
+        if (photo) {
+          paintHatchPhoto(g, x + 10f, ty.toFloat(), (bw - 20).toFloat(), photoH.toFloat())
+          ty += photoH + 6
+        }
+        if (wrapped.isNotEmpty()) {
+          g.font = if (draft) font.deriveFont(Font.ITALIC, 16f) else font.deriveFont(16f)
+          g.color = when {
+            draft -> Dim
+            line.fromYou -> Mark
+            else -> Fg
+          }
+          for (w in wrapped) {
+            g.drawString(w, x + 14, ty + g.fontMetrics.ascent)
+            ty += 20
+          }
+        }
+        if (sending) {
+          if (wrapped.isNotEmpty() || photo) ty += 6
+          g.font = font.deriveFont(11f)
+          g.color = Dim
+          g.drawString("sending", x + 14, ty + g.fontMetrics.ascent)
         }
         y += bh + 10
         if (y > (if (overlayH > 0) overlayTop else composerTop) - 8) break
@@ -230,9 +260,9 @@ private fun paintHeader(g: Graphics2D, font: Font, slug: String, up: Boolean, ty
 private fun paintAvatar(g: Graphics2D, x: Float, y: Float, size: Float) {
   g.color = Track
   g.fill(Ellipse2D.Float(x, y, size, size))
-  paintIkon(
+  paintVectorDrawable(
     g,
-    Material2OutlinedMZ.SENTIMENT_SATISFIED,
+    VEC_SMILE,
     x + size / 2f,
     y + size / 2f,
     (size * 0.55f).toInt().coerceAtLeast(12),
@@ -249,8 +279,13 @@ private fun paintSettings(g: Graphics2D, font: Font, slug: String, email: String
   g.drawString("Settings", 56, 40)
   val inset = 24
   val fieldW = (PHONE_W - 48).toFloat()
-  var y = BAR_H + 16
-  y = g.outlinedField(font, "Mailbox", "https://pendant.example.com", inset, y, fieldW)
+  var y = BAR_H + 12
+  g.font = font.deriveFont(13f)
+  g.color = Muted
+  for (w in wrap(g, "You are the operator. The name in the chat bar is the crane.", PHONE_W - 48)) {
+    y = g.drawLine(w, inset, y, 13)
+  }
+  y = g.outlinedField(font, "Mailbox", "https://pendant.example.com", inset, y + 8, fieldW)
   y = g.outlinedField(font, "Talking to", slug, inset, y + 8, fieldW)
   y = g.outlinedField(font, "Phone secret", "••••••••", inset, y + 8, fieldW)
   g.font = font.deriveFont(12f)
@@ -373,11 +408,11 @@ private fun paintAttachMenu(g: Graphics2D, font: Font, top: Int) {
   var y = top + 28
   g.color = Fg
   g.drawString("Photo", x.toInt() + 44, y)
-  paintIkon(g, Material2OutlinedMZ.PHOTO, x + 24f, y - 6f, 16, Muted)
+  paintVectorDrawable(g, VEC_PHOTO, x + 24f, y - 6f, 16, Muted)
   y += 40
   g.color = Fg
   g.drawString("Commands", x.toInt() + 44, y)
-  paintIkon(g, Material2OutlinedAL.CODE, x + 24f, y - 6f, 16, Muted)
+  paintVectorDrawable(g, VEC_CODE, x + 24f, y - 6f, 16, Muted)
   y += 40
   g.color = Fg
   g.drawString("Location", x.toInt() + 44, y)
@@ -389,7 +424,7 @@ private fun paintAttachMenu(g: Graphics2D, font: Font, top: Int) {
   y += 40
   g.color = Fg
   g.drawString("Drop a pin", x.toInt() + 44, y)
-  paintIkon(g, Material2OutlinedAL.ADD_LOCATION_ALT, x + 24f, y - 6f, 16, Muted)
+  paintVectorDrawable(g, VEC_PIN, x + 24f, y - 6f, 16, Muted)
 }
 
 private fun paintComposer(g: Graphics2D, font: Font, composerTop: Int, slug: String, emojiOpen: Boolean) {
@@ -402,12 +437,12 @@ private fun paintComposer(g: Graphics2D, font: Font, composerTop: Int, slug: Str
   g.color = Track
   g.fill(RoundRectangle2D.Float(fieldX, (composerTop + 12).toFloat(), fieldW, 48f, 28f, 28f))
   val iconY = composerTop + 36f
-  paintIkon(g, Material2OutlinedAL.ATTACH_FILE, fieldX + 22f, iconY, 18, Muted)
+  paintVectorDrawable(g, VEC_ATTACH, fieldX + 22f, iconY, 18, Muted)
   g.color = Live
   g.fill(Ellipse2D.Float(fieldX + 28f, composerTop + 16f, 8f, 8f))
-  paintIkon(
+  paintVectorDrawable(
     g,
-    Material2OutlinedMZ.SENTIMENT_SATISFIED,
+    VEC_SMILE,
     fieldX + fieldW - 22f,
     iconY,
     18,
@@ -422,6 +457,31 @@ private fun paintComposer(g: Graphics2D, font: Font, composerTop: Int, slug: Str
   g.fill(Ellipse2D.Float(sendX.toFloat(), (composerTop + 12).toFloat(), send.toFloat(), send.toFloat()))
   g.composite = saved
   paintIkon(g, Material2OutlinedMZ.SEND, sendX + send / 2f, composerTop + 36f, 20, Canvas)
+}
+
+private fun paintHatchPhoto(g: Graphics2D, x: Float, y: Float, w: Float, h: Float) {
+  val clip = g.clip
+  g.clip = RoundRectangle2D.Float(x, y, w, h, 12f, 12f)
+  val hatch = sampleHatch()
+  if (hatch != null) {
+    g.drawImage(hatch, x.toInt(), y.toInt(), w.toInt(), h.toInt(), null)
+  } else {
+    g.color = You
+    g.fill(RoundRectangle2D.Float(x, y, w, h, 12f, 12f))
+    g.color = Mark
+    g.fillRect(x.toInt(), (y + h * 0.42f).toInt(), w.toInt(), 14)
+  }
+  g.clip = clip
+}
+
+private fun sampleHatch(): BufferedImage? {
+  val file = listOf(
+    File("src/main/res/drawable-nodpi/sample_hatch.jpg"),
+    File("app/src/main/res/drawable-nodpi/sample_hatch.jpg"),
+    File("src/main/res/drawable/sample_hatch.jpg"),
+    File("app/src/main/res/drawable/sample_hatch.jpg"),
+  ).firstOrNull { it.isFile } ?: return null
+  return ImageIO.read(file)
 }
 
 private fun Graphics2D.drawLine(text: String, x: Int, y: Int, size: Int): Int {

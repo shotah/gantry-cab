@@ -21,6 +21,12 @@ Samples are canned Ada/Kit turns — not a live crane. Release builds ignore
   &nbsp;
   <img src="../assets/docs/phone-thread.png" alt="Ada talking to Kit" width="180">
   &nbsp;
+  <img src="../assets/docs/phone-stream.png" alt="Kit drafting a reply" width="180">
+</p>
+
+<p align="center">
+  <img src="../assets/docs/phone-photo.png" alt="Photo bubble" width="180">
+  &nbsp;
   <img src="../assets/docs/phone-down.png" alt="Socket down" width="180">
 </p>
 
@@ -48,7 +54,9 @@ Voice is Auto's host STT, not Assistant.
 | `phone-unsigned` | `unsigned` | Google door. Avatar + cog. |
 | `phone-empty` | `empty` | Live, nothing said yet. |
 | `phone-thread` | `thread` | Ada ↔ Kit. |
-| `phone-down` | `down` | Socket down. |
+| `phone-stream` | `stream` | Draft bubble + `Live · typing…`. |
+| `phone-photo` | `photo` | Hatch photo in a you-bubble. |
+| `phone-down` | `down` | Socket down; local echo still `sending`. |
 | `phone-settings` | `empty` | Settings screen: origin, slug, theme, font size. |
 | `phone-emoji` | `thread` | Emoji picker over compose. |
 | `phone-attach` | `thread` | Paperclip menu: photo, commands, GPS, pin. |

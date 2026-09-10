@@ -54,7 +54,7 @@ fun sampleScene(id: String): SampleScene? {
       up = false,
       hint = "socket down — reconnecting",
       lines = listOf(
-        line("d1", true, "On the dock — is the gate still open?"),
+        line("d1", true, "On the dock — is the gate still open?", pending = true),
       ),
     )
     "stream" -> SampleScene(
@@ -68,7 +68,7 @@ fun sampleScene(id: String): SampleScene? {
         ChatLine(
           DRAFT_ID,
           false,
-          "⏳ Gate's on the latch until 21:00. I'll ping you at…",
+          "Gate's on the latch until 21:00. I'll ping you at…",
           "draft",
         ),
       ),
@@ -98,9 +98,14 @@ fun sampleScene(id: String): SampleScene? {
   }
 }
 
-private fun line(id: String, fromYou: Boolean, text: String, kind: String? = null, photo: String? = null) =
-  ChatLine(id = id, fromYou = fromYou, text = text, kind = kind, photo = photo)
+private fun line(
+  id: String,
+  fromYou: Boolean,
+  text: String,
+  kind: String? = null,
+  photo: String? = null,
+  pending: Boolean = false,
+) = ChatLine(id = id, fromYou = fromYou, text = text, kind = kind, photo = photo, pending = pending)
 
-/** 1×1 JPEG so the photo sample is a real chat image, not an SVG mock. */
-private const val SAMPLE_PHOTO =
-  "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQEASABIAAD/2wBDAAEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQH/wgALCAABAAEBAREA/8QAFBABAAAAAAAAAAAAAAAAAAAAAP/aAAgBAQABPxA="
+/** Hatch plate in `res/drawable/sample_hatch.jpg` — Coil loads the resource URI. */
+internal const val SAMPLE_PHOTO = "android.resource://com.gantree.cab/drawable/sample_hatch"

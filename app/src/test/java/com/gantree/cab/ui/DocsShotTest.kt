@@ -141,6 +141,45 @@ class DocsShotTest {
   }
 
   @Test
+  fun vectorDrawablesParseToShapes() {
+    for (name in listOf(VEC_ATTACH, VEC_SMILE, VEC_PHOTO, VEC_CODE, VEC_PIN)) {
+      val shapes = vectorShapes(name)
+      assertTrue(name, shapes.isNotEmpty())
+      assertTrue(name, shapes.any { it.bounds2D.width > 4 && it.bounds2D.height > 4 })
+    }
+  }
+
+  @Test
+  fun streamShotDiffersFromThread() {
+    val thread = renderPhone("thread")
+    val stream = renderPhone("stream")
+    var diffs = 0
+    var y = 0
+    while (y < PHONE_H) {
+      var x = 0
+      while (x < PHONE_W) {
+        if (thread.getRGB(x, y) != stream.getRGB(x, y)) diffs += 1
+        x += 4
+      }
+      y += 4
+    }
+    assertTrue(diffs > 20)
+  }
+
+  @Test
+  fun photoShotPaintsHatchTape() {
+    val img = renderDocsShot("phone-photo")
+    var tape = 0
+    for (y in 80 until 420) {
+      for (x in 40 until 370) {
+        val rgb = img.getRGB(x, y) and 0xFFFFFF
+        if (rgb == 0xF3B199 || rgb == 0xF5C542) tape += 1
+      }
+    }
+    assertTrue(tape > 40)
+  }
+
+  @Test
   fun writesNamedPngsWhenAsked() {
     if (System.getenv("CAB_WRITE_SHOTS") != "1") {
       return

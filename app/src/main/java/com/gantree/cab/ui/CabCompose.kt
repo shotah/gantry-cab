@@ -1,5 +1,6 @@
 package com.gantree.cab.ui
 
+import androidx.annotation.DrawableRes
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -22,12 +23,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Send
-import androidx.compose.material.icons.outlined.AddLocationAlt
-import androidx.compose.material.icons.outlined.AttachFile
-import androidx.compose.material.icons.outlined.Code
 import androidx.compose.material.icons.outlined.LocationOn
-import androidx.compose.material.icons.outlined.Photo
-import androidx.compose.material.icons.outlined.SentimentSatisfied
 import androidx.compose.material3.Badge
 import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.DropdownMenu
@@ -52,7 +48,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
-import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.TextRange
@@ -61,6 +57,7 @@ import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.gantree.cab.R
 import com.gantree.cab.mailbox.SlashCommand
 import com.gantree.cab.mailbox.applyEmoji
 import com.gantree.cab.mailbox.matchSlash
@@ -175,7 +172,7 @@ fun CabCompose(
                   },
                 ) {
                   Icon(
-                    Icons.Outlined.AttachFile,
+                    painterResource(R.drawable.ic_attach_file),
                     contentDescription = null,
                     modifier = Modifier.size(20.dp),
                   )
@@ -218,7 +215,7 @@ fun CabCompose(
               modifier = Modifier.size(36.dp).semantics { contentDescription = "emoji" },
             ) {
               Icon(
-                Icons.Outlined.SentimentSatisfied,
+                painterResource(R.drawable.ic_sentiment_satisfied),
                 contentDescription = null,
                 modifier = Modifier.size(20.dp),
                 tint = if (emojiOpen) scheme.primary else scheme.onSurfaceVariant,
@@ -258,13 +255,13 @@ private fun AttachMenu(
   ) {
     AttachRow(
       label = "Photo",
-      icon = Icons.Outlined.Photo,
+      icon = R.drawable.ic_photo,
       enabled = !disabled,
       onClick = onPhoto,
     )
     AttachRow(
       label = "Commands",
-      icon = Icons.Outlined.Code,
+      icon = R.drawable.ic_code,
       enabled = !disabled,
       onClick = onCommands,
       modifier = Modifier.semantics { contentDescription = "harness commands" },
@@ -293,7 +290,7 @@ private fun AttachMenu(
     }
     AttachRow(
       label = "Drop a pin",
-      icon = Icons.Outlined.AddLocationAlt,
+      icon = R.drawable.ic_add_location_alt,
       enabled = !disabled && gpsOn,
       onClick = onPin,
       modifier = Modifier.semantics { contentDescription = "drop pin" },
@@ -304,7 +301,7 @@ private fun AttachMenu(
 @Composable
 private fun AttachRow(
   label: String,
-  icon: ImageVector,
+  @DrawableRes icon: Int,
   enabled: Boolean,
   onClick: () -> Unit,
   modifier: Modifier = Modifier,
@@ -319,7 +316,7 @@ private fun AttachRow(
       .padding(horizontal = 12.dp),
   ) {
     Icon(
-      icon,
+      painterResource(icon),
       contentDescription = null,
       modifier = Modifier.size(20.dp),
       tint = if (enabled) scheme.onSurfaceVariant else scheme.onSurface.copy(alpha = 0.38f),

@@ -40,6 +40,7 @@ class SamplesTest {
     val down = sampleScene("down")!!
     assertEquals(false, down.up)
     assertEquals(1, down.lines.size)
+    assertEquals(true, down.lines.first().pending)
 
     val stream = sampleScene("stream")!!
     assertEquals(true, stream.up)
@@ -48,7 +49,7 @@ class SamplesTest {
     assertEquals("__draft__", stream.lines.last().id)
 
     val photo = sampleScene("photo")!!
-    assertEquals(true, photo.lines.first().photo!!.startsWith("data:image/jpeg"))
+    assertEquals(true, photo.lines.first().photo!!.contains("sample_hatch"))
     assertEquals("This the right hatch?", photo.lines.first().text)
   }
 }

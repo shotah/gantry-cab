@@ -7,8 +7,6 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.SentimentSatisfied
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
@@ -18,10 +16,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import com.gantree.cab.R
 import com.gantree.cab.mailbox.displaySlug
 
 @Composable
@@ -53,7 +53,7 @@ fun KitAvatar(
     } else {
       Box(modifier = mod.then(base), contentAlignment = Alignment.Center) {
         Icon(
-          Icons.Outlined.SentimentSatisfied,
+          painterResource(R.drawable.ic_sentiment_satisfied),
           contentDescription = null,
           tint = scheme.onSurfaceVariant,
           modifier = Modifier.size(size * 0.55f),

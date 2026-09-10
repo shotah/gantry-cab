@@ -54,6 +54,12 @@ private fun PreviewPhoneStream() {
   PhoneShot("stream")
 }
 
+@Preview(name = "phone-photo", widthDp = 390, heightDp = 844)
+@Composable
+private fun PreviewPhonePhoto() {
+  PhoneShot("photo")
+}
+
 @Preview(name = "auto-thread", widthDp = 1024, heightDp = 576)
 @Composable
 private fun PreviewAutoThread() {

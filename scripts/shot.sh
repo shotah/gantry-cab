@@ -7,7 +7,7 @@ cd "$root"
 CAB_WRITE_SHOTS=1 ./gradlew :app:testDebugUnitTest --tests com.gantree.cab.ui.DocsShotTest --rerun
 
 copied=0
-for name in phone-unsigned phone-empty phone-thread phone-down phone-settings phone-emoji phone-attach auto-empty auto-thread; do
+for name in phone-unsigned phone-empty phone-thread phone-stream phone-photo phone-down phone-settings phone-emoji phone-attach auto-empty auto-thread; do
   png="$root/assets/docs/${name}.png"
   if [[ ! -f "$png" ]]; then
     echo "missing $png" >&2
