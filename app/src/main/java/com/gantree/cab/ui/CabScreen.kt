@@ -73,6 +73,8 @@ fun CabScreen(
   onGoogle: () -> Unit,
   onSignOut: () -> Unit,
   onSend: (String) -> Unit,
+  authHint: String = "",
+  signingIn: Boolean = false,
   dev: Boolean = false,
   compact: Boolean = false,
   onSample: (String) -> Unit = {},
@@ -207,6 +209,8 @@ fun CabScreen(
           onConnect = onConnect,
           onGoogle = onGoogle,
           onSignOut = onSignOut,
+          authHint = authHint,
+          signingIn = signingIn,
         )
       } else if (googleDoor) {
         Column(
@@ -222,8 +226,21 @@ fun CabScreen(
             modifier = Modifier.padding(top = 16.dp),
             textAlign = TextAlign.Center,
           )
-          Button(onClick = onGoogle, modifier = Modifier.padding(top = 20.dp)) {
-            Text("Continue with Google")
+          Button(
+            onClick = onGoogle,
+            enabled = !signingIn,
+            modifier = Modifier.padding(top = 20.dp),
+          ) {
+            Text(if (signingIn) "Opening Google…" else "Continue with Google")
+          }
+          if (authHint.isNotBlank()) {
+            Text(
+              authHint,
+              style = MaterialTheme.typography.bodySmall,
+              color = scheme.primary,
+              textAlign = TextAlign.Center,
+              modifier = Modifier.padding(top = 12.dp),
+            )
           }
         }
       } else {

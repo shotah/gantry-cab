@@ -5,7 +5,7 @@ import android.util.Base64
 import androidx.credentials.CustomCredential
 import androidx.credentials.CredentialManager
 import androidx.credentials.GetCredentialRequest
-import com.google.android.libraries.identity.googleid.GetGoogleIdOption
+import com.google.android.libraries.identity.googleid.GetSignInWithGoogleOption
 import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
 import java.security.SecureRandom
 
@@ -15,9 +15,7 @@ suspend fun requestGoogleId(activity: Activity, webClientId: String): GoogleId {
   val nonceBytes = ByteArray(24)
   SecureRandom().nextBytes(nonceBytes)
   val nonce = Base64.encodeToString(nonceBytes, Base64.URL_SAFE or Base64.NO_WRAP or Base64.NO_PADDING)
-  val option = GetGoogleIdOption.Builder()
-    .setFilterByAuthorizedAccounts(false)
-    .setServerClientId(webClientId)
+  val option = GetSignInWithGoogleOption.Builder(webClientId)
     .setNonce(nonce)
     .build()
   val request = GetCredentialRequest.Builder().addCredentialOption(option).build()

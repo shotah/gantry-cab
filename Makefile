@@ -73,6 +73,7 @@ test-scripts: ## Semver + coverage-badge tests (no Android SDK)
 	./test/scripts/release.test.sh
 	./test/scripts/hooks.test.sh
 	./test/scripts/cab-bake.test.sh
+	./test/scripts/launcher-icon.test.sh
 
 .PHONY: test-app
 test-app: ensure-sdk ## JVM unit tests

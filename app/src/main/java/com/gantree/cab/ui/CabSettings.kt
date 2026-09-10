@@ -51,6 +51,8 @@ fun CabSettings(
   onConnect: () -> Unit,
   onGoogle: () -> Unit,
   onSignOut: () -> Unit,
+  authHint: String = "",
+  signingIn: Boolean = false,
 ) {
   val scheme = MaterialTheme.colorScheme
   Column(
@@ -102,9 +104,16 @@ fun CabSettings(
       singleLine = true,
     )
     if (googleReady && email.isBlank()) {
-      Button(onClick = onGoogle, modifier = Modifier.fillMaxWidth()) {
-        Text("Continue with Google")
+      Button(
+        onClick = onGoogle,
+        enabled = !signingIn,
+        modifier = Modifier.fillMaxWidth(),
+      ) {
+        Text(if (signingIn) "Opening Google…" else "Continue with Google")
       }
+    }
+    if (authHint.isNotBlank()) {
+      Text(authHint, style = MaterialTheme.typography.bodySmall, color = scheme.primary)
     }
     if (!googleReady) {
       Text(

@@ -54,6 +54,8 @@ class MainActivity : ComponentActivity() {
       val lines by vm.lines.collectAsStateWithLifecycle()
       val catalog by vm.catalog.collectAsStateWithLifecycle()
       val faceHint by vm.faceHint.collectAsStateWithLifecycle()
+      val signingIn by vm.signingIn.collectAsStateWithLifecycle()
+      val authHint by vm.authHint.collectAsStateWithLifecycle()
       CabTheme(themeId = theme, fontId = font) {
         CabScreen(
           origin = origin,
@@ -73,6 +75,8 @@ class MainActivity : ComponentActivity() {
           },
           onGoogle = { vm.signIn(this) },
           onSignOut = vm::signOut,
+          authHint = authHint,
+          signingIn = signingIn,
           onSend = { text ->
             vm.persist()
             MailboxService.sendText(this, text)

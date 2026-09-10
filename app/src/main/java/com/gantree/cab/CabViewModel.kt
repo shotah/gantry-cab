@@ -16,6 +16,7 @@ import com.gantree.cab.mailbox.CHAT_PHOTO_EDGE
 import com.gantree.cab.mailbox.IMAGE_BYTES_MAX
 import com.gantree.cab.mailbox.PhotoResult
 import com.gantree.cab.mailbox.jpegFromUri
+import com.gantree.cab.mailbox.googleSignInHint
 import com.gantree.cab.mailbox.normalizeMailboxOrigin
 import com.gantree.cab.mailbox.parseSlug
 import com.gantree.cab.mailbox.photoDataUrl
@@ -40,6 +41,8 @@ class CabViewModel(private val app: CabApp) : ViewModel() {
   private val _gps = MutableStateFlow(app.prefs.gps)
   private val _cranes = MutableStateFlow<List<String>>(emptyList())
   private val _face = MutableStateFlow<ByteArray?>(null)
+  private val _signingIn = MutableStateFlow(false)
+  private val _authHint = MutableStateFlow("")
   val origin = _origin.asStateFlow()
   val slug = _slug.asStateFlow()
   val spike = _spike.asStateFlow()
@@ -49,6 +52,8 @@ class CabViewModel(private val app: CabApp) : ViewModel() {
   val gps = _gps.asStateFlow()
   val cranes = _cranes.asStateFlow()
   val face = _face.asStateFlow()
+  val signingIn = _signingIn.asStateFlow()
+  val authHint = _authHint.asStateFlow()
   val up = app.mouth.up.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), false)
   val hint = app.mouth.hint.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), "")
   val lines = app.mouth.lines.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
@@ -165,11 +170,16 @@ class CabViewModel(private val app: CabApp) : ViewModel() {
   fun signIn(activity: Activity) {
     val web = BuildConfig.GOOGLE_WEB_CLIENT_ID
     if (web.isBlank()) {
-      app.mouth.setHint("rebuild with CAB_GOOGLE_WEB_CLIENT_ID")
+      _authHint.value = "rebuild with CAB_GOOGLE_WEB_CLIENT_ID"
+      return
+    }
+    if (_signingIn.value) {
       return
     }
     persist()
     viewModelScope.launch {
+      _signingIn.value = true
+      _authHint.value = "Opening Google…"
       try {
         val google = requestGoogleId(activity, web)
         val session = withContext(Dispatchers.IO) {
@@ -184,12 +194,15 @@ class CabViewModel(private val app: CabApp) : ViewModel() {
           _slug.value = me.cranes.first()
           app.prefs.slug = me.cranes.first()
         }
+        _authHint.value = "Signed in as ${session.email ?: session.sub}"
         app.mouth.setHint("signed in as ${session.email ?: session.sub}")
         MailboxService.start(activity)
       } catch (e: AuthException) {
-        app.mouth.setHint("auth ${e.code}")
+        _authHint.value = "Mailbox auth ${e.code}"
       } catch (e: Exception) {
-        app.mouth.setHint(e.message ?: "google failed")
+        _authHint.value = googleSignInHint(e.javaClass.name, e.message)
+      } finally {
+        _signingIn.value = false
       }
     }
   }
