@@ -11,23 +11,23 @@ class CabPrefs(ctx: Context) {
 
   var origin: String
     get() = p.getString(ORIGIN, null)?.takeIf { it.isNotBlank() } ?: BuildConfig.MAILBOX_ORIGIN
-    set(value) { p.edit().putString(ORIGIN, value.trim()).apply() }
+    set(value) { write(ORIGIN, value.trim()) }
 
   var slug: String
     get() = p.getString(SLUG, "kit") ?: "kit"
-    set(value) { p.edit().putString(SLUG, value.trim().lowercase()).apply() }
+    set(value) { write(SLUG, value.trim().lowercase()) }
 
   var spike: String
     get() = p.getString(SPIKE, "") ?: ""
-    set(value) { p.edit().putString(SPIKE, value).apply() }
+    set(value) { write(SPIKE, value) }
 
   var session: String
     get() = p.getString(SESSION, "") ?: ""
-    set(value) { p.edit().putString(SESSION, value).apply() }
+    set(value) { write(SESSION, value) }
 
   var email: String
     get() = p.getString(EMAIL, "") ?: ""
-    set(value) { p.edit().putString(EMAIL, value).apply() }
+    set(value) { write(EMAIL, value) }
 
   var gps: Boolean
     get() = p.getString(GPS, "on") != "off"
@@ -48,7 +48,12 @@ class CabPrefs(ctx: Context) {
     get() = bearer.isNotBlank()
 
   fun signOut() {
-    p.edit().remove(SESSION).remove(EMAIL).apply()
+    p.edit().remove(SESSION).remove(EMAIL).commit()
+  }
+
+  /** Synchronously — MailboxService reads these on the next start. */
+  private fun write(key: String, value: String) {
+    p.edit().putString(key, value).commit()
   }
 
   companion object {

@@ -17,6 +17,7 @@ import com.gantree.cab.mailbox.IMAGE_BYTES_MAX
 import com.gantree.cab.mailbox.PhotoResult
 import com.gantree.cab.mailbox.jpegFromUri
 import com.gantree.cab.mailbox.googleSignInHint
+import com.gantree.cab.mailbox.mailboxSignedInHint
 import com.gantree.cab.mailbox.normalizeMailboxOrigin
 import com.gantree.cab.mailbox.parseSlug
 import com.gantree.cab.mailbox.photoDataUrl
@@ -124,6 +125,7 @@ class CabViewModel(private val app: CabApp) : ViewModel() {
     _email.value = ""
     _cranes.value = emptyList()
     app.mouth.setHint("signed out")
+    MailboxService.stop(app)
   }
 
   fun sendPhoto(ctx: Context, uri: Uri) {
@@ -194,13 +196,13 @@ class CabViewModel(private val app: CabApp) : ViewModel() {
           _slug.value = me.cranes.first()
           app.prefs.slug = me.cranes.first()
         }
-        _authHint.value = "Signed in as ${session.email ?: session.sub}"
-        app.mouth.setHint("signed in as ${session.email ?: session.sub}")
+        _authHint.value = mailboxSignedInHint(session.email.orEmpty(), me.cranes)
+        app.mouth.setHint(mailboxSignedInHint(session.email.orEmpty(), me.cranes))
         MailboxService.start(activity)
       } catch (e: AuthException) {
-        _authHint.value = "Mailbox auth ${e.code}"
+        _authHint.value = "Mailbox auth ${e.code}\n${e.body.take(400)}"
       } catch (e: Exception) {
-        _authHint.value = googleSignInHint(e.javaClass.name, e.message)
+        _authHint.value = googleSignInHint(e)
       } finally {
         _signingIn.value = false
       }

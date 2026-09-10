@@ -15,6 +15,8 @@ import com.gantree.cab.mailbox.MailboxClient
 import com.gantree.cab.mailbox.PhoneContext
 import com.gantree.cab.mailbox.applyEmoji
 import com.gantree.cab.mailbox.geoHint
+import com.gantree.cab.mailbox.mailboxConnectError
+import com.gantree.cab.mailbox.mailboxSocketHint
 import com.gantree.cab.mailbox.parseSlug
 import com.gantree.cab.mailbox.pinFrame
 import com.gantree.cab.outbound
@@ -38,7 +40,12 @@ class MailboxService : LifecycleService() {
     } else {
       startForeground(CabNotifier.CONNECTED_ID, CabNotifier.connected(this))
     }
+  }
+
+  override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+    super.onStartCommand(intent, flags, startId)
     connect()
+    return START_STICKY
   }
 
   override fun onDestroy() {
@@ -52,11 +59,18 @@ class MailboxService : LifecycleService() {
 
   private fun connect() {
     val app = application as CabApp
-    val slug = parseSlug(app.prefs.slug) ?: return
+    client?.stop()
+    client = null
+    val slugRaw = app.prefs.slug
     val bearer = app.prefs.bearer
-    if (bearer.isBlank()) {
+    val blocked = mailboxConnectError(slugRaw, bearer)
+    if (blocked != null) {
+      app.mouth.setUp(false)
+      app.mouth.setHint(blocked)
       return
     }
+    val slug = parseSlug(slugRaw) ?: return
+    app.mouth.setHint("Connecting to mailbox…")
     val mailbox = MailboxClient(
       onFrame = { frame ->
         app.mouth.ingest(frame)
@@ -65,7 +79,15 @@ class MailboxService : LifecycleService() {
           CabNotifier.kitMessage(this, slug, text)
         }
       },
-      onState = { up -> app.mouth.setUp(up) },
+      onState = { up ->
+        app.mouth.setUp(up)
+        if (up) {
+          app.mouth.setHint("")
+        }
+      },
+      onError = { err, res ->
+        app.mouth.setHint(mailboxSocketHint(res?.code, err.message))
+      },
     )
     client = mailbox
     mailbox.start(app.prefs.origin, slug, bearer)
@@ -151,6 +173,10 @@ class MailboxService : LifecycleService() {
     fun start(ctx: Context) {
       val i = Intent(ctx, MailboxService::class.java)
       ctx.startForegroundService(i)
+    }
+
+    fun stop(ctx: Context) {
+      ctx.stopService(Intent(ctx, MailboxService::class.java))
     }
 
     fun sendText(ctx: Context, text: String) {

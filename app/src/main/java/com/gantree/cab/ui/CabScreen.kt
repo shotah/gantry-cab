@@ -177,8 +177,8 @@ fun CabScreen(
     bottomBar = {
       if (!googleDoor && !showSettings) {
         CabCompose(
-          disabled = !up,
-          placeholder = "Message $title",
+          disabled = false,
+          placeholder = if (up) "Message $title" else "Waiting for mailbox…",
           gpsOn = gpsOn,
           catalog = catalog,
           onSend = onSend,
@@ -237,7 +237,11 @@ fun CabScreen(
             Text(
               authHint,
               style = MaterialTheme.typography.bodySmall,
-              color = scheme.primary,
+              color = if (authHint.startsWith("Opening") || authHint.startsWith("Signed")) {
+                scheme.primary
+              } else {
+                scheme.error
+              },
               textAlign = TextAlign.Center,
               modifier = Modifier.padding(top = 12.dp),
             )
@@ -290,6 +294,8 @@ fun CabScreen(
                   Text(
                     if (up) {
                       "No messages yet. Say hello, or type / for commands."
+                    } else if (email.isNotBlank() || spike.isNotBlank()) {
+                      "Connecting to the mailbox…"
                     } else {
                       "Open Settings to connect. You are the operator; the name in the bar is the crane."
                     },

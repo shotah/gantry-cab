@@ -56,6 +56,20 @@ jobs:
           cp "$src" "dist/gantry-cab-${name}.apk"
           echo "APK=dist/gantry-cab-${name}.apk" >> "$GITHUB_ENV"
 
+      - name: Signing cert SHA-1
+        run: |
+          set -euo pipefail
+          name="$(basename "$APK" .apk)"
+          sha_file="dist/${name}-sha1.txt"
+          ./scripts/apk-sha1.sh "$APK" "$sha_file"
+          if [[ -n "${CAB_STORE_FILE:-}" ]]; then
+            kind=stable
+          else
+            kind=ephemeral
+          fi
+          ./scripts/apk-sha1.sh --notes "$(cat "$sha_file")" "$kind" > dist/release-notes-sha1.md
+          echo "SHA1_FILE=$sha_file" >> "$GITHUB_ENV"
+
       - name: Create GitHub Release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -67,12 +81,21 @@ jobs:
           else
             extra+=(--latest)
           fi
+          notes="$(mktemp)"
+          {
+            cat dist/release-notes-sha1.md
+            echo
+            gh api "repos/${GITHUB_REPOSITORY}/releases/generate-notes" \
+              -f tag_name="$GITHUB_REF_NAME" \
+              --jq .body || true
+          } > "$notes"
           if gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1; then
-            echo "Release $GITHUB_REF_NAME already exists — uploading APK"
-            gh release upload "$GITHUB_REF_NAME" "$APK" --clobber
+            echo "Release $GITHUB_REF_NAME already exists — uploading APK + SHA-1"
+            gh release upload "$GITHUB_REF_NAME" "$APK" "$SHA1_FILE" --clobber
+            gh release edit "$GITHUB_REF_NAME" --notes-file "$notes"
             exit 0
           fi
-          gh release create "$GITHUB_REF_NAME" "$APK" --generate-notes "${extra[@]}"
+          gh release create "$GITHUB_REF_NAME" "$APK" "$SHA1_FILE" --notes-file "$notes" "${extra[@]}"
 
       - name: Point latest git tag at this release
         # Keep a floating `latest` tag on the same commit as the version tag (v*).

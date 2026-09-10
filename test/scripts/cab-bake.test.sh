@@ -43,4 +43,25 @@ then
   exit 1
 fi
 
+grep -q ':app:signingReport' "$root/Makefile" || {
+  echo "FAIL: Makefile should run :app:signingReport" >&2
+  exit 1
+}
+grep -q 'apk-cert' "$root/Makefile" || {
+  echo "FAIL: Makefile should have apk-cert" >&2
+  exit 1
+}
+grep -q 'apk-sha1.sh' "$root/.github/workflows/release.yml" || {
+  echo "FAIL: release.yml should publish the signing-cert SHA-1" >&2
+  exit 1
+}
+grep -q 'apksigner' "$root/scripts/apk-sha1.sh" || {
+  echo "FAIL: apk-sha1.sh should use apksigner (v2/v3 APKs)" >&2
+  exit 1
+}
+grep -q 'sha1.txt' "$root/.github/workflows/release.yml" || {
+  echo "FAIL: release.yml should attach a sha1.txt asset" >&2
+  exit 1
+}
+
 echo "ok cab-bake"

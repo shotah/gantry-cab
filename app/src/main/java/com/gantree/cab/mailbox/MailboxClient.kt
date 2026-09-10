@@ -12,6 +12,7 @@ import java.util.concurrent.atomic.AtomicReference
 class MailboxClient(
   private val onFrame: (WireFrame) -> Unit,
   private val onState: (Boolean) -> Unit,
+  private val onError: (Throwable, Response?) -> Unit = { _, _ -> },
   private val client: OkHttpClient = OkHttpClient.Builder()
     .pingInterval(20, TimeUnit.SECONDS)
     .connectTimeout(15, TimeUnit.SECONDS)
@@ -97,6 +98,7 @@ class MailboxClient(
       }
 
       override fun onFailure(webSocket: WebSocket, t: Throwable, response: Response?) {
+        onError(t, response)
         onState(false)
         retry(origin, slug, bearer)
       }

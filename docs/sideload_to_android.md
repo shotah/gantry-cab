@@ -64,8 +64,16 @@ Tap **Listen**. Stay on the screen until the socket comes up. Type
 on the phone; Kit's replies show in the thread and as a heads-up
 notification.
 
-The GitHub APK only has Google Sign-In if the release job was given
-`CAB_GOOGLE_WEB_CLIENT_ID`. Otherwise the phone secret is the way in.
+The GitHub APK only has the Google **button** if the release job was
+given `CAB_GOOGLE_WEB_CLIENT_ID` (pendant’s **Web** client id — copying
+that is correct). Play Services still needs a **separate Android**
+OAuth client in the same GCP project: package `com.gantree.cab`, SHA-1
+of this APK, **no** redirect URI. Copy the SHA-1 from that
+release’s notes (or the `-sha1.txt` asset) — not the SHA-256 next
+to the APK. Cab posts the token to the mailbox
+`/api/auth/token`; Google is not told a Cab callback. Details:
+[setup.md](setup.md#google-production-worker). Otherwise the phone
+secret is the way in.
 
 A leftover origin of `http://10.0.2.2:3000` is the emulator default.
 On a real phone that address is not the mailbox — replace it with the
@@ -97,7 +105,8 @@ work.
 | What happened | What to try |
 | --- | --- |
 | Install blocked | Allow unknown apps on Chrome / Files, then reopen the `.apk`. |
-| Socket never comes up | Origin must be `https://` and reachable on the phone's network. Recheck the secret and agent name. |
+| Continue with Google opens then “cancelled” | Need a **new Android** OAuth client (package `com.gantree.cab` + this APK’s cert SHA-1 from the GitHub Release notes). GitHub’s SHA-256 next to the APK is the file hash, not that fingerprint. See [setup.md](setup.md#google-production-worker). |
+| Continue with Google works, but Offline and Message is dead | Google is identity. Live is the mailbox socket. Sideload a build that reconnects after sign-in (0.1.5 could start the service before the session was saved). If the hint says HTTP 403, you’re not on that crane’s room list. |
 | `http://` origin | This release APK blocks plain HTTP. Use the https Worker URL. |
 | Cab missing in Android Auto | Unknown sources off, or notifications off. |
 | Update over an older Cab fails | Uninstall Cab, then install the new APK. |

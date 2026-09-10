@@ -14,6 +14,7 @@ import org.junit.Test
 import java.util.concurrent.CopyOnWriteArrayList
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.atomic.AtomicReference
 
 class MailboxClientTest {
@@ -121,6 +122,28 @@ class MailboxClientTest {
       assertTrue(pong.await(5, TimeUnit.SECONDS))
       assertTrue(gotCmds.await(5, TimeUnit.SECONDS))
       assertEquals("cmds", frames.single().kind)
+    } finally {
+      client.stop()
+    }
+  }
+
+  @Test
+  fun httpRefusalSurfacesOnError() {
+    val err = CountDownLatch(1)
+    val code = AtomicInteger(0)
+    server.enqueue(MockResponse().setResponseCode(403))
+    val client = MailboxClient(
+      onFrame = {},
+      onState = {},
+      onError = { _, res ->
+        code.set(res?.code ?: -1)
+        err.countDown()
+      },
+    )
+    client.start(server.url("/").toString(), "kit", "tok")
+    try {
+      assertTrue(err.await(5, TimeUnit.SECONDS))
+      assertEquals(403, code.get())
     } finally {
       client.stop()
     }

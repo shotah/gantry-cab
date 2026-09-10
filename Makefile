@@ -17,6 +17,8 @@ help: ## Show available targets
 	@echo "  make build          Debug APK (assembleDebug)"
 	@echo "  make shot           Phone + Auto PNGs → assets/docs"
 	@echo "  make apk            Sideload APK (assembleRelease)"
+	@echo "  make signing-report This machine's signing cert SHA-1 (Google Android OAuth)"
+	@echo "  make apk-cert       Cert SHA-1 of an APK file (APK=path)"
 	@echo "  make test           Script tests + JVM unit tests"
 	@echo "  make test-scripts   Semver + badge + release + hooks (no Android SDK)"
 	@echo "  make test-app       ./gradlew testDebugUnitTest"
@@ -31,6 +33,7 @@ help: ## Show available targets
 	@echo
 	@echo "SDK: Android Studio writes sdk.dir in local.properties, or set ANDROID_HOME."
 	@echo "Release: make release BUMP=patch|minor|major   or   make release TAG=v0.2.0"
+	@echo "GitHub Release notes include the signing-cert SHA-1 (not the APK file SHA-256)."
 	@echo
 
 .PHONY: all
@@ -66,6 +69,17 @@ apk: ensure-sdk ## Build a sideload APK (release build, debug-signed unless a Pl
 	$(GRADLE) assembleRelease
 	@echo built app/build/outputs/apk/release/
 
+.PHONY: signing-report
+signing-report: ensure-sdk ## Print this machine's signing cert SHA-1 (not the GitHub release SHA-256)
+	$(GRADLE) :app:signingReport
+
+.PHONY: apk-cert
+apk-cert: ## Print the signing-cert SHA-1 of APK=path (Google Android OAuth; uses apksigner)
+	@test -n "$(APK)" || (echo "usage: make apk-cert APK=path/to/gantry-cab.apk" >&2; exit 1)
+	@test -f "$(APK)" || (echo "missing $(APK)" >&2; exit 1)
+	@echo "Google Android OAuth SHA-1:"
+	./scripts/apk-sha1.sh "$(APK)"
+
 .PHONY: test-scripts
 test-scripts: ## Semver + coverage-badge tests (no Android SDK)
 	./test/scripts/semver.test.sh
@@ -73,6 +87,7 @@ test-scripts: ## Semver + coverage-badge tests (no Android SDK)
 	./test/scripts/release.test.sh
 	./test/scripts/hooks.test.sh
 	./test/scripts/cab-bake.test.sh
+	./test/scripts/apk-sha1.test.sh
 	./test/scripts/launcher-icon.test.sh
 
 .PHONY: test-app

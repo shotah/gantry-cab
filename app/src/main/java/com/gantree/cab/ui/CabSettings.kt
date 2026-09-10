@@ -113,7 +113,15 @@ fun CabSettings(
       }
     }
     if (authHint.isNotBlank()) {
-      Text(authHint, style = MaterialTheme.typography.bodySmall, color = scheme.primary)
+      Text(
+        authHint,
+        style = MaterialTheme.typography.bodySmall,
+        color = if (authHint.startsWith("Opening") || authHint.startsWith("Signed")) {
+          scheme.primary
+        } else {
+          scheme.error
+        },
+      )
     }
     if (!googleReady) {
       Text(

@@ -48,8 +48,10 @@ Phone + Auto install: [docs/sideload_to_android.md](docs/sideload_to_android.md)
 | `GET /ws/<slug>?role=phone` | WebSocket. Header is the JWE (Google) or the spike secret |
 
 Spike walk: emulator → `http://10.0.2.2:3000`, paste the mailbox
-secret. Production: Android OAuth client (this package + SHA-1) plus
-the **same Web client id** pendant already uses (`setServerClientId`).
+secret. Production: copy pendant’s **Web** client id into
+`CAB_GOOGLE_WEB_CLIENT_ID`, and create a **new Android** OAuth client
+(package `com.gantree.cab` + SHA-1, no redirect URI). Cab POSTs the
+token to `/api/auth/token` — Google is not given a Cab callback.
 
 ## Hello
 
@@ -83,12 +85,15 @@ In cab: origin `http://10.0.2.2:3000`, slug `kit`, spike secret from
 a real head unit with Android Auto → Developer settings → Unknown
 sources.
 
-Google Sign-In needs `CAB_GOOGLE_WEB_CLIENT_ID` in a gitignored `.env`
-(or `cab.googleWebClientId` in `local.properties`): pendant's Web
-application client id, plus an **Android** OAuth client on that same
-GCP project: package `com.gantree.cab`, debug SHA-1 from Android
-Studio's signing report. GitHub Release bakes the same values from
-Actions secrets. The public tree only has fake example hosts.
+Google Sign-In needs **two** OAuth clients in pendant’s GCP project:
+the existing **Web** client id in `CAB_GOOGLE_WEB_CLIENT_ID` (copied
+from pendant — that is the token `aud`), and a **new Android** client
+(`com.gantree.cab` + this APK’s SHA-1 from the GitHub Release notes).
+The Android client has **no** redirect URI. Cab never opens Chrome;
+it POSTs the ID token to the mailbox `/api/auth/token`. Walk:
+[docs/setup.md](docs/setup.md#google-production-worker). GitHub
+Release bakes the Web id from Actions secrets. The public tree only
+has fake example hosts.
 
 ## Auto
 
