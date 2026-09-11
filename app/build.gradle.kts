@@ -150,7 +150,7 @@ dependencies {
   implementation("io.coil-kt.coil3:coil-compose:3.3.0")
   implementation("io.coil-kt.coil3:coil-network-okhttp:3.3.0")
   testImplementation("junit:junit:4.13.2")
-  testImplementation("org.json:json:20240303")
+  testImplementation("org.json:json:20260814")
   testImplementation("com.squareup.okhttp3:mockwebserver:4.12.0")
   testImplementation("org.robolectric:robolectric:4.16.1")
   testImplementation("androidx.test:core:1.7.0")
