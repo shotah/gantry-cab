@@ -53,6 +53,7 @@ class MainActivity : ComponentActivity() {
       val email by vm.email.collectAsStateWithLifecycle()
       val theme by vm.theme.collectAsStateWithLifecycle()
       val font by vm.font.collectAsStateWithLifecycle()
+      val photoSize by vm.photoSize.collectAsStateWithLifecycle()
       val gps by vm.gps.collectAsStateWithLifecycle()
       val cranes by vm.cranes.collectAsStateWithLifecycle()
       val face by vm.face.collectAsStateWithLifecycle()
@@ -120,6 +121,8 @@ class MainActivity : ComponentActivity() {
           typingUntil = typingUntil,
           sub = sub,
           onCarTest = { carTest(slug) },
+          photoSizeId = photoSize,
+          onPhotoSize = vm::setPhotoSize,
         )
       }
     }

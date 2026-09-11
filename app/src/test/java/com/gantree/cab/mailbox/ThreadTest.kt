@@ -40,6 +40,16 @@ class ThreadTest {
   }
 
   @Test
+  fun onlyQueuedTurnsMoveTheCursor() {
+    assertEquals(true, movesCursor("reply"))
+    assertEquals(true, movesCursor("inbound"))
+    assertEquals(true, movesCursor("push"))
+    assertEquals(true, movesCursor(null))
+    assertEquals(false, movesCursor("ack"))
+    assertEquals(false, movesCursor("error"))
+  }
+
+  @Test
   fun ackSinceUsesTheHighestSeqNotLastArrival() {
     var cur = advanceCursor(ThreadCursor(seq = 0), id = "b", seq = 2)
     cur = advanceCursor(cur, id = "a", seq = 1)

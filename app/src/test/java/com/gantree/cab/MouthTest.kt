@@ -2,6 +2,8 @@ package com.gantree.cab
 
 import com.gantree.cab.mailbox.SlashCommand
 import com.gantree.cab.mailbox.WireFrame
+import com.gantree.cab.mailbox.movesCursor
+import com.gantree.cab.mailbox.parseFrame
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -44,6 +46,62 @@ class MouthTest {
     mouth.ingest(WireFrame(kind = "error", text = "bad frame"))
     assertTrue(mouth.lines.value.isEmpty())
     assertEquals("bad frame", mouth.hint.value)
+  }
+
+  @Test
+  fun mailboxErrorMarksTheRefusedBubbleById() {
+    val mouth = Mouth()
+    mouth.add(ChatLine("a1", true, "hatch?", "inbound", pending = true))
+    mouth.add(ChatLine("a2", true, "photo", "inbound", photo = "data:image/jpeg;base64,aa", pending = true))
+    mouth.ingest(WireFrame(kind = "typing"))
+    assertEquals(false, mouth.ingest(WireFrame(kind = "error", text = "too large", id = "a2")))
+    val (first, second) = mouth.lines.value
+    assertTrue(first.pending)
+    assertEquals(null, first.failed)
+    assertFalse(second.pending)
+    assertEquals("Not sent — too big for the room.", second.failed)
+    assertEquals(2, mouth.lines.value.size)
+    assertEquals("", mouth.hint.value)
+    assertEquals(0L, mouth.typingUntil.value)
+  }
+
+  @Test
+  fun mailboxErrorWithoutAnIdFallsBackToYourNewestPendingBubble() {
+    val mouth = Mouth()
+    mouth.add(ChatLine("a1", true, "one", "inbound", pending = true))
+    mouth.add(ChatLine("a2", true, "two", "inbound", pending = true))
+    mouth.add(ChatLine("k1", false, "kit", "reply"))
+    mouth.ingest(WireFrame(kind = "error", text = "rate"))
+    assertEquals(listOf(true, false, false), mouth.lines.value.map { it.pending })
+    assertEquals(
+      listOf(null, "Not sent — too much too fast. Wait a minute, then try again.", null),
+      mouth.lines.value.map { it.failed },
+    )
+    assertEquals("", mouth.hint.value)
+  }
+
+  @Test
+  fun workerRefusalPayloadLandsOnTheRefusedPhotoBubble() {
+    // Same bytes pendant's `encodeError` puts on the wire (test/mailbox/frame.test.ts).
+    val mouth = Mouth()
+    mouth.add(ChatLine("msg-1", true, "", "inbound", photo = "data:image/jpeg;base64,aa", pending = true))
+    val frame = parseFrame("""{"kind":"error","text":"too large","id":"msg-1"}""")!!
+    assertFalse(mouth.ingest(frame))
+    val line = mouth.lines.value.single()
+    assertEquals("Not sent — too big for the room.", line.failed)
+    assertFalse(line.pending)
+    assertEquals(true, line.fromYou)
+    assertFalse(movesCursor(frame.kind))
+  }
+
+  @Test
+  fun mailboxErrorNeverMarksACraneBubble() {
+    val mouth = Mouth()
+    mouth.add(ChatLine("k1", false, "kit", "reply"))
+    mouth.ingest(WireFrame(kind = "error", text = "rate", id = "k1"))
+    assertEquals(null, mouth.lines.value.single().failed)
+    assertEquals("rate", mouth.hint.value)
+    assertFalse(mouth.fail("nope", "why"))
   }
 
   @Test

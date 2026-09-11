@@ -8,6 +8,11 @@ import java.io.ByteArrayOutputStream
 import kotlin.math.max
 import kotlin.math.roundToInt
 
+/**
+ * Read [uri] as a JPEG no larger than [maxBytes]. Draws at [edge] and walks
+ * the pendant ladder ([shrinkSteps]) until one encode fits; only the floor
+ * step failing throws `image too large`, same message as `jpegFromFile`.
+ */
 fun jpegFromUri(
   resolver: ContentResolver,
   uri: Uri,
@@ -33,19 +38,26 @@ fun jpegFromUri(
   val sample = decodeSample(width, height, edge)
   val opts = BitmapFactory.Options().apply { inSampleSize = sample }
   val bmp = BitmapFactory.decodeByteArray(raw, 0, raw.size, opts) ?: error("could not read that image")
-  val scale = minOf(1f, edge.toFloat() / max(bmp.width, bmp.height).toFloat())
+  val steps = shrinkSteps(edge, max(bmp.width, bmp.height))
+  return shrinkToFit(steps, maxBytes) { step -> encodeJpeg(bmp, step) } ?: error("image too large")
+}
+
+private fun encodeJpeg(bmp: Bitmap, step: JpegStep): ByteArray {
+  val scale = minOf(1f, step.edge.toFloat() / max(bmp.width, bmp.height).toFloat())
   val dw = max(1, (bmp.width * scale).roundToInt())
   val dh = max(1, (bmp.height * scale).roundToInt())
   val scaled = if (dw == bmp.width && dh == bmp.height) bmp else Bitmap.createScaledBitmap(bmp, dw, dh, true)
   val out = ByteArrayOutputStream()
-  if (!scaled.compress(Bitmap.CompressFormat.JPEG, 90, out)) {
-    error("could not encode jpeg")
+  try {
+    if (!scaled.compress(Bitmap.CompressFormat.JPEG, step.quality, out)) {
+      error("could not encode jpeg")
+    }
+  } finally {
+    if (scaled !== bmp) {
+      scaled.recycle()
+    }
   }
-  val bytes = out.toByteArray()
-  if (bytes.size > maxBytes) {
-    error("image too large")
-  }
-  return bytes
+  return out.toByteArray()
 }
 
 private fun decodeSample(width: Int, height: Int, edge: Int): Int {

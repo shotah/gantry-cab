@@ -88,7 +88,7 @@ class MailboxClient(
         }
         val frame = parseFrame(text) ?: return
         val id = frame.id
-        if (id != null && frame.kind != "ack") {
+        if (id != null && movesCursor(frame.kind)) {
           synchronized(seen) { noteLocked(id, frame.seq) }
         }
         onFrame(frame)

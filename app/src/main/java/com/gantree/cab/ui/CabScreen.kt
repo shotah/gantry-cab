@@ -52,6 +52,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.gantree.cab.ChatLine
 import com.gantree.cab.dev.SAMPLE_IDS
+import com.gantree.cab.mailbox.DEFAULT_PHOTO_SIZE
 import com.gantree.cab.mailbox.SlashCommand
 import com.gantree.cab.mailbox.displaySlug
 import coil3.compose.AsyncImage
@@ -97,6 +98,8 @@ fun CabScreen(
   typingUntil: Long = 0L,
   sub: String = "",
   onCarTest: () -> Unit = {},
+  photoSizeId: String = DEFAULT_PHOTO_SIZE,
+  onPhotoSize: (String) -> Unit = {},
 ) {
   val scheme = MaterialTheme.colorScheme
   var settingsOpen by remember { mutableStateOf(false) }
@@ -253,6 +256,8 @@ fun CabScreen(
           authHint = authHint,
           signingIn = signingIn,
           onCarTest = onCarTest,
+          photoSizeId = photoSizeId,
+          onPhotoSize = onPhotoSize,
         )
       } else if (googleDoor) {
         Column(
@@ -381,6 +386,14 @@ fun CabScreen(
                       }
                       if (mine && line.pending) {
                         Text("sending", style = MaterialTheme.typography.labelSmall, color = scheme.onSurfaceVariant)
+                      }
+                      if (mine && line.failed != null) {
+                        Text(
+                          line.failed,
+                          style = MaterialTheme.typography.labelSmall,
+                          color = scheme.error,
+                          modifier = Modifier.semantics { contentDescription = "not sent" },
+                        )
                       }
                     }
                   }

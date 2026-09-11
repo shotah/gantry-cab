@@ -2,9 +2,11 @@ package com.gantree.cab
 
 import android.content.Context
 import com.gantree.cab.mailbox.DEFAULT_FONT
+import com.gantree.cab.mailbox.DEFAULT_PHOTO_SIZE
 import com.gantree.cab.mailbox.DEFAULT_THEME
 import com.gantree.cab.mailbox.liveBearer
 import com.gantree.cab.mailbox.parseFont
+import com.gantree.cab.mailbox.parsePhotoSize
 import com.gantree.cab.mailbox.parseTheme
 
 class CabPrefs(ctx: Context) {
@@ -55,6 +57,11 @@ class CabPrefs(ctx: Context) {
     get() = parseFont(p.getString(FONT, DEFAULT_FONT))
     set(value) { p.edit().putString(FONT, parseFont(value)).apply() }
 
+  /** Same ids as the PWA's `localStorage["pendant.photo"]`. */
+  var photoSize: String
+    get() = parsePhotoSize(p.getString(PHOTO, DEFAULT_PHOTO_SIZE))
+    set(value) { p.edit().putString(PHOTO, parsePhotoSize(value)).apply() }
+
   val bearer: String
     get() = liveBearer(session, sessionExp, heldSpike, System.currentTimeMillis() / 1000L)
 
@@ -85,5 +92,6 @@ class CabPrefs(ctx: Context) {
     private const val GPS = "gps"
     private const val THEME = "theme"
     private const val FONT = "font"
+    private const val PHOTO = "photo"
   }
 }

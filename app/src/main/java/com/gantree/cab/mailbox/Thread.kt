@@ -55,6 +55,12 @@ fun advanceCursor(current: ThreadCursor, id: String? = null, seq: Int? = null): 
   return current
 }
 
+/**
+ * Only queued turns advance `since`. An `ack` echoes our own id; an `error`
+ * names the frame the mailbox refused — neither is a place to resume from.
+ */
+fun movesCursor(kind: String?): Boolean = kind != "ack" && kind != "error"
+
 fun ackSince(cursor: ThreadCursor): String? {
   if (cursor.seq > 0) {
     return cursor.seq.toString()

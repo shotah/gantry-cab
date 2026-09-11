@@ -12,9 +12,9 @@ import com.gantree.cab.mailbox.AuthException
 import com.gantree.cab.mailbox.AvatarUpload
 import com.gantree.cab.mailbox.AVATAR_EDGE
 import com.gantree.cab.mailbox.AVATAR_MAX_BYTES
-import com.gantree.cab.mailbox.CHAT_PHOTO_EDGE
-import com.gantree.cab.mailbox.IMAGE_BYTES_MAX
+import com.gantree.cab.mailbox.PHOTO_JPEG_BYTES_MAX
 import com.gantree.cab.mailbox.PhotoResult
+import com.gantree.cab.mailbox.describePhotoError
 import com.gantree.cab.mailbox.jpegFromUri
 import com.gantree.cab.mailbox.googleSignInHint
 import com.gantree.cab.mailbox.mailboxSignedInHint
@@ -22,6 +22,8 @@ import com.gantree.cab.mailbox.normalizeMailboxOrigin
 import com.gantree.cab.mailbox.parseSlug
 import com.gantree.cab.mailbox.persistSpikeAllowed
 import com.gantree.cab.mailbox.photoDataUrl
+import com.gantree.cab.mailbox.photoEdge
+import com.gantree.cab.mailbox.photoErrorToken
 import com.gantree.cab.mailbox.WireFrame
 import com.gantree.cab.ui.requestGoogleId
 import androidx.credentials.exceptions.GetCredentialException
@@ -44,6 +46,7 @@ class CabViewModel(private val app: CabApp) : ViewModel() {
   private val _email = MutableStateFlow(app.prefs.email)
   private val _theme = MutableStateFlow(app.prefs.theme)
   private val _font = MutableStateFlow(app.prefs.font)
+  private val _photoSize = MutableStateFlow(app.prefs.photoSize)
   private val _gps = MutableStateFlow(app.prefs.gps)
   private val _cranes = MutableStateFlow<List<String>>(emptyList())
   private val _face = MutableStateFlow<ByteArray?>(null)
@@ -57,6 +60,7 @@ class CabViewModel(private val app: CabApp) : ViewModel() {
   val email = _email.asStateFlow()
   val theme = _theme.asStateFlow()
   val font = _font.asStateFlow()
+  val photoSize = _photoSize.asStateFlow()
   val gps = _gps.asStateFlow()
   val cranes = _cranes.asStateFlow()
   val face = _face.asStateFlow()
@@ -101,6 +105,11 @@ class CabViewModel(private val app: CabApp) : ViewModel() {
   fun setFont(v: String) {
     _font.value = v
     app.prefs.font = v
+  }
+
+  fun setPhotoSize(v: String) {
+    _photoSize.value = v
+    app.prefs.photoSize = v
   }
 
   fun toggleGps() {
@@ -152,20 +161,21 @@ class CabViewModel(private val app: CabApp) : ViewModel() {
   }
 
   fun sendPhoto(ctx: Context, uri: Uri) {
+    val edge = photoEdge(_photoSize.value)
     viewModelScope.launch {
       try {
         val jpeg = withContext(Dispatchers.IO) {
-          jpegFromUri(ctx.contentResolver, uri, CHAT_PHOTO_EDGE, IMAGE_BYTES_MAX)
+          jpegFromUri(ctx.contentResolver, uri, edge, PHOTO_JPEG_BYTES_MAX)
         }
         when (val got = photoDataUrl(jpeg)) {
           is PhotoResult.Ok -> {
             persist()
             MailboxService.sendPhoto(ctx, got.url)
           }
-          is PhotoResult.Err -> app.mouth.setHint(got.error)
+          is PhotoResult.Err -> app.mouth.setHint(describePhotoError(got.error))
         }
       } catch (e: Exception) {
-        app.mouth.setHint(e.message ?: "bad photo")
+        app.mouth.setHint(describePhotoError(photoErrorToken(e.message)))
       }
     }
   }

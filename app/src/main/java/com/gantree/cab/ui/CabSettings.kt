@@ -34,11 +34,15 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.gantree.cab.mailbox.allowlistCopy
+import com.gantree.cab.mailbox.DEFAULT_PHOTO_SIZE
 import com.gantree.cab.mailbox.FONT_IDS
+import com.gantree.cab.mailbox.PHOTO_SIZE_IDS
 import com.gantree.cab.mailbox.THEME_IDS
 import com.gantree.cab.mailbox.chatSp
 import com.gantree.cab.mailbox.displaySlug
 import com.gantree.cab.mailbox.fontLabel
+import com.gantree.cab.mailbox.photoSizeChip
+import com.gantree.cab.mailbox.photoSizeLabel
 import com.gantree.cab.mailbox.themeLabel
 
 @Composable
@@ -63,6 +67,8 @@ fun CabSettings(
   authHint: String = "",
   signingIn: Boolean = false,
   onCarTest: () -> Unit = {},
+  photoSizeId: String = DEFAULT_PHOTO_SIZE,
+  onPhotoSize: (String) -> Unit = {},
 ) {
   val scheme = MaterialTheme.colorScheme
   val clipboard = LocalClipboardManager.current
@@ -204,6 +210,33 @@ fun CabSettings(
         )
       }
     }
+    Text("Photo size", style = MaterialTheme.typography.labelLarge, color = scheme.onSurfaceVariant)
+    Row(
+      horizontalArrangement = Arrangement.spacedBy(8.dp),
+      modifier = Modifier
+        .fillMaxWidth()
+        .horizontalScroll(rememberScrollState())
+        .semantics { contentDescription = "Photo size" },
+    ) {
+      for (id in PHOTO_SIZE_IDS) {
+        val on = id == photoSizeId
+        FilterChip(
+          selected = on,
+          onClick = { onPhotoSize(id) },
+          label = { Text(photoSizeChip(id)) },
+          modifier = Modifier.semantics {
+            role = Role.RadioButton
+            selected = on
+            contentDescription = photoSizeLabel(id)
+          },
+        )
+      }
+    }
+    Text(
+      "Smaller sends faster and costs fewer tokens to look at.",
+      style = MaterialTheme.typography.bodySmall,
+      color = scheme.onSurfaceVariant,
+    )
     Text("Android Auto", style = MaterialTheme.typography.labelLarge, color = scheme.onSurfaceVariant)
     Text(
       "Cab has no tile in the car from a sideload. Kit arrives as a message card that Auto reads aloud; " +

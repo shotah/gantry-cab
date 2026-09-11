@@ -5,6 +5,7 @@ import com.gantree.cab.mailbox.THREAD_MAX
 import com.gantree.cab.mailbox.ThreadOrder
 import com.gantree.cab.mailbox.WireFrame
 import com.gantree.cab.mailbox.capThread
+import com.gantree.cab.mailbox.describeSendError
 import com.gantree.cab.mailbox.faceRev
 import com.gantree.cab.mailbox.placeInThread
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -28,6 +29,8 @@ data class ChatLine(
   val pending: Boolean = false,
   override val at: Long = 0L,
   override val seq: Int? = null,
+  /** Mailbox refused it; sentence from [describeSendError]. */
+  val failed: String? = null,
 ) : ThreadOrder
 
 class Mouth(
@@ -92,7 +95,10 @@ class Mouth(
       return false
     }
     if (frame.kind == "error") {
-      _hint.value = frame.text?.trim().orEmpty().ifEmpty { "mailbox error" }
+      // Refusal, not a turn: mark our bubble, never paint it as the crane.
+      if (!fail(frame.id, describeSendError(frame.text))) {
+        _hint.value = frame.text?.trim().orEmpty().ifEmpty { "mailbox error" }
+      }
       _typingUntil.value = 0L
       return false
     }
@@ -152,6 +158,25 @@ class Mouth(
     _lines.value = _lines.value.map { line ->
       if (line.id == id && line.pending) line.copy(pending = false) else line
     }
+  }
+
+  /**
+   * A mailbox `error` names the frame it refused when it can (`id`); older
+   * mailboxes and parse failures cannot, so fall back to your newest bubble
+   * still marked sending. Same rule as pendant `failInThread`.
+   * @return false when there was nothing of yours to mark.
+   */
+  fun fail(id: String?, why: String): Boolean {
+    val lines = _lines.value
+    val byId = if (id != null) lines.indexOfLast { it.fromYou && it.id == id } else -1
+    val at = if (byId >= 0) byId else lines.indexOfLast { it.fromYou && it.pending }
+    if (at < 0) {
+      return false
+    }
+    _lines.value = lines.mapIndexed { i, line ->
+      if (i == at) line.copy(pending = false, failed = why) else line
+    }
+    return true
   }
 
   private fun applyDraft(text: String) {
