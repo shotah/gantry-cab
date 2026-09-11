@@ -7,6 +7,7 @@ import com.gantree.cab.mailbox.WireFrame
 import com.gantree.cab.mailbox.capThread
 import com.gantree.cab.mailbox.describeSendError
 import com.gantree.cab.mailbox.faceRev
+import com.gantree.cab.mailbox.knownTheme
 import com.gantree.cab.mailbox.placeInThread
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -41,6 +42,8 @@ class Mouth(
   private val _hint = MutableStateFlow("")
   private val _catalog = MutableStateFlow<List<SlashCommand>>(emptyList())
   private val _avatarRev = MutableStateFlow(0)
+  private val _backdropRev = MutableStateFlow(0)
+  private val _roomTheme = MutableStateFlow("")
   private val _faceHint = MutableStateFlow("")
   private val _typingUntil = MutableStateFlow(0L)
   val lines: StateFlow<List<ChatLine>> = _lines
@@ -48,6 +51,8 @@ class Mouth(
   val hint: StateFlow<String> = _hint
   val catalog: StateFlow<List<SlashCommand>> = _catalog
   val avatarRev: StateFlow<Int> = _avatarRev
+  val backdropRev: StateFlow<Int> = _backdropRev
+  val roomTheme: StateFlow<String> = _roomTheme
   val faceHint: StateFlow<String> = _faceHint
   val typingUntil: StateFlow<Long> = _typingUntil
 
@@ -71,6 +76,14 @@ class Mouth(
     _avatarRev.value = value
   }
 
+  fun setBackdropRev(value: Int) {
+    _backdropRev.value = value
+  }
+
+  fun setRoomTheme(value: String) {
+    _roomTheme.value = value
+  }
+
   fun add(line: ChatLine) {
     _lines.value = capThread(_lines.value + line, THREAD_MAX)
   }
@@ -81,6 +94,8 @@ class Mouth(
     _hint.value = hint
     _catalog.value = emptyList()
     _typingUntil.value = 0L
+    _backdropRev.value = 0
+    _roomTheme.value = ""
   }
 
   /** @return true when a new turn was painted (not a restamp, draft, or control frame). */
@@ -88,6 +103,18 @@ class Mouth(
     val rev = faceRev(frame.kind, frame.text)
     if (rev != null) {
       _avatarRev.value = rev
+      return false
+    }
+    if (frame.kind == "backdrop") {
+      frame.rev?.let { _backdropRev.value = it }
+      return false
+    }
+    if (frame.kind == "theme") {
+      when (val id = frame.theme) {
+        null -> {}
+        "" -> _roomTheme.value = ""
+        else -> knownTheme(id)?.let { _roomTheme.value = it }
+      }
       return false
     }
     if (frame.kind == "cmds") {

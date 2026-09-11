@@ -37,6 +37,10 @@ val LocalCabColors = staticCompositionLocalOf { boomColors() }
 fun cabColors(themeId: String): CabColors = when (parseTheme(themeId)) {
   "inlay" -> inlayColors()
   "lamp" -> lampColors()
+  "noir" -> noirColors()
+  "ember" -> emberColors()
+  "tide" -> tideColors()
+  "bloom" -> bloomColors()
   else -> boomColors()
 }
 
@@ -98,6 +102,86 @@ private fun lampColors() = CabColors(
   ok = Color(0xFF5EC8B0),
   you = Color(0xFF2A2A18),
   kit = Color(0xFF1E1E2E),
+)
+
+private fun noirColors() = CabColors(
+  canvas = Color(0xFF0A0C10),
+  panel = Color(0xFF12151A),
+  track = Color(0xFF1A1F28),
+  line = Color(0xFF2E3644),
+  edge = Color(0xFF5A6578),
+  fg = Color(0xFFE8EEF4),
+  body = Color(0xFFC5CED8),
+  muted = Color(0xFF8A96A8),
+  dim = Color(0xFF6E7A8C),
+  accent = Color(0xFF8EB4D4),
+  mark = Color(0xFFD4E4F4),
+  accentLine = Color(0xFF4A78A0),
+  accentSoft = Color(0xFF121820),
+  danger = Color(0xFFD07090),
+  ok = Color(0xFF5CB8A8),
+  you = Color(0xFF1A2430),
+  kit = Color(0xFF1A1F28),
+)
+
+private fun emberColors() = CabColors(
+  canvas = Color(0xFF120C0A),
+  panel = Color(0xFF1A1210),
+  track = Color(0xFF261C16),
+  line = Color(0xFF4A3430),
+  edge = Color(0xFF7A5850),
+  fg = Color(0xFFF4ECE4),
+  body = Color(0xFFDCC8BC),
+  muted = Color(0xFFB09080),
+  dim = Color(0xFF8A7064),
+  accent = Color(0xFFE07040),
+  mark = Color(0xFFF4C4A0),
+  accentLine = Color(0xFFA04828),
+  accentSoft = Color(0xFF241410),
+  danger = Color(0xFFE07090),
+  ok = Color(0xFF6BB090),
+  you = Color(0xFF2A1410),
+  kit = Color(0xFF261C16),
+)
+
+private fun tideColors() = CabColors(
+  canvas = Color(0xFF0A1214),
+  panel = Color(0xFF101A1C),
+  track = Color(0xFF182428),
+  line = Color(0xFF2A3C44),
+  edge = Color(0xFF4A6870),
+  fg = Color(0xFFE4F0EE),
+  body = Color(0xFFC4D8D4),
+  muted = Color(0xFF88A8A8),
+  dim = Color(0xFF6E8888),
+  accent = Color(0xFF3CB8B0),
+  mark = Color(0xFFB8ECE4),
+  accentLine = Color(0xFF2A7878),
+  accentSoft = Color(0xFF102020),
+  danger = Color(0xFFD07890),
+  ok = Color(0xFF4CBC9C),
+  you = Color(0xFF142428),
+  kit = Color(0xFF182428),
+)
+
+private fun bloomColors() = CabColors(
+  canvas = Color(0xFF100C14),
+  panel = Color(0xFF18141E),
+  track = Color(0xFF221C2A),
+  line = Color(0xFF3A3048),
+  edge = Color(0xFF6A5878),
+  fg = Color(0xFFF0E8F4),
+  body = Color(0xFFD8D0DC),
+  muted = Color(0xFFA890B0),
+  dim = Color(0xFF8A7898),
+  accent = Color(0xFFD070C0),
+  mark = Color(0xFFF0C8E8),
+  accentLine = Color(0xFF884878),
+  accentSoft = Color(0xFF20141E),
+  danger = Color(0xFFE07090),
+  ok = Color(0xFF68B8A0),
+  you = Color(0xFF241428),
+  kit = Color(0xFF221C2A),
 )
 
 fun CabColors.toColorScheme() = darkColorScheme(

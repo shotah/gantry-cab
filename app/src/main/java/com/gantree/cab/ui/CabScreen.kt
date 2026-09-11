@@ -1,6 +1,8 @@
 package com.gantree.cab.ui
 
+import android.graphics.BitmapFactory
 import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
@@ -43,7 +45,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.semantics.contentDescription
@@ -100,6 +104,11 @@ fun CabScreen(
   onCarTest: () -> Unit = {},
   photoSizeId: String = DEFAULT_PHOTO_SIZE,
   onPhotoSize: (String) -> Unit = {},
+  backdropBytes: ByteArray? = null,
+  backdropOn: Boolean = true,
+  followTheme: Boolean = true,
+  onBackdropToggle: () -> Unit = {},
+  onFollowToggle: () -> Unit = {},
 ) {
   val scheme = MaterialTheme.colorScheme
   var settingsOpen by remember { mutableStateOf(false) }
@@ -258,6 +267,10 @@ fun CabScreen(
           onCarTest = onCarTest,
           photoSizeId = photoSizeId,
           onPhotoSize = onPhotoSize,
+          backdropOn = backdropOn,
+          followTheme = followTheme,
+          onBackdropToggle = onBackdropToggle,
+          onFollowToggle = onFollowToggle,
         )
       } else if (googleDoor) {
         Column(
@@ -295,20 +308,24 @@ fun CabScreen(
           }
         }
       } else {
-        Column(modifier = Modifier.fillMaxSize()) {
-          if (dev && !compact) {
-            Row(
-              horizontalArrangement = Arrangement.spacedBy(8.dp),
-              modifier = Modifier
-                .fillMaxWidth()
-                .horizontalScroll(rememberScrollState())
-                .padding(horizontal = 16.dp, vertical = 4.dp),
-            ) {
-              for (id in SAMPLE_IDS) {
-                AssistChip(onClick = { onSample(id) }, label = { Text(id) })
+        Box(modifier = Modifier.fillMaxSize()) {
+          if (!compact) {
+            ChatBackdrop(backdropBytes)
+          }
+          Column(modifier = Modifier.fillMaxSize()) {
+            if (dev && !compact) {
+              Row(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                modifier = Modifier
+                  .fillMaxWidth()
+                  .horizontalScroll(rememberScrollState())
+                  .padding(horizontal = 16.dp, vertical = 4.dp),
+              ) {
+                for (id in SAMPLE_IDS) {
+                  AssistChip(onClick = { onSample(id) }, label = { Text(id) })
+                }
               }
             }
-          }
           if (faceHint.isNotBlank()) {
             Text(
               faceHint,
@@ -402,9 +419,27 @@ fun CabScreen(
             }
           }
         }
+        }
       }
     }
   }
+}
+
+@Composable
+private fun ChatBackdrop(bytes: ByteArray?) {
+  val bmp = remember(bytes) {
+    if (bytes == null || bytes.isEmpty()) {
+      null
+    } else {
+      BitmapFactory.decodeByteArray(bytes, 0, bytes.size)?.asImageBitmap()
+    }
+  } ?: return
+  Image(
+    bitmap = bmp,
+    contentDescription = null,
+    contentScale = ContentScale.Crop,
+    modifier = Modifier.fillMaxSize().alpha(0.6f),
+  )
 }
 
 @Composable

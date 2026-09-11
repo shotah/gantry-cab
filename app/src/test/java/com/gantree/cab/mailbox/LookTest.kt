@@ -10,7 +10,18 @@ class LookTest {
     assertEquals("boom", parseTheme("nope"))
     assertEquals("inlay", parseTheme("inlay"))
     assertEquals("lamp", parseTheme("lamp"))
-    assertEquals(listOf("boom", "inlay", "lamp"), THEME_IDS)
+    assertEquals("noir", parseTheme("noir"))
+    assertEquals(listOf("boom", "inlay", "lamp", "noir", "ember", "tide", "bloom"), THEME_IDS)
+    assertEquals("noir", knownTheme("noir"))
+    assertEquals(null, knownTheme("nope"))
+  }
+
+  @Test
+  fun followPaintsTheRoomThemeUntilItIsCleared() {
+    assertEquals("noir", paintedTheme(true, "noir", "boom"))
+    assertEquals("boom", paintedTheme(true, "", "boom"))
+    assertEquals("boom", paintedTheme(true, "nope", "boom"))
+    assertEquals("lamp", paintedTheme(false, "noir", "lamp"))
   }
 
   @Test
@@ -31,6 +42,7 @@ class LookTest {
     assertEquals("Boom", themeLabel("boom"))
     assertEquals("Boom", themeLabel("nope"))
     assertEquals("Inlay", themeLabel("inlay"))
+    assertEquals("Noir", themeLabel("noir"))
     assertEquals("Small", fontLabel("sm"))
     assertEquals("Medium", fontLabel("md"))
     assertEquals("Large", fontLabel("lg"))

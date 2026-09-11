@@ -6,6 +6,7 @@ import com.gantree.cab.drive.carConnectionAttached
 import com.gantree.cab.mailbox.AuthApi
 import com.gantree.cab.mailbox.AvatarApi
 import com.gantree.cab.mailbox.PhoneContext
+import com.gantree.cab.mailbox.ThemeApi
 import com.gantree.cab.mailbox.WireFrame
 import com.gantree.cab.mailbox.inbound
 import com.gantree.cab.mailbox.shouldSpeak
@@ -16,6 +17,7 @@ class CabApp : Application() {
   val mouth = Mouth()
   val auth = AuthApi()
   val avatar = AvatarApi()
+  val theme = ThemeApi()
   @Volatile
   var phoneResumed = false
   @Volatile

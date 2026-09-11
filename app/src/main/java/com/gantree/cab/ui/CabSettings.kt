@@ -69,6 +69,10 @@ fun CabSettings(
   onCarTest: () -> Unit = {},
   photoSizeId: String = DEFAULT_PHOTO_SIZE,
   onPhotoSize: (String) -> Unit = {},
+  backdropOn: Boolean = true,
+  followTheme: Boolean = true,
+  onBackdropToggle: () -> Unit = {},
+  onFollowToggle: () -> Unit = {},
 ) {
   val scheme = MaterialTheme.colorScheme
   val clipboard = LocalClipboardManager.current
@@ -234,6 +238,48 @@ fun CabSettings(
     }
     Text(
       "Smaller sends faster and costs fewer tokens to look at.",
+      style = MaterialTheme.typography.bodySmall,
+      color = scheme.onSurfaceVariant,
+    )
+    Text("Follow Kit's mood", style = MaterialTheme.typography.labelLarge, color = scheme.onSurfaceVariant)
+    Row(
+      horizontalArrangement = Arrangement.spacedBy(8.dp),
+      verticalAlignment = Alignment.CenterVertically,
+    ) {
+      FilterChip(
+        selected = followTheme,
+        onClick = onFollowToggle,
+        label = { Text(if (followTheme) "On" else "Off") },
+        modifier = Modifier.semantics {
+          role = Role.Switch
+          selected = followTheme
+          contentDescription = "Follow Kit's mood"
+        },
+      )
+    }
+    Text(
+      "When on, ${displaySlug(slug)} picks the color theme. Off keeps the one you pick.",
+      style = MaterialTheme.typography.bodySmall,
+      color = scheme.onSurfaceVariant,
+    )
+    Text("Backdrop", style = MaterialTheme.typography.labelLarge, color = scheme.onSurfaceVariant)
+    Row(
+      horizontalArrangement = Arrangement.spacedBy(8.dp),
+      verticalAlignment = Alignment.CenterVertically,
+    ) {
+      FilterChip(
+        selected = backdropOn,
+        onClick = onBackdropToggle,
+        label = { Text(if (backdropOn) "On" else "Off") },
+        modifier = Modifier.semantics {
+          role = Role.Switch
+          selected = backdropOn
+          contentDescription = "Backdrop"
+        },
+      )
+    }
+    Text(
+      "${displaySlug(slug)} can paint a wallpaper behind the thread. Off keeps the theme.",
       style = MaterialTheme.typography.bodySmall,
       color = scheme.onSurfaceVariant,
     )

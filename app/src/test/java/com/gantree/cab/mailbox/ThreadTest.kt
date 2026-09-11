@@ -47,6 +47,9 @@ class ThreadTest {
     assertEquals(true, movesCursor(null))
     assertEquals(false, movesCursor("ack"))
     assertEquals(false, movesCursor("error"))
+    assertEquals(false, movesCursor("face"))
+    assertEquals(false, movesCursor("backdrop"))
+    assertEquals(false, movesCursor("theme"))
   }
 
   @Test

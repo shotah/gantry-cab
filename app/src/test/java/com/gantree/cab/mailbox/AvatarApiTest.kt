@@ -40,6 +40,15 @@ class AvatarApiTest {
   }
 
   @Test
+  fun fetchBackdropUsesTheBackdropPath() {
+    val jpeg = fakeJpeg()
+    server.enqueue(MockResponse().setBody(okio.Buffer().write(jpeg)))
+    val got = runBlocking { api.fetch(server.url("/").toString(), "kit", "jwe", 4, "/api/backdrop") }
+    assertTrue(got.contentEquals(jpeg))
+    assertEquals("/api/backdrop?slug=kit&v=4", server.takeRequest().path)
+  }
+
+  @Test
   fun fetchMissIsNull() {
     server.enqueue(MockResponse().setResponseCode(404))
     assertNull(runBlocking { api.fetch(server.url("/").toString(), "kit", "", 0) })

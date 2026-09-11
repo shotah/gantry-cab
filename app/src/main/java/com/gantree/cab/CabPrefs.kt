@@ -62,6 +62,16 @@ class CabPrefs(ctx: Context) {
     get() = parsePhotoSize(p.getString(PHOTO, DEFAULT_PHOTO_SIZE))
     set(value) { p.edit().putString(PHOTO, parsePhotoSize(value)).apply() }
 
+  /** Settings → Backdrop. Default on; only `"off"` keeps the theme canvas. */
+  var backdrop: Boolean
+    get() = p.getString(BACKDROP, "on") != "off"
+    set(value) { p.edit().putString(BACKDROP, if (value) "on" else "off").apply() }
+
+  /** Settings → Follow Kit's mood. Default on; only `"off"` keeps yours. */
+  var followTheme: Boolean
+    get() = p.getString(FOLLOW_THEME, "on") != "off"
+    set(value) { p.edit().putString(FOLLOW_THEME, if (value) "on" else "off").apply() }
+
   val bearer: String
     get() = liveBearer(session, sessionExp, heldSpike, System.currentTimeMillis() / 1000L)
 
@@ -93,5 +103,7 @@ class CabPrefs(ctx: Context) {
     private const val THEME = "theme"
     private const val FONT = "font"
     private const val PHOTO = "photo"
+    private const val BACKDROP = "backdrop"
+    private const val FOLLOW_THEME = "followTheme"
   }
 }

@@ -51,12 +51,15 @@ class MainActivity : ComponentActivity() {
       val slug by vm.slug.collectAsStateWithLifecycle()
       val spike by vm.spike.collectAsStateWithLifecycle()
       val email by vm.email.collectAsStateWithLifecycle()
-      val theme by vm.theme.collectAsStateWithLifecycle()
+      val painted by vm.painted.collectAsStateWithLifecycle()
       val font by vm.font.collectAsStateWithLifecycle()
       val photoSize by vm.photoSize.collectAsStateWithLifecycle()
+      val backdropOn by vm.backdropOn.collectAsStateWithLifecycle()
+      val followTheme by vm.followTheme.collectAsStateWithLifecycle()
       val gps by vm.gps.collectAsStateWithLifecycle()
       val cranes by vm.cranes.collectAsStateWithLifecycle()
       val face by vm.face.collectAsStateWithLifecycle()
+      val backdrop by vm.backdrop.collectAsStateWithLifecycle()
       val up by vm.up.collectAsStateWithLifecycle()
       val hint by vm.hint.collectAsStateWithLifecycle()
       val lines by vm.lines.collectAsStateWithLifecycle()
@@ -66,7 +69,7 @@ class MainActivity : ComponentActivity() {
       val authHint by vm.authHint.collectAsStateWithLifecycle()
       val typingUntil by vm.typingUntil.collectAsStateWithLifecycle()
       val sub by vm.sub.collectAsStateWithLifecycle()
-      CabTheme(themeId = theme, fontId = font) {
+      CabTheme(themeId = painted, fontId = font) {
         CabScreen(
           origin = origin,
           slug = slug,
@@ -93,7 +96,7 @@ class MainActivity : ComponentActivity() {
           },
           dev = BuildConfig.DEV,
           onSample = vm::showSample,
-          themeId = theme,
+          themeId = painted,
           fontId = font,
           gpsOn = gps,
           catalog = catalog,
@@ -123,6 +126,11 @@ class MainActivity : ComponentActivity() {
           onCarTest = { carTest(slug) },
           photoSizeId = photoSize,
           onPhotoSize = vm::setPhotoSize,
+          backdropBytes = backdrop,
+          backdropOn = backdropOn,
+          followTheme = followTheme,
+          onBackdropToggle = vm::toggleBackdrop,
+          onFollowToggle = vm::toggleFollowTheme,
         )
       }
     }

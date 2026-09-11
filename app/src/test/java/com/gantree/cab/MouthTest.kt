@@ -19,6 +19,31 @@ class MouthTest {
   }
 
   @Test
+  fun backdropNoticeSetsRevIncludingZeroAndNeverABubble() {
+    val mouth = Mouth()
+    mouth.ingest(WireFrame(kind = "backdrop", rev = 1725, text = "1725"))
+    assertEquals(1725, mouth.backdropRev.value)
+    assertTrue(mouth.lines.value.isEmpty())
+    mouth.ingest(WireFrame(kind = "backdrop", rev = 0))
+    assertEquals(0, mouth.backdropRev.value)
+    assertTrue(mouth.lines.value.isEmpty())
+    mouth.ingest(WireFrame(kind = "backdrop"))
+    assertEquals(0, mouth.backdropRev.value)
+  }
+
+  @Test
+  fun themeNoticeSetsTheRoomIdAndClearsOnEmpty() {
+    val mouth = Mouth()
+    mouth.ingest(WireFrame(kind = "theme", theme = "noir"))
+    assertEquals("noir", mouth.roomTheme.value)
+    assertTrue(mouth.lines.value.isEmpty())
+    mouth.ingest(WireFrame(kind = "theme", theme = ""))
+    assertEquals("", mouth.roomTheme.value)
+    mouth.ingest(WireFrame(kind = "theme", theme = "nope"))
+    assertEquals("", mouth.roomTheme.value)
+  }
+
+  @Test
   fun cmdsReplaceTheCatalog() {
     val mouth = Mouth()
     val cmds = listOf(SlashCommand("new", "reset this session"))

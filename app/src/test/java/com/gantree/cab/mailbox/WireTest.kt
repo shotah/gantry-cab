@@ -80,6 +80,28 @@ class WireTest {
   }
 
   @Test
+  fun backdropNoticeCarriesRevAndNoText() {
+    val got = parseFrame("""{"kind":"backdrop","rev":1725}""")!!
+    assertEquals("backdrop", got.kind)
+    assertEquals(1725, got.rev)
+    assertNull(got.text)
+    val cleared = parseFrame("""{"kind":"backdrop","rev":0}""")!!
+    assertEquals(0, cleared.rev)
+    assertNull(parseFrame("""{"kind":"backdrop","rev":-1}""")!!.rev)
+  }
+
+  @Test
+  fun themeNoticeCarriesTheIdAndClearsOnNull() {
+    val got = parseFrame("""{"kind":"theme","theme":"noir"}""")!!
+    assertEquals("theme", got.kind)
+    assertEquals("noir", got.theme)
+    assertNull(got.text)
+    val cleared = parseFrame("""{"kind":"theme","theme":null}""")!!
+    assertEquals("", cleared.theme)
+    assertNull(parseFrame("""{"kind":"theme","theme":"nope"}""")!!.theme)
+  }
+
+  @Test
   fun pinEncodesGeoWithoutText() {
     val raw = encodeFrame(pinFrame(PhoneContext(geo = Geo(1.0, 2.0, 3.0))))
     assertTrue(raw.contains("\"kind\":\"pin\""))

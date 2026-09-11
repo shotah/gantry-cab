@@ -37,6 +37,10 @@ data class WireFrame(
   val seq: Int? = null,
   val at: Long? = null,
   val replay: Boolean = false,
+  /** Backdrop notice only. 0 = cleared. */
+  val rev: Int? = null,
+  /** Theme notice only. Empty = cleared. */
+  val theme: String? = null,
 )
 
 const val TEXT_BYTES_MAX = 8_000
@@ -103,6 +107,8 @@ fun parseFrame(raw: String): WireFrame? {
         }.ifEmpty { null }
       },
       commands = if (kind == "cmds") parseCommands(o.optJSONArray("commands")) else null,
+      rev = backdropRev(kind, o.opt("rev")),
+      theme = roomThemeNotice(kind, o.has("theme"), o.isNull("theme"), o.optString("theme")),
     )
   } catch (_: Exception) {
     null
@@ -138,7 +144,7 @@ fun orderAt(raw: Any?): Long? {
   return n.takeIf { it >= 0 }
 }
 
-private fun jsonWholeNumber(raw: Any?): Long? = when (raw) {
+internal fun jsonWholeNumber(raw: Any?): Long? = when (raw) {
   null, JSONObject.NULL -> null
   is Int -> raw.toLong()
   is Long -> raw

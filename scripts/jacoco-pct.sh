@@ -14,7 +14,7 @@ fi
 # Default scoped classes. Override: COVERAGE_CLASSES=  (report total)
 # or COVERAGE_CLASSES="com/gantree/cab/mailbox/AuthApi".
 if [[ ! -v COVERAGE_CLASSES ]]; then
-  COVERAGE_CLASSES="com/gantree/cab/mailbox/WireKt com/gantree/cab/mailbox/MailboxUrlKt com/gantree/cab/mailbox/EmojiKt com/gantree/cab/mailbox/SlashKt com/gantree/cab/mailbox/PhotoKt com/gantree/cab/mailbox/JpegKt com/gantree/cab/mailbox/SendErrorKt com/gantree/cab/mailbox/LookKt com/gantree/cab/mailbox/GeoHintKt com/gantree/cab/mailbox/AvatarKt com/gantree/cab/mailbox/ThreadKt com/gantree/cab/Mouth"
+  COVERAGE_CLASSES="com/gantree/cab/mailbox/WireKt com/gantree/cab/mailbox/MailboxUrlKt com/gantree/cab/mailbox/EmojiKt com/gantree/cab/mailbox/SlashKt com/gantree/cab/mailbox/PhotoKt com/gantree/cab/mailbox/JpegKt com/gantree/cab/mailbox/SendErrorKt com/gantree/cab/mailbox/LookKt com/gantree/cab/mailbox/GeoHintKt com/gantree/cab/mailbox/AvatarKt com/gantree/cab/mailbox/ThemeApiKt com/gantree/cab/mailbox/ThreadKt com/gantree/cab/Mouth"
 fi
 
 parse() {

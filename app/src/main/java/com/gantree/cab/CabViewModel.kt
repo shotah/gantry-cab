@@ -20,6 +20,7 @@ import com.gantree.cab.mailbox.googleSignInHint
 import com.gantree.cab.mailbox.mailboxSignedInHint
 import com.gantree.cab.mailbox.normalizeMailboxOrigin
 import com.gantree.cab.mailbox.parseSlug
+import com.gantree.cab.mailbox.paintedTheme
 import com.gantree.cab.mailbox.persistSpikeAllowed
 import com.gantree.cab.mailbox.photoDataUrl
 import com.gantree.cab.mailbox.photoEdge
@@ -47,9 +48,12 @@ class CabViewModel(private val app: CabApp) : ViewModel() {
   private val _theme = MutableStateFlow(app.prefs.theme)
   private val _font = MutableStateFlow(app.prefs.font)
   private val _photoSize = MutableStateFlow(app.prefs.photoSize)
+  private val _backdropOn = MutableStateFlow(app.prefs.backdrop)
+  private val _followTheme = MutableStateFlow(app.prefs.followTheme)
   private val _gps = MutableStateFlow(app.prefs.gps)
   private val _cranes = MutableStateFlow<List<String>>(emptyList())
   private val _face = MutableStateFlow<ByteArray?>(null)
+  private val _backdrop = MutableStateFlow<ByteArray?>(null)
   private val _signingIn = MutableStateFlow(false)
   private val _authHint = MutableStateFlow("")
   private val _sub = MutableStateFlow("")
@@ -61,9 +65,12 @@ class CabViewModel(private val app: CabApp) : ViewModel() {
   val theme = _theme.asStateFlow()
   val font = _font.asStateFlow()
   val photoSize = _photoSize.asStateFlow()
+  val backdropOn = _backdropOn.asStateFlow()
+  val followTheme = _followTheme.asStateFlow()
   val gps = _gps.asStateFlow()
   val cranes = _cranes.asStateFlow()
   val face = _face.asStateFlow()
+  val backdrop = _backdrop.asStateFlow()
   val signingIn = _signingIn.asStateFlow()
   val authHint = _authHint.asStateFlow()
   val sub = _sub.asStateFlow()
@@ -72,6 +79,9 @@ class CabViewModel(private val app: CabApp) : ViewModel() {
   val lines = app.mouth.lines.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
   val catalog = app.mouth.catalog.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
   val avatarRev = app.mouth.avatarRev.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), 0)
+  val painted = combine(_followTheme, app.mouth.roomTheme, _theme) { follow, room, mine ->
+    paintedTheme(follow, room, mine)
+  }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), paintedTheme(app.prefs.followTheme, "", app.prefs.theme))
   val faceHint = app.mouth.faceHint.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), "")
   val typingUntil = app.mouth.typingUntil.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), 0L)
 
@@ -86,6 +96,35 @@ class CabViewModel(private val app: CabApp) : ViewModel() {
           _face.value = app.avatar.fetch(origin, room, app.prefs.bearer, rev)
         }
     }
+    viewModelScope.launch {
+      combine(_fetchOrigin, _slug, app.mouth.backdropRev, _backdropOn) { origin, slug, rev, on ->
+        Triple(origin, slug, rev to on)
+      }.collectLatest { (origin, slug, rest) ->
+        val (rev, on) = rest
+        if (!on) {
+          _backdrop.value = null
+          return@collectLatest
+        }
+        val room = parseSlug(slug) ?: return@collectLatest
+        if (origin.isBlank() || app.prefs.bearer.isBlank()) {
+          return@collectLatest
+        }
+        _backdrop.value = app.avatar.fetch(origin, room, app.prefs.bearer, rev, "/api/backdrop")
+      }
+    }
+    viewModelScope.launch {
+      combine(_fetchOrigin, _slug) { origin, slug -> origin to slug }
+        .collectLatest { (origin, slug) ->
+          val room = parseSlug(slug) ?: return@collectLatest
+          if (origin.isBlank() || app.prefs.bearer.isBlank()) {
+            return@collectLatest
+          }
+          val got = withContext(Dispatchers.IO) { app.theme.fetch(origin, room, app.prefs.bearer) }
+          if (got != null) {
+            app.mouth.setRoomTheme(got)
+          }
+        }
+    }
   }
 
   fun setOrigin(v: String) { _origin.value = v }
@@ -94,12 +133,18 @@ class CabViewModel(private val app: CabApp) : ViewModel() {
   fun setSlug(v: String) {
     _slug.value = v
     app.mouth.setAvatarRev(0)
+    app.mouth.setBackdropRev(0)
+    app.mouth.setRoomTheme("")
     app.mouth.setFaceHint("")
   }
 
   fun setTheme(v: String) {
     _theme.value = v
     app.prefs.theme = v
+    if (_followTheme.value) {
+      _followTheme.value = false
+      app.prefs.followTheme = false
+    }
   }
 
   fun setFont(v: String) {
@@ -110,6 +155,23 @@ class CabViewModel(private val app: CabApp) : ViewModel() {
   fun setPhotoSize(v: String) {
     _photoSize.value = v
     app.prefs.photoSize = v
+  }
+
+  fun toggleBackdrop() {
+    val next = !_backdropOn.value
+    _backdropOn.value = next
+    app.prefs.backdrop = next
+  }
+
+  fun toggleFollowTheme() {
+    val next = !_followTheme.value
+    _followTheme.value = next
+    app.prefs.followTheme = next
+    if (!next) {
+      val shown = paintedTheme(true, app.mouth.roomTheme.value, _theme.value)
+      _theme.value = shown
+      app.prefs.theme = shown
+    }
   }
 
   fun toggleGps() {
@@ -131,6 +193,8 @@ class CabViewModel(private val app: CabApp) : ViewModel() {
       app.mouth.ingest(WireFrame(kind = "typing"))
     }
     app.mouth.setAvatarRev(0)
+    app.mouth.setBackdropRev(0)
+    app.mouth.setRoomTheme("")
     app.mouth.setFaceHint("")
   }
 

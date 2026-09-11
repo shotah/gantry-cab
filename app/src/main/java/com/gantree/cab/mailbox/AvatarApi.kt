@@ -25,8 +25,14 @@ class AvatarApi(
     .readTimeout(15, TimeUnit.SECONDS)
     .build(),
 ) {
-  suspend fun fetch(origin: String, slug: String, bearer: String, rev: Int): ByteArray? {
-    val req = Request.Builder().url(avatarUrl(origin, slug, rev)).get()
+  suspend fun fetch(
+    origin: String,
+    slug: String,
+    bearer: String,
+    rev: Int,
+    path: String = "/api/avatar",
+  ): ByteArray? {
+    val req = Request.Builder().url(blobUrl(origin, path, slug, rev)).get()
     if (bearer.isNotBlank()) {
       req.header("Authorization", "Bearer $bearer")
     }
