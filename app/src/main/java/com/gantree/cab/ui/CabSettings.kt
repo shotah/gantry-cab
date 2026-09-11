@@ -62,6 +62,7 @@ fun CabSettings(
   onSignOut: () -> Unit,
   authHint: String = "",
   signingIn: Boolean = false,
+  onCarTest: () -> Unit = {},
 ) {
   val scheme = MaterialTheme.colorScheme
   val clipboard = LocalClipboardManager.current
@@ -202,6 +203,20 @@ fun CabSettings(
           },
         )
       }
+    }
+    Text("Android Auto", style = MaterialTheme.typography.labelLarge, color = scheme.onSurfaceVariant)
+    Text(
+      "Cab has no tile in the car from a sideload. Kit arrives as a message card that Auto reads aloud; " +
+        "tap the card to reply by voice. Needs Android Auto → Developer settings → Unknown sources, " +
+        "and Cab must be Live before you plug in. Plug in, then tap Test to hear a check message.",
+      style = MaterialTheme.typography.bodySmall,
+      color = scheme.onSurfaceVariant,
+    )
+    FilledTonalButton(
+      onClick = onCarTest,
+      modifier = Modifier.semantics { contentDescription = "test car voice" },
+    ) {
+      Text("Test car voice")
     }
     Row(
       horizontalArrangement = Arrangement.spacedBy(8.dp),

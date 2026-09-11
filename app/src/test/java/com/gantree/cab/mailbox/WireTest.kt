@@ -109,6 +109,23 @@ class WireTest {
   }
 
   @Test
+  fun mailboxSeqAndAtAreKeptAndJunkOrderDropped() {
+    val got = parseFrame("""{"text":"hi","id":"m1","seq":3,"at":1700000000000}""")!!
+    assertEquals(3, got.seq)
+    assertEquals(1_700_000_000_000L, got.at)
+    val junk = parseFrame("""{"text":"hi","seq":0,"at":-1}""")!!
+    assertNull(junk.seq)
+    assertNull(junk.at)
+    val encoded = encodeFrame(got)
+    assertFalse(encoded.contains("\"seq\""))
+    assertFalse(encoded.contains("\"at\":1700000000000"))
+    assertNull(orderSeq("3"))
+    assertNull(orderSeq(1.5))
+    assertEquals(3, orderSeq(3))
+    assertEquals(9L, orderAt(9))
+  }
+
+  @Test
   fun kitReplyAndCronAreSpokenInTheCar() {
     assertTrue(shouldSpeak("reply"))
     assertTrue(shouldSpeak("push"))

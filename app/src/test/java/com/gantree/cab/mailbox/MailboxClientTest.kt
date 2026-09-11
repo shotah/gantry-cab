@@ -39,12 +39,12 @@ class MailboxClientTest {
   }
 
   @Test
-  fun openAcksLastSeenAndDropsDuplicateIds() {
+  fun openAcksLastSeenAndDeliversFrames() {
     val frames = CopyOnWriteArrayList<WireFrame>()
     val acks = CopyOnWriteArrayList<String>()
     val up = CountDownLatch(1)
     val ack = CountDownLatch(1)
-    val gotTwo = CountDownLatch(1)
+    val gotThree = CountDownLatch(1)
     val peer = AtomicReference<WebSocket>()
     server.enqueue(
       MockResponse().withWebSocketUpgrade(
@@ -63,7 +63,7 @@ class MailboxClientTest {
     val client = MailboxClient(
       onFrame = {
         frames.add(it)
-        if (frames.size >= 2) gotTwo.countDown()
+        if (frames.size >= 3) gotThree.countDown()
       },
       onState = { if (it) up.countDown() },
     )
@@ -77,8 +77,8 @@ class MailboxClientTest {
       ws.send("""{"kind":"reply","id":"a","text":"hi"}""")
       ws.send("""{"kind":"reply","id":"a","text":"again"}""")
       ws.send("""{"kind":"reply","id":"b","text":"two"}""")
-      assertTrue(gotTwo.await(5, TimeUnit.SECONDS))
-      assertEquals(listOf("hi", "two"), frames.map { it.text })
+      assertTrue(gotThree.await(5, TimeUnit.SECONDS))
+      assertEquals(listOf("hi", "again", "two"), frames.map { it.text })
       assertTrue(client.send(inbound("yo", "c", null)))
     } finally {
       client.stop()
@@ -181,6 +181,37 @@ class MailboxClientTest {
     try {
       assertTrue(err.await(5, TimeUnit.SECONDS))
       assertEquals(403, code.get())
+    } finally {
+      client.stop()
+    }
+  }
+
+  @Test
+  fun openAcksHighestSeqNotLastArrival() {
+    val acks = CopyOnWriteArrayList<String>()
+    val ack = CountDownLatch(1)
+    val up = CountDownLatch(1)
+    server.enqueue(
+      MockResponse().withWebSocketUpgrade(
+        object : WebSocketListener() {
+          override fun onMessage(webSocket: WebSocket, text: String) {
+            acks.add(text)
+            ack.countDown()
+          }
+        },
+      ),
+    )
+    val client = MailboxClient(
+      onFrame = {},
+      onState = { if (it) up.countDown() },
+    )
+    client.remember("b", 2)
+    client.remember("a", 1)
+    client.start(server.url("/").toString(), "kit", "tok")
+    try {
+      assertTrue(up.await(5, TimeUnit.SECONDS))
+      assertTrue(ack.await(5, TimeUnit.SECONDS))
+      assertTrue(acks.any { it.contains("\"since\":\"2\"") })
     } finally {
       client.stop()
     }

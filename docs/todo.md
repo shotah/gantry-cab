@@ -14,7 +14,7 @@ letting another app read the thread are the failures that matter.
 | --- | --- |
 | **Development** | Debug APK. Cleartext only to loopback. Spike may persist on loopback. Car host `ALLOW_ALL` (DHU). |
 | **Sideload (the product)** | GitHub Release. `https://` Worker. Session expiry, payload caps, slug checks, car host allowlist, no cleartext, GPS off until toggled. Debug-signed is fine. |
-| **Play Store** | Not a goal. Do not block sideload to chase a listing. |
+| **Play Store** | Not a goal. Do not block sideload to chase a listing. Only exception worth knowing: a Cab **tile** in a real car needs a Play internal-testing install — Auto's Unknown sources does not admit Car App Library apps. |
 
 ## Small
 
@@ -28,12 +28,12 @@ letting another app read the thread are the failures that matter.
 - [ ] **`gradle/verification-metadata.xml`.** Medium. Generate with `./gradlew --write-verification-metadata sha256` and commit. Wrapper jar is already validated by `setup-gradle@v4`.
 - [ ] **Release minify + shrink.** Low. `isMinifyEnabled = true`, `isShrinkResources = true`. Faster `adb install` of the 51 MB APK; strips unused code and symbol names. Keep `proguard-rules.pro` for OkHttp/Compose. Debug stays unminified. Not a release-job gate.
 - [ ] **ktlint + `.editorconfig`.** `indent_size = 2`, `max_line_length = 120`, `ktlint_code_style = intellij_idea`. Plugin `org.jlleitschuh.gradle.ktlint` (or detekt with formatting). Run in pre-commit (sub-second warm). Drop `kotlin.code.style=official` or align to 4-space.
-- [ ] **Socket past 6 h.** `MailboxService.onTimeout` already stops the socket. Still open: FGS type `remoteMessaging` or FCM wake so a drive longer than Android 15's `dataSync` limit does not go mute.
+- [ ] **Relisten on car connect.** `BootReceiver` covers reboot and APK update; `specialUse` removed the 6 h `dataSync` mute. Still open: a *Force stop* or an OEM battery killer leaves the car silent until Cab is opened. `CarConnection` only reports while the process lives, so this needs a manifest-safe wake (Bluetooth `ACL_CONNECTED` to the head unit, or FCM).
 
 ## Large
 
 - [ ] **`:mailbox` JVM module.** Everything the 70 % bar covers is Android-free (`Wire`, `MailboxUrl`, `MailboxConnect`, `Emoji`, `Slash`, `Photo`, `Jpeg`, `Look`, `GeoHint`, `Avatar`, `GoogleHint`, `Mouth`/`ChatLine`; OkHttp: `AuthApi`, `AvatarApi`, `MailboxClient`). `include(":mailbox")` with `org.jetbrains.kotlin.jvm` (match AGP's Kotlin, currently 2.4.20). `./gradlew :mailbox:test` then skips AGP — ~2 s cold for the code you touch most. `org.json`: `compileOnly` + `testImplementation`, platform class wins on device (or `kotlinx.serialization`). Point `scripts/jacoco-pct.sh` at `mailbox/build/reports/jacoco/test/jacocoTestReport.xml`; add `MailboxClient` to the gated list. `:app` stays thin (Activity, services, Compose, ViewModel, prefs).
-- [ ] **Test the Android side.** `MailboxService`, `CabViewModel`, `CabPrefs`, `CabNotifier` (`conversationId`), `ReplyService`, `CabCarAppService` have no tests. Prefer extracting decisions into `:mailbox` (`retryDelay`, `shouldReconnect`, outbox flush order, notification history) over Robolectric. Unlocks after the module split.
+- [ ] **Test the Android side.** `MailboxService`, `CabViewModel`, `CabPrefs`, `CabCarAppService` have no tests. `CabNotifier` + `ReplyService` are covered by `CabNotifierAutoContractTest` (Robolectric, SDK 34: the Android Auto notification contract and the spoken-reply → socket path — keep that one, it is the car). For the rest prefer extracting decisions into `:mailbox` (`retryDelay`, `shouldReconnect`, outbox flush order) over more Robolectric. Unlocks after the module split.
 - [ ] **Replace hand-painted screenshots.** `DocsShot.kt` is 500 lines of Java2D that must track every Compose change. Use Compose Preview Screenshot Testing (`com.android.compose.screenshot`) or Roborazzi against `@Preview`s in `ShotScenes.kt`. `Type.kt` (bundled Noto Sans) is what LayoutLib needed. `make shot` becomes a Gradle `updateScreenshots` task, not `CAB_WRITE_SHOTS=1`. After the UI settles.
 
 ## Watch — not a ticket

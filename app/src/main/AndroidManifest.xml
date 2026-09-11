@@ -8,7 +8,8 @@
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.VIBRATE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
-    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
 
     <application
         android:name=".CabApp"
@@ -34,14 +35,30 @@
             </intent-filter>
         </activity>
 
+        <!-- specialUse, not dataSync: Android 15 caps dataSync at 6 h per 24 h and
+             then stops the socket. There is no Cab tile in the car to restart it. -->
         <service
             android:name=".drive.MailboxService"
             android:exported="false"
-            android:foregroundServiceType="dataSync" />
+            android:foregroundServiceType="specialUse">
+            <property
+                android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
+                android:value="Holds the mailbox WebSocket open so Android Auto can read the crane's replies aloud and take spoken replies while driving." />
+        </service>
 
         <service
             android:name=".drive.ReplyService"
             android:exported="false" />
+
+        <!-- System broadcasts reach a non-exported receiver. Relisten when signed in. -->
+        <receiver
+            android:name=".drive.BootReceiver"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+                <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
+            </intent-filter>
+        </receiver>
 
         <service
             android:name=".drive.CabCarAppService"

@@ -106,6 +106,11 @@ android {
     checkReleaseBuilds = false
   }
 
+  testOptions {
+    // Robolectric: the Android Auto notification contract test builds a real Notification.
+    unitTests.isIncludeAndroidResources = true
+  }
+
   compileOptions {
     sourceCompatibility = JavaVersion.VERSION_21
     targetCompatibility = JavaVersion.VERSION_21
@@ -147,6 +152,8 @@ dependencies {
   testImplementation("junit:junit:4.13.2")
   testImplementation("org.json:json:20240303")
   testImplementation("com.squareup.okhttp3:mockwebserver:4.12.0")
+  testImplementation("org.robolectric:robolectric:4.16.1")
+  testImplementation("androidx.test:core:1.7.0")
   testImplementation("org.kordamp.ikonli:ikonli-swing:12.4.0")
   testImplementation("org.kordamp.ikonli:ikonli-material2-pack:12.4.0")
   testImplementation("org.kordamp.ikonli:ikonli-fontawesome6-pack:12.4.0")

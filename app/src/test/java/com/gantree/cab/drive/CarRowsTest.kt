@@ -71,6 +71,14 @@ class CarRowsTest {
   }
 
   @Test
+  fun draftTokensDoNotChangeCarTurns() {
+    val base = listOf(ChatLine("1", true, "hello", "inbound", at = 1L))
+    val a = carTurns(base + ChatLine("__draft__", false, "Gate", "draft", at = 2L))
+    val b = carTurns(base + ChatLine("__draft__", false, "Gate's on the latch until 21:00", "draft", at = 3L))
+    assertEquals(a, b)
+  }
+
+  @Test
   fun blankSlugFallsBackAndOnlyTheLastSixShow() {
     val lines = (1..8).map { ChatLine("$it", it % 2 == 0, "n$it", "reply") }
     val rows = carRows(lines, "  ", "empty")

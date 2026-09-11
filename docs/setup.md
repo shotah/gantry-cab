@@ -145,7 +145,12 @@ then Cab `POST`s `{ id_token, nonce }` to
 
 ## Android Auto
 
-- Desktop Head Unit from Android Studio, or a car.
+- Desktop Head Unit from Android Studio shows the `CabCarAppService`
+  conversation screen. A real car does **not**: Google's unknown-sources
+  toggle covers notifications, media and parked apps, not Car App
+  Library apps, and templated messaging is Play internal-testing only.
 - Real car: Android Auto app → tap Version 10× → Developer settings →
-  **Unknown sources**. That is how a sideloaded GitHub APK talks to Auto.
+  **Unknown sources**. That admits the `MessagingStyle` card — Kit read
+  aloud, spoken reply — and that is the whole in-car product for a
+  sideloaded GitHub APK. Settings → **Test car voice** proves the path.
 - Voice reply is Auto's STT. We never run `SpeechRecognition` in the dash.

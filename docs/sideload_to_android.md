@@ -1,6 +1,7 @@
 # Sideload Cab onto a phone (and Android Auto)
 
-Cab is one APK: chat on the phone, and the same app in Android Auto.
+Cab is one APK: chat on the phone, and Kit read aloud as message
+cards in Android Auto (no Cab tile in the car — see §4).
 Needs Android 9 or newer. Not on the Play Store, so the phone has to
 allow installing an app from a file.
 
@@ -82,26 +83,45 @@ https Worker URL.
 
 ## 4. Android Auto
 
-Same install. After **Listen** is connected:
+Full walk, with a driveway test and a symptom table:
+[android_auto_setup.md](android_auto_setup.md). The short version:
+
+Same install. **There is no Cab tile in the car.** Google only lets
+sideloaded apps into Android Auto as *message notifications*; the
+Unknown sources switch below "doesn't apply to apps built using the
+Android for Cars App Library"
+([Test Android apps for cars](https://developer.android.com/training/cars/testing#unknown-sources)).
+Cab's in-dash conversation screen exists, but it only shows on the
+Desktop Head Unit or a Play internal-testing install. Do not look
+for Cab in the Auto app list — you will not find it.
+
+What you get instead is the same thing Messages and WhatsApp get:
+Kit's reply pops up as a message card over maps or music, Auto reads
+it aloud, and the card offers **Reply**. Speak; Auto's voice typing
+turns it into text and Cab sends it to the crane as `inbound`.
 
 1. Install **Android Auto** from Play if the phone does not already
    have it (some Pixels include it).
 2. Open Android Auto (or Settings → Connected devices → Android Auto).
    Scroll to **Version** and tap it **10 times** until developer mode
    unlocks.
-3. Menu → **Developer settings** → **Unknown sources** → on. Google
-   moves this toggle; if it is missing, Cab will work on the phone
+3. Menu → **Developer settings** → **Unknown sources** → on. Without
+   this Auto drops every notification from a non-Play app, silently.
+   Google moves this toggle; if it is missing, Cab works on the phone
    but not in the car until that setting exists again.
-4. Plug the phone into the car.
-5. Cab should appear in the Auto app list. Open it and tap **Reply**
-   on the Kit conversation to speak first. Kit is also read as a
-   message notification while you are in maps or music. Spoken text
-   uses Auto's own voice typing (not Google Assistant); Cab sends
-   that inbound.
+4. In Android Auto settings → **Notifications**, keep **Show message
+   notifications** on.
+5. Open Cab, tap **Listen**, wait for **Live**. The shade must show
+   Cab's "Listening for Kit" notification. Kit only reaches the car
+   while that is there — Auto cannot start Cab for you.
+6. Plug the phone into the car. Open Cab → Settings → **Test car
+   voice**. Auto should read a "Car check" card aloud; the words say
+   whether the phone sees the head unit. If you hear it, Kit will be
+   read the same way.
 
-If Cab never shows in the car: unknown sources is off, notifications
-were denied, or Listen never connected. The phone app can still
-work.
+If the check card only shows on the phone: unknown sources is off, or
+Auto's notification access was turned off. If nothing shows at all:
+Cab's notifications were denied in Android settings.
 
 ## If it will not connect
 
@@ -113,5 +133,7 @@ work.
 | Live, send works, Kit never answers | The phone is in the Worker room. The **crane** still has to be running, and your Google email/`sub` must be on that crane’s `PENDANT_ALLOWED_USERS` (recreate the crane after changing it). GPS omitted is not a failed send. |
 | Message hangs / “GPS omitted” after send | Old APK waited up to 4s for a fresh GPS fix before painting the bubble. Sideload a build that uses last-known location on send. |
 | `http://` origin | This release APK blocks plain HTTP. Use the https Worker URL. |
-| Cab missing in Android Auto | Unknown sources off, or notifications off. |
+| Cab missing in the Android Auto app list | Expected for a sideload. Kit arrives as a message card, not a tile. Use Settings → **Test car voice** to prove the path. |
+| Test car voice shows on the phone, silent in the car | Unknown sources off in Auto developer settings, or Auto's notification access revoked. |
+| Kit answered on the phone yesterday, silent in the car today | Cab was not **Live** — the "Listening for Kit" notification was gone. Open Cab, Listen, then drive. |
 | Update over an older Cab fails | Uninstall Cab, then install the new APK. |

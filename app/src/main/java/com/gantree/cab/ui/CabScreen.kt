@@ -40,6 +40,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -95,6 +96,7 @@ fun CabScreen(
   onEngage: () -> Unit = {},
   typingUntil: Long = 0L,
   sub: String = "",
+  onCarTest: () -> Unit = {},
 ) {
   val scheme = MaterialTheme.colorScheme
   var settingsOpen by remember { mutableStateOf(false) }
@@ -127,9 +129,18 @@ fun CabScreen(
     delay(wait)
     typing = false
   }
-  LaunchedEffect(lines.lastOrNull()?.id, lines.lastOrNull()?.text) {
-    if (lines.isNotEmpty()) {
-      list.animateScrollToItem(lines.lastIndex)
+  var followNewest by remember { mutableStateOf(true) }
+  LaunchedEffect(list) {
+    snapshotFlow { list.isScrollInProgress }.collect { scrolling ->
+      if (!scrolling) {
+        followNewest = pinnedToNewest(list.firstVisibleItemIndex, list.firstVisibleItemScrollOffset)
+      }
+    }
+  }
+  val last = lines.lastOrNull()
+  LaunchedEffect(last?.id) {
+    if (last != null && shouldFollowNewest(followNewest, last.fromYou)) {
+      list.scrollToItem(0)
     }
   }
   val keepScreen = typing || lines.any { it.pending }
@@ -241,6 +252,7 @@ fun CabScreen(
           onSignOut = onSignOut,
           authHint = authHint,
           signingIn = signingIn,
+          onCarTest = onCarTest,
         )
       } else if (googleDoor) {
         Column(
@@ -311,65 +323,65 @@ fun CabScreen(
               modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
             )
           }
-          LazyColumn(
-            state = list,
-            modifier = Modifier.weight(1f).fillMaxWidth(),
-            verticalArrangement = Arrangement.spacedBy(8.dp),
-            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp),
-          ) {
-            if (lines.isEmpty()) {
-              item {
-                Column(
-                  modifier = Modifier.fillMaxWidth().padding(top = 48.dp),
-                  horizontalAlignment = Alignment.CenterHorizontally,
-                ) {
-                  KitAvatar(slug = slug, bytes = avatarBytes, size = 72.dp)
-                  Text(
-                    if (up) {
-                      "No messages yet. Say hello, or type / for commands."
-                    } else if (email.isNotBlank() || spike.isNotBlank()) {
-                      "Connecting to the mailbox…"
-                    } else {
-                      "Open Settings to connect. You are the operator; the name in the bar is the crane."
-                    },
-                    color = scheme.onSurfaceVariant,
-                    style = MaterialTheme.typography.bodyLarge,
-                    textAlign = TextAlign.Center,
-                    modifier = Modifier.padding(top = 16.dp, start = 24.dp, end = 24.dp),
-                  )
-                }
-              }
+          if (lines.isEmpty()) {
+            Column(
+              modifier = Modifier.weight(1f).fillMaxWidth().padding(top = 48.dp),
+              horizontalAlignment = Alignment.CenterHorizontally,
+            ) {
+              KitAvatar(slug = slug, bytes = avatarBytes, size = 72.dp)
+              Text(
+                if (up) {
+                  "No messages yet. Say hello, or type / for commands."
+                } else if (email.isNotBlank() || spike.isNotBlank()) {
+                  "Connecting to the mailbox…"
+                } else {
+                  "Open Settings to connect. You are the operator; the name in the bar is the crane."
+                },
+                color = scheme.onSurfaceVariant,
+                style = MaterialTheme.typography.bodyLarge,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.padding(top = 16.dp, start = 24.dp, end = 24.dp),
+              )
             }
-            items(lines, key = { it.id }) { line ->
-              val mine = line.fromYou
-              Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = if (mine) Arrangement.End else Arrangement.Start,
-              ) {
-                Surface(
-                  color = if (mine) scheme.primaryContainer else scheme.surfaceContainerHighest,
-                  contentColor = if (mine) scheme.onPrimaryContainer else scheme.onSurface,
-                  shape = if (mine) {
-                    RoundedCornerShape(20.dp, 20.dp, 4.dp, 20.dp)
-                  } else {
-                    RoundedCornerShape(20.dp, 20.dp, 20.dp, 4.dp)
-                  },
-                  tonalElevation = 1.dp,
-                  modifier = Modifier.fillMaxWidth(0.82f),
+          } else {
+            LazyColumn(
+              state = list,
+              reverseLayout = true,
+              modifier = Modifier.weight(1f).fillMaxWidth(),
+              verticalArrangement = Arrangement.spacedBy(8.dp),
+              contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp),
+            ) {
+              items(threadNewestFirst(lines), key = { it.id }) { line ->
+                val mine = line.fromYou
+                Row(
+                  modifier = Modifier.fillMaxWidth(),
+                  horizontalArrangement = if (mine) Arrangement.End else Arrangement.Start,
                 ) {
-                  Column(
-                    modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
-                    verticalArrangement = Arrangement.spacedBy(6.dp),
+                  Surface(
+                    color = if (mine) scheme.primaryContainer else scheme.surfaceContainerHighest,
+                    contentColor = if (mine) scheme.onPrimaryContainer else scheme.onSurface,
+                    shape = if (mine) {
+                      RoundedCornerShape(20.dp, 20.dp, 4.dp, 20.dp)
+                    } else {
+                      RoundedCornerShape(20.dp, 20.dp, 20.dp, 4.dp)
+                    },
+                    tonalElevation = 1.dp,
+                    modifier = Modifier.fillMaxWidth(0.82f),
                   ) {
-                    if (line.kind == "push") {
-                      Text("Ping", style = MaterialTheme.typography.labelSmall, color = scheme.onSurfaceVariant)
-                    }
-                    line.photo?.let { ChatPhoto(it) }
-                    if (line.text.isNotBlank()) {
-                      ChatMarkdown(text = line.text, draft = line.kind == "draft")
-                    }
-                    if (mine && line.pending) {
-                      Text("sending", style = MaterialTheme.typography.labelSmall, color = scheme.onSurfaceVariant)
+                    Column(
+                      modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
+                      verticalArrangement = Arrangement.spacedBy(6.dp),
+                    ) {
+                      if (line.kind == "push") {
+                        Text("Ping", style = MaterialTheme.typography.labelSmall, color = scheme.onSurfaceVariant)
+                      }
+                      line.photo?.let { ChatPhoto(it) }
+                      if (line.text.isNotBlank()) {
+                        ChatMarkdown(text = line.text, draft = line.kind == "draft")
+                      }
+                      if (mine && line.pending) {
+                        Text("sending", style = MaterialTheme.typography.labelSmall, color = scheme.onSurfaceVariant)
+                      }
                     }
                   }
                 }

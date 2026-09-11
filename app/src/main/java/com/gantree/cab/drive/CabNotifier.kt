@@ -91,6 +91,9 @@ object CabNotifier {
       .setContentTitle(slug)
       .setContentText(text)
       .setContentIntent(openApp(ctx))
+      // Swipe / tap-away on the phone forgets the shown turns; otherwise the
+      // next Kit reply re-posts them and Auto reads the whole backlog again.
+      .setDeleteIntent(serviceIntent(ctx, ReplyService.ACTION_READ))
       .setStyle(style)
       .addAction(reply)
       .addAction(read)

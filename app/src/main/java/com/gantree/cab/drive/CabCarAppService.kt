@@ -23,6 +23,8 @@ import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import com.gantree.cab.BuildConfig
 import com.gantree.cab.CabApp
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 
 class CabCarAppService : CarAppService() {
@@ -76,7 +78,10 @@ class CabThreadScreen(carContext: CarContext) : Screen(carContext) {
     )
     lifecycleScope.launch {
       lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
-        app.mouth.lines.collect { invalidate() }
+        app.mouth.lines
+          .map { carTurns(it) }
+          .distinctUntilChanged()
+          .collect { invalidate() }
       }
     }
   }

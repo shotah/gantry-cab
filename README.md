@@ -33,6 +33,7 @@ It does not wrap the Vinext PWA. It does not run React Native.
 
 Every screen: [docs/screens.md](docs/screens.md). `make shot` reshoots.
 Phone + Auto install: [docs/sideload_to_android.md](docs/sideload_to_android.md).
+Make the car talk: [docs/android_auto_setup.md](docs/android_auto_setup.md).
 Open work: [docs/todo.md](docs/todo.md).
 
 ## This is not
@@ -86,9 +87,9 @@ npm run dev          # 127.0.0.1:3000 — emulator reaches it as 10.0.2.2
 ```
 
 In cab: origin `http://10.0.2.2:3000`, slug `kit`, spike secret from
-`.dev.vars`. Type. Reply in the crane tab. Auto: Desktop Head Unit, or
-a real head unit with Android Auto → Developer settings → Unknown
-sources.
+`.dev.vars`. Type. Reply in the crane tab. Auto: Desktop Head Unit
+for the `ConversationItem` screen; a real head unit only gets the
+message cards (Android Auto → Developer settings → Unknown sources).
 
 Google Sign-In needs **two** OAuth clients in pendant’s GCP project:
 the existing **Web** client id in `CAB_GOOGLE_WEB_CLIENT_ID` (copied
@@ -103,9 +104,20 @@ has fake example hosts.
 ## Auto
 
 Notification messaging (`MessagingStyle` + reply + mark-as-read) is
-the heads-up while maps or music are up. Opening Cab in the Auto app
-list is a `ConversationItem` (Car API 7): Auto's Reply button uses
-host voice, not Google Assistant. We send the transcript as `inbound`.
+the car. Kit's reply is a message card over maps or music; Auto reads
+it and takes a spoken reply. That is the whole sideload story — Auto's
+**Unknown sources** switch admits notifications from a non-Play APK,
+and nothing else.
 
-Foreground socket while the app is signed in. FCM lock-screen when
-the process is dead is later — same later as pendant Web Push.
+The `ConversationItem` screen (`CabCarAppService`, Car API 7) is real
+but only reachable on the Desktop Head Unit or a Play internal-testing
+install: Google's unknown-sources toggle "doesn't apply to apps built
+using the Android for Cars App Library", and templated messaging is
+Play internal/closed testing only. Do not expect a Cab tile in a car.
+Settings → **Test car voice** posts a check card through the same
+path so you can hear it in the driveway.
+
+Foreground socket (`specialUse`, no 6 h cap) while the app is signed
+in; Auto cannot start Cab, so be **Live** before you plug in. FCM
+lock-screen when the process is dead is later — same later as pendant
+Web Push.

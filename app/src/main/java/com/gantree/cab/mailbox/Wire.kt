@@ -34,6 +34,8 @@ data class WireFrame(
   val images: List<String>? = null,
   val context: PhoneContext? = null,
   val commands: List<SlashCommand>? = null,
+  val seq: Int? = null,
+  val at: Long? = null,
 )
 
 const val TEXT_BYTES_MAX = 8_000
@@ -88,6 +90,8 @@ fun parseFrame(raw: String): WireFrame? {
       kind = kind,
       id = o.optStringOrNull("id"),
       since = o.optStringOrNull("since"),
+      seq = orderSeq(o.opt("seq")),
+      at = orderAt(o.opt("at")),
       images = o.optJSONArray("images")?.let { arr ->
         buildList {
           for (i in 0 until arr.length()) {
@@ -116,6 +120,39 @@ fun pinFrame(context: PhoneContext): WireFrame =
   WireFrame(kind = "pin", context = context)
 
 fun ackSince(since: String): WireFrame = WireFrame(kind = "ack", since = since)
+
+/** Mailbox sequence; 1-based. Ignore junk so an old client cannot poison a frame. */
+fun orderSeq(raw: Any?): Int? {
+  val n = jsonWholeNumber(raw) ?: return null
+  if (n < 1 || n > Int.MAX_VALUE) {
+    return null
+  }
+  return n.toInt()
+}
+
+/** Epoch ms when the mailbox accepted the frame. */
+fun orderAt(raw: Any?): Long? {
+  val n = jsonWholeNumber(raw) ?: return null
+  return n.takeIf { it >= 0 }
+}
+
+private fun jsonWholeNumber(raw: Any?): Long? = when (raw) {
+  null, JSONObject.NULL -> null
+  is Int -> raw.toLong()
+  is Long -> raw
+  is Short -> raw.toLong()
+  is Byte -> raw.toLong()
+  is Double -> {
+    if (!raw.isFinite()) {
+      null
+    } else {
+      val n = raw.toLong()
+      if (n.toDouble() == raw) n else null
+    }
+  }
+  is Float -> jsonWholeNumber(raw.toDouble())
+  else -> null
+}
 
 fun shouldSpeak(kind: String?): Boolean = kind == "reply" || kind == "push"
 

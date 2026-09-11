@@ -171,8 +171,8 @@ class MouthTest {
     mouth.ingest(WireFrame(kind = "typing"))
     mouth.ingest(WireFrame(kind = "push", text = "still on the dock?"))
     assertEquals(0L, mouth.typingUntil.value)
-    assertEquals(DRAFT_ID, mouth.lines.value.first().id)
-    assertEquals("push", mouth.lines.value.last().kind)
+    assertEquals(DRAFT_ID, mouth.lines.value.last().id)
+    assertEquals("push", mouth.lines.value.first().kind)
   }
 
   @Test
@@ -183,5 +183,34 @@ class MouthTest {
     assertTrue(mouth.lines.value.single().pending)
     mouth.ingest(WireFrame(kind = "ack", id = "a1"))
     assertFalse(mouth.lines.value.single().pending)
+  }
+
+  @Test
+  fun catchUpPaintsBySeqAndKeepsADraftLast() {
+    val mouth = Mouth()
+    mouth.ingest(WireFrame(kind = "reply", id = "b", text = "second", seq = 2, at = 20L))
+    mouth.ingest(WireFrame(kind = "reply", id = "a", text = "first", seq = 1, at = 10L))
+    assertEquals(listOf("a", "b"), mouth.lines.value.map { it.id })
+    mouth.ingest(WireFrame(kind = "draft", text = "⏳ spinning up"))
+    mouth.ingest(
+      WireFrame(kind = "inbound", id = "late", text = "I already sent this", seq = 3, at = 15L),
+    )
+    assertEquals(listOf("a", "b", "late", DRAFT_ID), mouth.lines.value.map { it.id })
+    val restamp = mouth.ingest(WireFrame(kind = "reply", id = "b", text = "second", seq = 2, at = 20L))
+    assertEquals(false, restamp)
+    assertEquals(4, mouth.lines.value.size)
+  }
+
+  @Test
+  fun echoRestampKeepsPendingUntilAck() {
+    val mouth = Mouth()
+    mouth.add(ChatLine("a1", true, "hi", "inbound", pending = true, at = 50L))
+    assertEquals(false, mouth.ingest(WireFrame(kind = "inbound", id = "a1", text = "hi", seq = 4, at = 40L)))
+    val line = mouth.lines.value.single()
+    assertEquals(4, line.seq)
+    assertEquals(40L, line.at)
+    assertEquals(true, line.pending)
+    mouth.ingest(WireFrame(kind = "ack", id = "a1"))
+    assertEquals(false, mouth.lines.value.single().pending)
   }
 }

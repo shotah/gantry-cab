@@ -56,7 +56,7 @@ class MailboxService : LifecycleService() {
     super.onCreate()
     CabNotifier.ensureChannel(this)
     if (Build.VERSION.SDK_INT >= 34) {
-      startForeground(CabNotifier.CONNECTED_ID, CabNotifier.connected(this), ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC)
+      startForeground(CabNotifier.CONNECTED_ID, CabNotifier.connected(this), ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE)
     } else {
       startForeground(CabNotifier.CONNECTED_ID, CabNotifier.connected(this))
     }
@@ -129,8 +129,8 @@ class MailboxService : LifecycleService() {
     app.mouth.setHint("Connecting to mailbox…")
     val mailbox = MailboxClient(
       onFrame = { frame ->
-        app.mouth.ingest(frame)
-        if (frame.spoken()) {
+        val fresh = app.mouth.ingest(frame)
+        if (fresh && frame.spoken()) {
           val kind = frame.kind
           val body = notifyBody(frame.text, !frame.images.isNullOrEmpty())
           if (shouldPost(app.phoneResumed, app.carAttached, kind, app.carThreadVisible)) {

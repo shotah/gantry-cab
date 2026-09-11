@@ -26,10 +26,11 @@ class MailboxClient(
   private val attempt = AtomicInteger(0)
   @Volatile
   private var lastSeenId: String? = null
+  private var lastSeenSeq: Int = 0
   private val seen = LinkedHashSet<String>()
 
-  fun remember(id: String) {
-    synchronized(seen) { rememberLocked(id) }
+  fun remember(id: String, seq: Int? = null) {
+    synchronized(seen) { noteLocked(id, seq) }
   }
 
   fun start(origin: String, slug: String, bearer: String) {
@@ -49,14 +50,14 @@ class MailboxClient(
     return ws.send(encodeFrame(frame))
   }
 
-  private fun rememberLocked(id: String) {
-    lastSeenId = id
-    seen.add(id)
-    while (seen.size > 200) {
-      val first = seen.first()
-      seen.remove(first)
-    }
+  private fun noteLocked(id: String, seq: Int?) {
+    val next = advanceCursor(ThreadCursor(id = lastSeenId, seq = lastSeenSeq), id, seq)
+    lastSeenId = next.id
+    lastSeenSeq = next.seq
+    rememberSeen(seen, id)
   }
+
+  private fun sinceLocked(): String? = ackSince(ThreadCursor(id = lastSeenId, seq = lastSeenSeq))
 
   private fun connect(origin: String, slug: String, bearer: String) {
     if (stopped.get()) {
@@ -75,7 +76,7 @@ class MailboxClient(
         }
         attempt.set(0)
         socket.set(webSocket)
-        val since = synchronized(seen) { lastSeenId }
+        val since = synchronized(seen) { sinceLocked() }
         since?.let { webSocket.send(encodeFrame(ackSince(it))) }
         onState(true)
       }
@@ -87,17 +88,8 @@ class MailboxClient(
         }
         val frame = parseFrame(text) ?: return
         val id = frame.id
-        if (id != null) {
-          synchronized(seen) {
-            if (!seen.add(id)) {
-              return
-            }
-            lastSeenId = id
-            while (seen.size > 200) {
-              val first = seen.first()
-              seen.remove(first)
-            }
-          }
+        if (id != null && frame.kind != "ack") {
+          synchronized(seen) { noteLocked(id, frame.seq) }
         }
         onFrame(frame)
       }

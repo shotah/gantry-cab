@@ -1,9 +1,12 @@
 package com.gantree.cab
 
 import android.Manifest
+import android.app.NotificationManager
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
+import android.provider.Settings
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -13,7 +16,11 @@ import androidx.activity.viewModels
 import androidx.compose.runtime.getValue
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.gantree.cab.drive.CabNotifier
 import com.gantree.cab.drive.MailboxService
+import com.gantree.cab.drive.carCheckText
+import com.gantree.cab.drive.carTestBlocked
+import com.gantree.cab.mailbox.parseSlug
 import com.gantree.cab.ui.CabScreen
 import com.gantree.cab.ui.CabTheme
 
@@ -112,6 +119,7 @@ class MainActivity : ComponentActivity() {
           },
           typingUntil = typingUntil,
           sub = sub,
+          onCarTest = { carTest(slug) },
         )
       }
     }
@@ -127,13 +135,43 @@ class MainActivity : ComponentActivity() {
     super.onPause()
   }
 
+  private fun notifyGranted(): Boolean =
+    Build.VERSION.SDK_INT < 33 ||
+      ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) ==
+      PackageManager.PERMISSION_GRANTED
+
   private fun requestNotify() {
-    if (Build.VERSION.SDK_INT >= 33
-      && ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS)
-      != PackageManager.PERMISSION_GRANTED
-    ) {
+    if (!notifyGranted()) {
       askNotify.launch(Manifest.permission.POST_NOTIFICATIONS)
     }
+  }
+
+  /**
+   * Settings → Test car voice. Same [CabNotifier.kitMessage] path as a real
+   * Kit reply, so Android Auto reads it if the sideload is allowed. When
+   * Android itself would drop the card, ask / open the switch instead.
+   */
+  private fun carTest(slug: String) {
+    if (!notifyGranted()) {
+      requestNotify()
+      return
+    }
+    CabNotifier.ensureChannel(this)
+    val nm = getSystemService(NotificationManager::class.java)
+    val enabled = nm.areNotificationsEnabled()
+    val importance = nm.getNotificationChannel(CabNotifier.CHANNEL)?.importance
+    if (carTestBlocked(enabled, importance)) {
+      val fix = if (enabled) {
+        Intent(Settings.ACTION_CHANNEL_NOTIFICATION_SETTINGS)
+          .putExtra(Settings.EXTRA_CHANNEL_ID, CabNotifier.CHANNEL)
+      } else {
+        Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS)
+      }
+      startActivity(fix.putExtra(Settings.EXTRA_APP_PACKAGE, packageName))
+      return
+    }
+    val app = application as CabApp
+    CabNotifier.kitMessage(this, parseSlug(slug) ?: "cab", carCheckText(app.carAttached))
   }
 
   private fun requestLoc() {
