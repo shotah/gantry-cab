@@ -36,6 +36,7 @@ data class WireFrame(
   val commands: List<SlashCommand>? = null,
   val seq: Int? = null,
   val at: Long? = null,
+  val replay: Boolean = false,
 )
 
 const val TEXT_BYTES_MAX = 8_000
@@ -92,6 +93,7 @@ fun parseFrame(raw: String): WireFrame? {
       since = o.optStringOrNull("since"),
       seq = orderSeq(o.opt("seq")),
       at = orderAt(o.opt("at")),
+      replay = o.optBoolean("replay", false),
       images = o.optJSONArray("images")?.let { arr ->
         buildList {
           for (i in 0 until arr.length()) {
@@ -154,7 +156,8 @@ private fun jsonWholeNumber(raw: Any?): Long? = when (raw) {
   else -> null
 }
 
-fun shouldSpeak(kind: String?): Boolean = kind == "reply" || kind == "push"
+fun shouldSpeak(kind: String?, replay: Boolean = false): Boolean =
+  !replay && (kind == "reply" || kind == "push")
 
 fun capWireText(text: String?): String? {
   val t = text ?: return null

@@ -18,6 +18,10 @@ letting another app read the thread are the failures that matter.
 
 ## Small
 
+- [x] **Transcript hydrate** — mailbox replays last 80 `inbound` /
+      `reply` / `push` on connect with additive `replay: true`.
+      `Mouth.ingest` already paints; `shouldSpeak(kind, replay)` skips
+      Auto HUNs. Ship this APK with the pendant Worker that hydrates.
 - [ ] **"Drop a pin" launcher shortcut.** Parity P2. Pendant has a PWA shortcut `/?pin=1`. Cab already pushes a conversation shortcut; add a static `shortcuts.xml` that starts `MailboxService.sendPin`.
 - [ ] **Drop `DocsShotTest` coordinate assertions.** `img.getRGB(200, 500)` fails on any layout tweak and says nothing about behaviour. Keep a "renders without throwing" test until the screenshot replacement lands.
 - [ ] **Tag slow/IO tests** (MockWebServer, Java2D) with a JUnit `Category` so `make watch` can exclude them.
@@ -54,7 +58,6 @@ letting another app read the thread are the failures that matter.
 
 Pendant does not have these either (`gantry-pendant` `docs/todo.md`). Do not build them "to catch up":
 
-- Transcript that survives reload
 - Failed + retry on an unacked send; copy on long-press
 - Painted timestamps / day chips
 - Crane presence (`asleep` / `queued`) separate from socket `live`

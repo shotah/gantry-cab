@@ -131,6 +131,15 @@ class WireTest {
     assertTrue(shouldSpeak("push"))
     assertFalse(shouldSpeak("ack"))
     assertFalse(shouldSpeak("inbound"))
+    assertFalse(shouldSpeak("reply", replay = true))
+    assertFalse(shouldSpeak("push", replay = true))
+    val live = parseFrame("""{"kind":"reply","text":"hi"}""")!!
+    assertFalse(live.replay)
+    assertTrue(shouldSpeak(live.kind, live.replay))
+    val replayed = parseFrame("""{"kind":"reply","text":"hi","replay":true}""")!!
+    assertTrue(replayed.replay)
+    assertFalse(shouldSpeak(replayed.kind, replayed.replay))
+    assertFalse(encodeFrame(replayed).contains("replay"))
   }
 
   @Test

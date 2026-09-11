@@ -108,8 +108,10 @@ Open it from Settings → Connected devices → Connection preferences →
 
 ## 5. On the road
 
-- Every Kit reply and push is read. A push with no text is read as
-  "ping"; a photo as "Photo".
+- Every **new** Kit reply and push is read. A push with no text is
+  read as "ping"; a photo as "Photo". Opening Cab or reconnecting
+  paints the last 80 turns (`replay: true`) without a chime — those
+  are history, not a new mouth.
 - **Reply**: tap the card → Reply → speak, or answer Auto's "Do you
   want to reply?" Hands off the phone.
 - **Mark as read** on the card (or tapping it) clears it and Cab's
@@ -135,7 +137,7 @@ Open it from Settings → Connected devices → Connection preferences →
 | Card read, reply never reaches Kit | Cab not Live; reply is queued | Phone bubble says *sending*; comes through when Live. If it never does, Connect again |
 | Worked yesterday, silent today, no "Listening for Kit" in the shade | OEM battery killer, or Force stop | §1.2; open Cab once |
 | Kit answers on the phone but the car never speaks | Cab was open on the phone screen | Lock the phone |
-| Auto re-reads old turns | Older APK | Update; swiping the card now clears history |
+| Auto re-reads old turns | Older APK (ignores `replay`) on a mailbox that hydrates | Update Cab; this APK paints last 80 on connect but does not chime. Swiping a live card still clears history |
 | Looking for a Cab tile in Auto | Expected | There is none for a sideload. See §0 |
 
 ## 7. If you really want the tile

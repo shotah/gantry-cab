@@ -29,5 +29,6 @@ class CabAppTest {
     assertTrue(frame.id!!.isNotEmpty())
     assertEquals("inbound", app.mouth.lines.value.single().kind)
     assertTrue(com.gantree.cab.mailbox.WireFrame(kind = "reply").spoken())
+    assertFalse(com.gantree.cab.mailbox.WireFrame(kind = "reply", replay = true).spoken())
   }
 }

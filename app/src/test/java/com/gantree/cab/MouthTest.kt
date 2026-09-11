@@ -77,6 +77,21 @@ class MouthTest {
   }
 
   @Test
+  fun transcriptReplayPaintsAndDedupesById() {
+    val mouth = Mouth()
+    assertTrue(
+      mouth.ingest(WireFrame(kind = "inbound", id = "a", text = "hatch", seq = 1, at = 10, replay = true)),
+    )
+    assertTrue(
+      mouth.ingest(WireFrame(kind = "reply", id = "b", text = "latched", seq = 2, at = 20, replay = true)),
+    )
+    assertFalse(
+      mouth.ingest(WireFrame(kind = "reply", id = "b", text = "latched", seq = 2, at = 20, replay = true)),
+    )
+    assertEquals(listOf("hatch", "latched"), mouth.lines.value.map { it.text })
+  }
+
+  @Test
   fun draftReplacesInPlaceAndBlankClears() {
     val mouth = Mouth()
     mouth.ingest(WireFrame(kind = "draft", text = "Gate"))

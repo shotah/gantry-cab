@@ -51,4 +51,4 @@ fun CabApp.outbound(text: String, context: PhoneContext?, images: List<String>? 
   return frame
 }
 
-fun WireFrame.spoken(): Boolean = shouldSpeak(kind)
+fun WireFrame.spoken(): Boolean = shouldSpeak(kind, replay)
