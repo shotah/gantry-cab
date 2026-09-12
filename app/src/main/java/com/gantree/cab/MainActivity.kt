@@ -2,6 +2,7 @@ package com.gantree.cab
 
 import android.Manifest
 import android.app.NotificationManager
+import android.content.ActivityNotFoundException
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
@@ -20,6 +21,7 @@ import com.gantree.cab.drive.CabNotifier
 import com.gantree.cab.drive.MailboxService
 import com.gantree.cab.drive.carCheckText
 import com.gantree.cab.drive.carTestBlocked
+import com.gantree.cab.mailbox.cameraShotUri
 import com.gantree.cab.mailbox.parseSlug
 import com.gantree.cab.ui.CabScreen
 import com.gantree.cab.ui.CabTheme
@@ -31,6 +33,9 @@ class MainActivity : ComponentActivity() {
   private val askLoc = registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { }
   private val pickPhoto = registerForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
     if (uri != null) vm.sendPhoto(this, uri)
+  }
+  private val takePhoto = registerForActivityResult(ActivityResultContracts.TakePicture()) { taken ->
+    if (taken) vm.sendPhoto(this, cameraShotUri(this))
   }
   private val pickAvatar = registerForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
     if (uri != null) vm.uploadAvatar(this, uri)
@@ -113,6 +118,13 @@ class MainActivity : ComponentActivity() {
           },
           onPhoto = {
             pickPhoto.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
+          },
+          onCamera = {
+            try {
+              takePhoto.launch(cameraShotUri(this))
+            } catch (_: ActivityNotFoundException) {
+              (application as CabApp).mouth.setHint("No camera app on this phone.")
+            }
           },
           onAvatar = {
             pickAvatar.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))

@@ -59,6 +59,6 @@ Voice is Auto's host STT, not Assistant.
 | `phone-down` | `down` | Socket down; local echo still `sending`. |
 | `phone-settings` | `empty` | Settings screen: origin, slug, theme, font size. |
 | `phone-emoji` | `thread` | Emoji picker over compose. |
-| `phone-attach` | `thread` | Paperclip menu: photo, commands, GPS, pin. |
+| `phone-attach` | `thread` | Paperclip menu: photo, camera, commands, GPS, pin. |
 | `auto-empty` | `empty` | Auto list, empty. |
 | `auto-thread` | `thread` | Auto list, last six turns. |

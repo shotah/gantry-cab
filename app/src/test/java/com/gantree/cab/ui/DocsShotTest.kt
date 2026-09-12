@@ -158,7 +158,7 @@ class DocsShotTest {
 
   @Test
   fun vectorDrawablesParseToShapes() {
-    for (name in listOf(VEC_ATTACH, VEC_SMILE, VEC_PHOTO, VEC_CODE, VEC_PIN)) {
+    for (name in listOf(VEC_ATTACH, VEC_SMILE, VEC_PHOTO, VEC_CAMERA, VEC_CODE, VEC_PIN)) {
       val shapes = vectorShapes(name)
       assertTrue(name, shapes.isNotEmpty())
       assertTrue(name, shapes.any { it.bounds2D.width > 4 && it.bounds2D.height > 4 })

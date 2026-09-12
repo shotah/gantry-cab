@@ -113,7 +113,7 @@ fun renderPhone(sampleId: String, settings: Boolean = false, emoji: Boolean = fa
   val composerTop = PHONE_H - COMPOSE_H
   val overlayH = when {
     emoji -> 128
-    attach -> 176
+    attach -> 216
     else -> 0
   }
   val overlayTop = composerTop - 8 - overlayH
@@ -433,7 +433,7 @@ private fun paintEmojiPanel(g: Graphics2D, font: Font, top: Int) {
 
 private fun paintAttachMenu(g: Graphics2D, font: Font, top: Int) {
   val w = 196f
-  val h = 168f
+  val h = 208f
   val x = 16f
   g.color = Panel
   g.fill(RoundRectangle2D.Float(x, top.toFloat(), w, h, 8f, 8f))
@@ -442,6 +442,10 @@ private fun paintAttachMenu(g: Graphics2D, font: Font, top: Int) {
   g.color = Fg
   g.drawString("Photo", x.toInt() + 44, y)
   paintVectorDrawable(g, VEC_PHOTO, x + 24f, y - 6f, 16, Muted)
+  y += 40
+  g.color = Fg
+  g.drawString("Camera", x.toInt() + 44, y)
+  paintVectorDrawable(g, VEC_CAMERA, x + 24f, y - 6f, 16, Muted)
   y += 40
   g.color = Fg
   g.drawString("Commands", x.toInt() + 44, y)

@@ -81,7 +81,11 @@ class CabViewModel(private val app: CabApp) : ViewModel() {
   val avatarRev = app.mouth.avatarRev.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), 0)
   val painted = combine(_followTheme, app.mouth.roomTheme, _theme) { follow, room, mine ->
     paintedTheme(follow, room, mine)
-  }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), paintedTheme(app.prefs.followTheme, "", app.prefs.theme))
+  }.stateIn(
+    viewModelScope,
+    SharingStarted.WhileSubscribed(5_000),
+    paintedTheme(app.prefs.followTheme, app.mouth.roomTheme.value, app.prefs.theme),
+  )
   val faceHint = app.mouth.faceHint.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), "")
   val typingUntil = app.mouth.typingUntil.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), 0L)
 
@@ -93,9 +97,10 @@ class CabViewModel(private val app: CabApp) : ViewModel() {
           if (origin.isBlank() || app.prefs.bearer.isBlank()) {
             return@collectLatest
           }
-          val bytes = app.avatar.fetch(origin, room, app.prefs.bearer, rev)
-          _face.value = bytes
-          app.face = bytes
+          if (_face.value == null) {
+            paintFace(withContext(Dispatchers.IO) { app.avatar.cached(origin, room) })
+          }
+          paintFace(app.avatar.fetch(origin, room, app.prefs.bearer, rev))
         }
     }
     viewModelScope.launch {
@@ -111,7 +116,10 @@ class CabViewModel(private val app: CabApp) : ViewModel() {
         if (origin.isBlank() || app.prefs.bearer.isBlank()) {
           return@collectLatest
         }
-        _backdrop.value = app.avatar.fetch(origin, room, app.prefs.bearer, rev, "/api/backdrop")
+        if (_backdrop.value == null) {
+          paintBackdrop(withContext(Dispatchers.IO) { app.avatar.cached(origin, room, "/api/backdrop") })
+        }
+        paintBackdrop(app.avatar.fetch(origin, room, app.prefs.bearer, rev, "/api/backdrop"))
       }
     }
     viewModelScope.launch {
@@ -121,11 +129,30 @@ class CabViewModel(private val app: CabApp) : ViewModel() {
           if (origin.isBlank() || app.prefs.bearer.isBlank()) {
             return@collectLatest
           }
+          if (app.mouth.roomTheme.value.isEmpty()) {
+            app.mouth.setRoomTheme(app.prefs.roomTheme(room))
+          }
           val got = withContext(Dispatchers.IO) { app.theme.fetch(origin, room, app.prefs.bearer) }
           if (got != null) {
             app.mouth.setRoomTheme(got)
+            app.prefs.putRoomTheme(room, got)
           }
         }
+    }
+  }
+
+  /** Same bytes stay put — no re-decode when the mailbox confirms what disk already painted. */
+  private fun paintFace(bytes: ByteArray?) {
+    if (bytes contentEquals _face.value) {
+      return
+    }
+    _face.value = bytes
+    app.face = bytes
+  }
+
+  private fun paintBackdrop(bytes: ByteArray?) {
+    if (!(bytes contentEquals _backdrop.value)) {
+      _backdrop.value = bytes
     }
   }
 
@@ -190,6 +217,7 @@ class CabViewModel(private val app: CabApp) : ViewModel() {
       return
     }
     val scene = sampleScene(id) ?: return
+    app.sampleShown = true
     _slug.value = scene.slug
     _email.value = scene.email
     app.mouth.replace(scene.lines, scene.up, scene.hint)

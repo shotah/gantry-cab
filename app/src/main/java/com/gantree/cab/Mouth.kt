@@ -5,8 +5,10 @@ import com.gantree.cab.mailbox.THREAD_MAX
 import com.gantree.cab.mailbox.ThreadOrder
 import com.gantree.cab.mailbox.WireFrame
 import com.gantree.cab.mailbox.capThread
+import com.gantree.cab.mailbox.compareThread
 import com.gantree.cab.mailbox.describeSendError
 import com.gantree.cab.mailbox.faceRev
+import com.gantree.cab.mailbox.isDraftBubble
 import com.gantree.cab.mailbox.knownTheme
 import com.gantree.cab.mailbox.placeInThread
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -98,6 +100,19 @@ class Mouth(
     _roomTheme.value = ""
   }
 
+  /**
+   * Last run's thread from disk. Ids already on the thread win (the mailbox
+   * got there first); drafts never come back. Mailbox order, then capped.
+   */
+  fun hydrate(cached: List<ChatLine>) {
+    val have = _lines.value.mapTo(HashSet()) { it.id }
+    val add = cached.filter { it.id !in have && !isDraftBubble(it.kind) }
+    if (add.isEmpty()) {
+      return
+    }
+    _lines.value = capThread((_lines.value + add).sortedWith(::compareThread), THREAD_MAX)
+  }
+
   /** @return true when a new turn was painted (not a restamp, draft, or control frame). */
   fun ingest(frame: WireFrame): Boolean {
     val rev = faceRev(frame.kind, frame.text)
@@ -153,8 +168,11 @@ class Mouth(
       if (existing != null) {
         val nextSeq = frame.seq ?: existing.seq
         val nextAt = frame.at ?: existing.at
-        if (nextSeq != existing.seq || nextAt != existing.at) {
-          commit(existing.copy(seq = nextSeq, at = nextAt))
+        // A live echo still waits for its ack. A replay is the transcript itself:
+        // a bubble restored from disk as "sending" is in the room, so it landed.
+        val nextPending = existing.pending && !frame.replay
+        if (nextSeq != existing.seq || nextAt != existing.at || nextPending != existing.pending) {
+          commit(existing.copy(seq = nextSeq, at = nextAt, pending = nextPending))
         }
         return false
       }

@@ -8,10 +8,15 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
+import org.junit.Rule
 import org.junit.Test
+import org.junit.rules.TemporaryFolder
 import kotlinx.coroutines.runBlocking
+import java.io.File
 
 class AvatarApiTest {
+  @get:Rule
+  val tmp = TemporaryFolder()
   private lateinit var server: MockWebServer
   private lateinit var api: AvatarApi
 
@@ -53,6 +58,56 @@ class AvatarApiTest {
     server.enqueue(MockResponse().setResponseCode(404))
     assertNull(runBlocking { api.fetch(server.url("/").toString(), "kit", "", 0) })
     assertNull(server.takeRequest().getHeader("Authorization"))
+  }
+
+  @Test
+  fun fetchKeepsTheLastFaceOnDiskAndCachedReadsItBack() {
+    val cache = BlobCache(File(tmp.root, "blobs"))
+    val api = AvatarApi(cache = cache)
+    val origin = server.url("/").toString()
+    assertNull(api.cached(origin, "kit"))
+    val jpeg = fakeJpeg()
+    server.enqueue(MockResponse().setBody(Buffer().write(jpeg)))
+    runBlocking { api.fetch(origin, "kit", "jwe", 1) }
+    assertTrue(jpeg.contentEquals(api.cached(origin, "kit")))
+    assertTrue(jpeg.contentEquals(cache.read(blobCacheKey(origin, "kit", "/api/avatar"))))
+    assertNull(api.cached(origin, "kit", "/api/backdrop"))
+  }
+
+  @Test
+  fun fetchFailureAnswersWithTheCachedBytesNotBlank() {
+    val cache = BlobCache(File(tmp.root, "blobs"))
+    val api = AvatarApi(cache = cache)
+    val origin = server.url("/").toString()
+    val jpeg = fakeJpeg()
+    server.enqueue(MockResponse().setBody(Buffer().write(jpeg)))
+    runBlocking { api.fetch(origin, "kit", "jwe", 1) }
+    server.enqueue(MockResponse().setResponseCode(503))
+    assertTrue(jpeg.contentEquals(runBlocking { api.fetch(origin, "kit", "jwe", 1) }))
+    server.enqueue(MockResponse().setResponseCode(401))
+    assertTrue(jpeg.contentEquals(runBlocking { api.fetch(origin, "kit", "expired", 1) }))
+    // Offline: nothing listens on port 1.
+    val dead = "http://127.0.0.1:1"
+    cache.write(blobCacheKey(dead, "kit", "/api/avatar"), jpeg)
+    assertTrue(jpeg.contentEquals(runBlocking { api.fetch(dead, "kit", "jwe", 1) }))
+  }
+
+  @Test
+  fun fetchMissForgetsTheCachedBytes() {
+    val api = AvatarApi(cache = BlobCache(File(tmp.root, "blobs")))
+    val origin = server.url("/").toString()
+    server.enqueue(MockResponse().setBody(Buffer().write(fakeJpeg())))
+    runBlocking { api.fetch(origin, "kit", "jwe", 1, "/api/backdrop") }
+    assertTrue(api.cached(origin, "kit", "/api/backdrop") != null)
+    server.enqueue(MockResponse().setResponseCode(404))
+    assertNull(runBlocking { api.fetch(origin, "kit", "jwe", 0, "/api/backdrop") })
+    assertNull(api.cached(origin, "kit", "/api/backdrop"))
+  }
+
+  @Test
+  fun failureWithoutACacheIsStillNull() {
+    server.enqueue(MockResponse().setResponseCode(503))
+    assertNull(runBlocking { api.fetch(server.url("/").toString(), "kit", "jwe", 0) })
   }
 
   @Test

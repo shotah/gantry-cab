@@ -73,6 +73,7 @@ fun CabCompose(
   catalog: List<SlashCommand>,
   onSend: (String) -> Unit,
   onPhoto: () -> Unit,
+  onCamera: () -> Unit,
   onPin: () -> Unit,
   onGpsToggle: () -> Unit,
   onEngage: () -> Unit,
@@ -186,6 +187,10 @@ fun CabCompose(
                     attachOpen = false
                     onPhoto()
                   },
+                  onCamera = {
+                    attachOpen = false
+                    onCamera()
+                  },
                   onCommands = {
                     attachOpen = false
                     emojiOpen = false
@@ -243,6 +248,7 @@ private fun AttachMenu(
   disabled: Boolean,
   gpsOn: Boolean,
   onPhoto: () -> Unit,
+  onCamera: () -> Unit,
   onCommands: () -> Unit,
   onGpsToggle: () -> Unit,
   onPin: () -> Unit,
@@ -258,6 +264,12 @@ private fun AttachMenu(
       icon = R.drawable.ic_photo,
       enabled = !disabled,
       onClick = onPhoto,
+    )
+    AttachRow(
+      label = "Camera",
+      icon = R.drawable.ic_photo_camera,
+      enabled = !disabled,
+      onClick = onCamera,
     )
     AttachRow(
       label = "Commands",

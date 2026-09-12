@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- FileProvider scope for cameraShotUri(): only cache/camera/, nothing else in app storage. -->
+<paths>
+    <cache-path
+        name="camera"
+        path="camera/" />
+</paths>

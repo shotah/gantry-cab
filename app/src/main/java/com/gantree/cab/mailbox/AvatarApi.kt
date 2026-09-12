@@ -19,12 +19,29 @@ sealed class AvatarUpload {
   data class Err(val error: String) : AvatarUpload()
 }
 
+/** One GET of a room blob. Missing = the room has none; Failed = we do not know. */
+private sealed class Fetched {
+  class Got(val bytes: ByteArray) : Fetched()
+  object Missing : Fetched()
+  object Failed : Fetched()
+}
+
 class AvatarApi(
   private val client: OkHttpClient = OkHttpClient.Builder()
     .connectTimeout(15, TimeUnit.SECONDS)
     .readTimeout(15, TimeUnit.SECONDS)
     .build(),
+  private val cache: BlobCache? = null,
 ) {
+  /** What [fetch] last kept for this room — paint it before the mailbox answers. */
+  fun cached(origin: String, slug: String, path: String = "/api/avatar"): ByteArray? =
+    cache?.read(blobCacheKey(origin, slug, path))
+
+  /**
+   * Current bytes, or null when the room has none. A failed request (offline,
+   * 5xx, expired session) answers with the cached bytes instead of blanking
+   * the face; a 404 forgets them.
+   */
   suspend fun fetch(
     origin: String,
     slug: String,
@@ -32,6 +49,7 @@ class AvatarApi(
     rev: Int,
     path: String = "/api/avatar",
   ): ByteArray? {
+    val key = blobCacheKey(origin, slug, path)
     val req = Request.Builder().url(blobUrl(origin, path, slug, rev)).get()
     if (bearer.isNotBlank()) {
       req.header("Authorization", "Bearer $bearer")
@@ -41,17 +59,32 @@ class AvatarApi(
       cont.invokeOnCancellation { call.cancel() }
       call.enqueue(object : Callback {
         override fun onFailure(call: Call, e: IOException) {
-          if (cont.isActive) cont.resume(null)
+          if (cont.isActive) cont.resume(cache?.read(key))
         }
 
         override fun onResponse(call: Call, response: Response) {
-          val bytes = try {
+          val got = try {
             response.use { res ->
-              if (!res.isSuccessful) null
-              else res.body?.bytes()?.takeIf { it.isNotEmpty() }
+              when {
+                res.isSuccessful ->
+                  res.body?.bytes()?.takeIf { it.isNotEmpty() }?.let { Fetched.Got(it) } ?: Fetched.Missing
+                res.code == 404 -> Fetched.Missing
+                else -> Fetched.Failed
+              }
             }
           } catch (_: Exception) {
-            null
+            Fetched.Failed
+          }
+          val bytes = when (got) {
+            is Fetched.Got -> {
+              cache?.write(key, got.bytes)
+              got.bytes
+            }
+            Fetched.Missing -> {
+              cache?.write(key, null)
+              null
+            }
+            Fetched.Failed -> cache?.read(key)
           }
           if (cont.isActive) cont.resume(bytes)
         }

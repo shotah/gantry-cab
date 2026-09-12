@@ -300,6 +300,45 @@ class MouthTest {
   }
 
   @Test
+  fun hydrateMergesByIdInMailboxOrderAndSkipsDrafts() {
+    val mouth = Mouth()
+    mouth.ingest(WireFrame(kind = "reply", id = "live", text = "fresh", seq = 3, at = 30L))
+    mouth.hydrate(
+      listOf(
+        ChatLine("a", true, "old me", "inbound", at = 10L, seq = 1),
+        ChatLine("live", false, "stale copy", "reply", at = 30L, seq = 3),
+        ChatLine(DRAFT_ID, false, "…", "draft", at = 99L),
+        ChatLine("b", false, "old kit", "reply", at = 20L, seq = 2),
+      ),
+    )
+    assertEquals(listOf("a", "b", "live"), mouth.lines.value.map { it.id })
+    assertEquals("fresh", mouth.lines.value.last().text)
+    mouth.hydrate(emptyList())
+    assertEquals(3, mouth.lines.value.size)
+  }
+
+  @Test
+  fun hydrateStaysUnderTheCap() {
+    val mouth = Mouth()
+    mouth.add(ChatLine("now", false, "now", "reply", at = 1_000L))
+    mouth.hydrate((0 until 100).map { ChatLine("c$it", false, "n$it", "reply", at = it.toLong()) })
+    assertEquals(80, mouth.lines.value.size)
+    assertEquals("now", mouth.lines.value.last().id)
+    assertEquals("c21", mouth.lines.value.first().id)
+  }
+
+  @Test
+  fun replayEchoClearsARestoredPendingBubble() {
+    val mouth = Mouth()
+    mouth.hydrate(listOf(ChatLine("a1", true, "hi", "inbound", pending = true, at = 50L)))
+    assertTrue(mouth.lines.value.single().pending)
+    assertFalse(mouth.ingest(WireFrame(kind = "inbound", id = "a1", text = "hi", seq = 4, at = 50L, replay = true)))
+    val line = mouth.lines.value.single()
+    assertFalse(line.pending)
+    assertEquals(4, line.seq)
+  }
+
+  @Test
   fun echoRestampKeepsPendingUntilAck() {
     val mouth = Mouth()
     mouth.add(ChatLine("a1", true, "hi", "inbound", pending = true, at = 50L))

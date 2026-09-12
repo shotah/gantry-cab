@@ -1,10 +1,16 @@
 package com.gantree.cab.mailbox
 
 import android.content.ContentResolver
+import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
+import android.graphics.ImageDecoder
 import android.net.Uri
+import androidx.core.content.FileProvider
 import java.io.ByteArrayOutputStream
+import java.io.File
+import java.io.IOException
+import java.nio.ByteBuffer
 import kotlin.math.max
 import kotlin.math.roundToInt
 
@@ -20,26 +26,42 @@ fun jpegFromUri(
   maxBytes: Int = AVATAR_MAX_BYTES,
 ): ByteArray {
   val mime = resolver.getType(uri)?.lowercase().orEmpty().ifBlank { "image/jpeg" }
+  val raw = resolver.openInputStream(uri)?.use { it.readBytes() } ?: error("could not read that image")
+  // Header only. With inJustDecodeBounds the decoder returns null by contract; read the out* fields.
   val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
-  resolver.openInputStream(uri)?.use { BitmapFactory.decodeStream(it, null, bounds) }
-    ?: error("could not read that image")
+  BitmapFactory.decodeByteArray(raw, 0, raw.size, bounds)
   val width = bounds.outWidth
   val height = bounds.outHeight
   if (width <= 0 || height <= 0) {
     error("could not read that image")
   }
-  val raw = resolver.openInputStream(uri)?.use { it.readBytes() } ?: error("could not read that image")
   if (shouldPassthroughJpeg(type = mime, size = raw.size, width = width, height = height, edge = edge, maxBytes = maxBytes)) {
     val check = acceptJpeg(raw)
     if (check is JpegCheck.Ok) {
       return raw
     }
   }
-  val sample = decodeSample(width, height, edge)
-  val opts = BitmapFactory.Options().apply { inSampleSize = sample }
-  val bmp = BitmapFactory.decodeByteArray(raw, 0, raw.size, opts) ?: error("could not read that image")
+  val bmp = decodeUpright(raw, decodeSample(width, height, edge))
   val steps = shrinkSteps(edge, max(bmp.width, bmp.height))
   return shrinkToFit(steps, maxBytes) { step -> encodeJpeg(bmp, step) } ?: error("image too large")
+}
+
+/**
+ * [ImageDecoder] applies EXIF orientation; [BitmapFactory] does not. A phone
+ * camera stores the sensor frame landscape and tags it, so re-encoding through
+ * BitmapFactory would hand the crane a portrait shot on its side. Software
+ * allocation because the ladder scales and compresses the bitmap on the CPU.
+ */
+private fun decodeUpright(raw: ByteArray, sample: Int): Bitmap {
+  val source = ImageDecoder.createSource(ByteBuffer.wrap(raw))
+  return try {
+    ImageDecoder.decodeBitmap(source) { decoder, _, _ ->
+      decoder.allocator = ImageDecoder.ALLOCATOR_SOFTWARE
+      decoder.setTargetSampleSize(sample)
+    }
+  } catch (_: IOException) {
+    error("could not read that image")
+  }
 }
 
 private fun encodeJpeg(bmp: Bitmap, step: JpegStep): ByteArray {
@@ -67,4 +89,16 @@ private fun decodeSample(width: Int, height: Int, edge: Int): Int {
     sample *= 2
   }
   return sample
+}
+
+/**
+ * Where the system camera writes an attach-menu capture. One fixed file in
+ * app-private cache: `TakePicture` only reports success, so the callback
+ * rebuilds this URI (even after a process restart) and the next shot
+ * overwrites it. Authority `<applicationId>.fileprovider` is declared in
+ * AndroidManifest with `res/xml/camera_paths.xml`.
+ */
+fun cameraShotUri(ctx: Context): Uri {
+  val dir = File(ctx.cacheDir, "camera").apply { mkdirs() }
+  return FileProvider.getUriForFile(ctx, "${ctx.packageName}.fileprovider", File(dir, "shot.jpg"))
 }

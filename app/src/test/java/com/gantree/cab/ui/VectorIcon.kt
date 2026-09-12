@@ -282,5 +282,6 @@ private fun arcTo(
 internal const val VEC_ATTACH = "ic_attach_file"
 internal const val VEC_SMILE = "ic_sentiment_satisfied"
 internal const val VEC_PHOTO = "ic_photo"
+internal const val VEC_CAMERA = "ic_photo_camera"
 internal const val VEC_CODE = "ic_code"
 internal const val VEC_PIN = "ic_add_location_alt"

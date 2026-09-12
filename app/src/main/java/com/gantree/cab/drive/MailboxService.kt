@@ -135,6 +135,9 @@ class MailboxService : LifecycleService() {
         if (frame.kind == "face") {
           refreshFace(app, slug)
         }
+        if (frame.kind == "theme") {
+          app.prefs.putRoomTheme(slug, app.mouth.roomTheme.value)
+        }
         if (fresh && frame.spoken()) {
           val kind = frame.kind
           val body = notifyBody(frame.text, !frame.images.isNullOrEmpty())

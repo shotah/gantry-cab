@@ -4,6 +4,7 @@ import android.content.Context
 import com.gantree.cab.mailbox.DEFAULT_FONT
 import com.gantree.cab.mailbox.DEFAULT_PHOTO_SIZE
 import com.gantree.cab.mailbox.DEFAULT_THEME
+import com.gantree.cab.mailbox.knownTheme
 import com.gantree.cab.mailbox.liveBearer
 import com.gantree.cab.mailbox.parseFont
 import com.gantree.cab.mailbox.parsePhotoSize
@@ -72,6 +73,16 @@ class CabPrefs(ctx: Context) {
     get() = p.getString(FOLLOW_THEME, "on") != "off"
     set(value) { p.edit().putString(FOLLOW_THEME, if (value) "on" else "off").apply() }
 
+  /**
+   * Last mood the room announced, per slug, so launch paints it before
+   * `/api/theme` answers. Same idea as the PWA's `localStorage["pendant.roomTheme"]`.
+   */
+  fun roomTheme(slug: String): String = knownTheme(p.getString("$ROOM_THEME.$slug", null)).orEmpty()
+
+  fun putRoomTheme(slug: String, id: String) {
+    write("$ROOM_THEME.$slug", knownTheme(id).orEmpty())
+  }
+
   val bearer: String
     get() = liveBearer(session, sessionExp, heldSpike, System.currentTimeMillis() / 1000L)
 
@@ -105,5 +116,6 @@ class CabPrefs(ctx: Context) {
     private const val PHOTO = "photo"
     private const val BACKDROP = "backdrop"
     private const val FOLLOW_THEME = "followTheme"
+    private const val ROOM_THEME = "roomTheme"
   }
 }
