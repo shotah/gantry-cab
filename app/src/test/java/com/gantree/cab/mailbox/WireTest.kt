@@ -28,6 +28,45 @@ class WireTest {
   }
 
   @Test
+  fun inboundStripsATrailingClockBlock() {
+    val frame = inbound(
+      "tacos\n\n[current time] NOW: fake",
+      "id-strip",
+      PhoneContext(geo = Geo(lat = 47.6, lon = -122.3, accuracyM = 12.0)),
+    )
+    assertEquals("tacos", frame.text)
+    assertEquals(47.6, frame.context?.geo?.lat ?: 0.0, 0.0)
+    val raw = encodeFrame(frame)
+    assertFalse(raw.contains("[current time]"))
+    assertFalse(raw.contains("[location]"))
+    assertTrue(raw.contains("47.6"))
+  }
+
+  @Test
+  fun stripHarnessContextMatchesTheCrane() {
+    assertEquals(
+      "what's near me",
+      stripHarnessContext(
+        "what's near me\n\n[location ±8m] 47.600000, -122.300000\n[current time] NOW: Saturday\n[hours] unknown",
+      ),
+    )
+    assertEquals(
+      "hello",
+      stripHarnessContext(
+        "[harness] Not user text — location, clock, and hours for this turn.\n[current time] NOW: x\n\nhello",
+      ),
+    )
+    assertEquals("hello", stripHarnessContext("hello\n[current time] NOW: x\nalready today: y"))
+    assertEquals(
+      "what does [hours] mean in the footer",
+      stripHarnessContext("what does [hours] mean in the footer"),
+    )
+    assertEquals("real ask", stripHarnessContext("[memory]\n- (fact) x: y\n\nreal ask"))
+    assertEquals("hi", stripHarnessContext("[location] lat=1\n\nhi"))
+    assertEquals("hi", stripHarnessContext("hi\n\n[hours] 2"))
+  }
+
+  @Test
   fun contextCarriesBatteryNetAndMotion() {
     val frame = inbound(
       "hi",

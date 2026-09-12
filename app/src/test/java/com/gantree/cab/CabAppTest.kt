@@ -24,6 +24,15 @@ class CabAppTest {
   }
 
   @Test
+  fun outboundBubbleUsesStrippedSpeech() {
+    val app = CabApp()
+    val frame = app.outbound("tacos\n\n[current time] NOW: fake", PhoneContext(tz = "UTC"))
+    assertEquals("tacos", frame.text)
+    assertEquals("tacos", app.mouth.lines.value.single().text)
+    assertEquals("UTC", frame.context?.tz)
+  }
+
+  @Test
   fun outboundPhotoOnlyLeavesTheCaptionEmpty() {
     val app = CabApp()
     val frame = app.outbound("", null, listOf("data:image/jpeg;base64,aa"))

@@ -6,8 +6,10 @@ Canonical design lives in the mailbox checkout:
 
 This page is what that means for Cab. It is **not** a new mailbox, a
 group chat, or a Cab-side poll. The Durable Object already stores Ada's
-turns under her Google `sub`. The hole is live delivery to her other
-open sockets.
+turns under her Google `sub`. The Worker fans a live `inbound` to her
+other open sockets (`siblingPhoneTag` → `sub:<userId>` except the
+sender). Walk both mouths on a deployed origin (same Google). That
+walk is still open.
 
 ## Why the browser seemed to "just work"
 
@@ -26,8 +28,7 @@ store. The bytes were on the DO the whole time.
 | `MailboxClient.sweep` | Quiet second dial, no down state. Frozen / Doze sockets, and spike (no `sub`), still need a connect flush |
 
 After the Worker fans inbound to `sub:<userId>`, the sweep is
-Doze insurance, not how browser turns arrive. Do not rip it out in
-the same change.
+Doze insurance, not how browser turns arrive. Do not rip it out.
 
 ## What Cab does not do
 
@@ -35,10 +36,20 @@ the same change.
 - Do not broadcast Cab inbound to every phone in the room.
 - Do not treat spike (`MAILBOX_SECRET`) as the same human as Google.
   Sibling live-delivery is per `sub`. Sign both mouths in with Google.
+  Spike Cab never sees PWA personal rows; PWA may still see Cab via
+  broadcast `t:_`.
 
-## Walk when the Worker ships
+## Walk
 
-Google on Cab and the PWA, both sockets up. Type in the browser — Cab
-inserts it as "you" without "Connecting…". Type in Cab — the browser
-does the same without a tab hide. Bob in the same room still does not
-see Ada's inbound.
+Still the open box on both ledgers. Google on Cab and the PWA, both
+sockets up, deployed origin:
+
+1. Type in the browser — Cab inserts it as "you" without "Connecting…",
+   without clearing the thread, in seq order. Type in Cab — the
+   browser does the same without a tab hide.
+2. Bob in the same room still does not see Ada's inbound. Kit's
+   `reply` to Ada still only hits Ada's sockets.
+3. An old APK already knows how to paint extra `inbound`. Worst case
+   it restamps an id it sent. No new required field.
+4. Cab sweep still runs. After the fan it is mostly "socket looks up
+   but is frozen"; it is not how sibling turns arrive.

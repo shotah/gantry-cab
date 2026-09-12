@@ -5,11 +5,12 @@ loop lists. Ordered **small → large**; within a size, **security high →
 low**. A `v*` tag must always attach an installable APK — never fail the
 release job for a missing Play keystore, R8, pinning, or Tink.
 
-Mailbox checkout handoff (2026-09-12 Worker pass: CSRF, config
-`version`, native nonce lockstep, hydrate ship):
-[pendant_handoff.md](pendant_handoff.md). Cab half of nonce + 4401
-is in tree; remaining boxes are a tagged APK and the Worker sibling
-fan-out. Do not wait for a pendant agent to edit Kotlin.
+Mailbox checkout handoff (2026-09-12 Worker pass + docs pass: CSRF,
+config `version`, native nonce issued-not-required, sibling fan-out,
+hydrate): [pendant_handoff.md](pendant_handoff.md). Cab half of nonce
++ 4401 is in tree; remaining boxes are a tagged APK and walking
+sibling inbound on the deployed origin. Do not wait for a pendant
+agent to edit Kotlin.
 
 Threat model: a phone that holds a **credential for the crane's room**
 (Google session JWE or `MAILBOX_SECRET`) and a socket that **speaks for
@@ -24,6 +25,11 @@ letting another app read the thread are the failures that matter.
 
 ## Small
 
+- [x] **Strip harness / clock header from inbound `text` on send.**
+      `stripHarnessContext` in `mailbox/Text.kt` (same rules as
+      ai-gantry `harness.go` / pendant `lib/phone/text.ts`). `inbound()`
+      strips before `capWireText`. Bubble uses the stripped string.
+      `context` JSON is untouched. `WireTest` / `CabAppTest`.
 - [x] **Transcript hydrate** — mailbox replays last 80 `inbound` /
       `reply` / `push` on connect with additive `replay: true`.
       `Mouth.ingest` already paints; `shouldSpeak(kind, replay)` skips
@@ -39,11 +45,11 @@ letting another app read the thread are the failures that matter.
 - [ ] **Release minify + shrink.** Low. `isMinifyEnabled = true`, `isShrinkResources = true`. Faster `adb install` of the 51 MB APK; strips unused code and symbol names. Keep `proguard-rules.pro` for OkHttp/Compose. Debug stays unminified. Not a release-job gate.
 - [ ] **ktlint + `.editorconfig`.** `indent_size = 2`, `max_line_length = 120`, `ktlint_code_style = intellij_idea`. Plugin `org.jlleitschuh.gradle.ktlint` (or detekt with formatting). Run in pre-commit (sub-second warm). Drop `kotlin.code.style=official` or align to 4-space.
 - [ ] **Relisten on car connect.** `BootReceiver` covers reboot and APK update; `specialUse` removed the 6 h `dataSync` mute. Still open: a *Force stop* or an OEM battery killer leaves the car silent until Cab is opened. `CarConnection` only reports while the process lives, so this needs a manifest-safe wake (Bluetooth `ACL_CONNECTED` to the head unit, or FCM).
-- [ ] **Sibling phones (Worker, not Cab).** Browser-sent `inbound` is already on `t:<sub>` and hydrates on reconnect; Cab's open socket never hears it live. Quiet sweep (`MailboxClient.sweep`) is catch-up. The live path is a one-loop fan-out in the pendant DO — [sibling_phones.md](sibling_phones.md). Walk Cab when that Worker ships; no lockstep APK. Keep the sweep.
+- [ ] **Walk sibling inbound.** Worker fan is shipped (`siblingPhoneTag` → `sub:<userId>` except the sender). Cab already paints `inbound` as you and skips HUN. Quiet sweep (`MailboxClient.sweep`) stays. Walk both mouths on a deployed origin: [sibling_phones.md](sibling_phones.md).
 
 ## Large
 
-- [ ] **`:mailbox` JVM module.** Everything the 70 % bar covers is Android-free (`Wire`, `MailboxUrl`, `MailboxConnect`, `Emoji`, `Slash`, `Photo`, `Jpeg`, `Look`, `GeoHint`, `Avatar`, `GoogleHint`, `Mouth`/`ChatLine`; OkHttp: `AuthApi`, `AvatarApi`, `MailboxClient`). `include(":mailbox")` with `org.jetbrains.kotlin.jvm` (match AGP's Kotlin, currently 2.4.20). `./gradlew :mailbox:test` then skips AGP — ~2 s cold for the code you touch most. `org.json`: `compileOnly` + `testImplementation`, platform class wins on device (or `kotlinx.serialization`). Point `scripts/jacoco-pct.sh` at `mailbox/build/reports/jacoco/test/jacocoTestReport.xml`; add `MailboxClient` to the gated list. `:app` stays thin (Activity, services, Compose, ViewModel, prefs).
+- [ ] **`:mailbox` JVM module.** Everything the 70 % bar covers is Android-free (`Wire`, `Text`, `MailboxUrl`, `MailboxConnect`, `Emoji`, `Slash`, `Photo`, `Jpeg`, `Look`, `GeoHint`, `Avatar`, `GoogleHint`, `Mouth`/`ChatLine`; OkHttp: `AuthApi`, `AvatarApi`, `MailboxClient`). `include(":mailbox")` with `org.jetbrains.kotlin.jvm` (match AGP's Kotlin, currently 2.4.20). `./gradlew :mailbox:test` then skips AGP — ~2 s cold for the code you touch most. `org.json`: `compileOnly` + `testImplementation`, platform class wins on device (or `kotlinx.serialization`). Point `scripts/jacoco-pct.sh` at `mailbox/build/reports/jacoco/test/jacocoTestReport.xml`; add `MailboxClient` to the gated list. `:app` stays thin (Activity, services, Compose, ViewModel, prefs).
 - [ ] **Test the Android side.** `MailboxService`, `CabViewModel`, `CabPrefs`, `CabCarAppService` have no tests. `CabNotifier` + `ReplyService` are covered by `CabNotifierAutoContractTest` (Robolectric, SDK 34: the Android Auto notification contract and the spoken-reply → socket path — keep that one, it is the car). For the rest prefer extracting decisions into `:mailbox` (`retryDelay`, `shouldReconnect`, outbox flush order) over more Robolectric. Unlocks after the module split.
 - [ ] **Replace hand-painted screenshots.** `DocsShot.kt` is 500 lines of Java2D that must track every Compose change. Use Compose Preview Screenshot Testing (`com.android.compose.screenshot`) or Roborazzi against `@Preview`s in `ShotScenes.kt`. `Type.kt` (bundled Noto Sans) is what LayoutLib needed. `make shot` becomes a Gradle `updateScreenshots` task, not `CAB_WRITE_SHOTS=1`. After the UI settles.
 

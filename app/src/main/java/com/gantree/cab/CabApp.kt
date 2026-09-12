@@ -102,7 +102,7 @@ fun CabApp.outbound(text: String, context: PhoneContext?, images: List<String>? 
     ChatLine(
       id = id,
       fromYou = true,
-      text = frame.text.orEmpty().ifEmpty { text },
+      text = frame.text.orEmpty(),
       kind = "inbound",
       photo = images?.firstOrNull(),
       pending = true,

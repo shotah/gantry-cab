@@ -115,14 +115,16 @@ fun parseFrame(raw: String): WireFrame? {
   }
 }
 
-fun inbound(text: String, id: String, context: PhoneContext?, images: List<String>? = null): WireFrame =
-  WireFrame(
-    text = capWireText(text.takeIf { it.isNotEmpty() }),
+fun inbound(text: String, id: String, context: PhoneContext?, images: List<String>? = null): WireFrame {
+  val speech = stripHarnessContext(text)
+  return WireFrame(
+    text = capWireText(speech.takeIf { it.isNotEmpty() }),
     kind = "inbound",
     id = id,
     context = context,
     images = images?.takeIf { it.isNotEmpty() },
   )
+}
 
 fun pinFrame(context: PhoneContext): WireFrame =
   WireFrame(kind = "pin", context = context)
