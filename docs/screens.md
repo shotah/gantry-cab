@@ -36,6 +36,8 @@ Samples are canned Ada/Kit turns — not a live crane. Release builds ignore
   <img src="../assets/docs/phone-emoji.png" alt="Emoji picker" width="180">
   &nbsp;
   <img src="../assets/docs/phone-attach.png" alt="Attach menu" width="180">
+  &nbsp;
+  <img src="../assets/docs/phone-draft.png" alt="Photo sitting on the draft" width="180">
 </p>
 
 ## Android Auto
@@ -60,5 +62,6 @@ Voice is Auto's host STT, not Assistant.
 | `phone-settings` | `empty` | Settings screen: origin, slug, theme, font size. |
 | `phone-emoji` | `thread` | Emoji picker over compose. |
 | `phone-attach` | `thread` | Paperclip menu: photo, camera, commands, GPS, pin. |
+| `phone-draft` | `thread` | Staged photo on compose: thumbnail + Remove; Send carries caption + JPEG. |
 | `auto-empty` | `empty` | Auto list, empty. |
 | `auto-thread` | `thread` | Auto list, last six turns. |

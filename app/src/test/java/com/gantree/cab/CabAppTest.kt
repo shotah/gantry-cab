@@ -3,6 +3,7 @@ package com.gantree.cab
 import com.gantree.cab.mailbox.PhoneContext
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -20,6 +21,16 @@ class CabAppTest {
     assertEquals("data:image/jpeg;base64,aa", line.photo)
     assertTrue(line.pending)
     assertFalse(frame.spoken())
+  }
+
+  @Test
+  fun outboundPhotoOnlyLeavesTheCaptionEmpty() {
+    val app = CabApp()
+    val frame = app.outbound("", null, listOf("data:image/jpeg;base64,aa"))
+    val line = app.mouth.lines.value.single()
+    assertNull(frame.text)
+    assertEquals("", line.text)
+    assertEquals("data:image/jpeg;base64,aa", line.photo)
   }
 
   @Test

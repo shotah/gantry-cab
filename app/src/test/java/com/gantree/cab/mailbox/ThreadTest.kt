@@ -13,6 +13,17 @@ private data class Bubble(
 
 class ThreadTest {
   @Test
+  fun cursorOfIsTheHighestStampedSeqNotLastArrival() {
+    assertEquals(ThreadCursor(), cursorOf(emptyList()))
+    assertEquals(ThreadCursor(), cursorOf(listOf(Bubble("sending", 5L), Bubble("refused", 6L))))
+    val cur = cursorOf(
+      listOf(Bubble("a", 10L, seq = 4), Bubble("late", 5L, seq = 2), Bubble("me", 20L), Bubble("b", 30L, seq = 9)),
+    )
+    assertEquals(ThreadCursor(id = "b", seq = 9), cur)
+    assertEquals("9", ackSince(cur))
+  }
+
+  @Test
   fun capThreadKeepsTheNewest() {
     assertEquals(listOf(2, 3), capThread(listOf(1, 2, 3), 2))
     assertEquals(listOf(1, 2), capThread(listOf(1, 2), 5))

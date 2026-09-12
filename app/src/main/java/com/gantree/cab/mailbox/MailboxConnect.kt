@@ -85,6 +85,20 @@ fun allowlistCopy(email: String, sub: String): String =
 fun mailboxTimeoutHint(): String =
   "Mailbox timed out — Android ended the background socket. Open Cab to listen again."
 
+/** No second handshake within this of the last open — a resume right after launch is not a gap. */
+const val SWEEP_MIN_GAP_MS = 10_000L
+
+/** While a thread is on some screen, sweep the mailbox this often. */
+const val SWEEP_EVERY_MS = 2 * 60_000L
+
+/**
+ * A quiet sweep is worth its handshake only while someone is looking at the
+ * thread. The mailbox does not push what another mouth of yours sent; a
+ * connect flush is how it comes over, so we take one on a slow tick.
+ */
+fun watchingThread(phoneResumed: Boolean, carThreadVisible: Boolean): Boolean =
+  phoneResumed || carThreadVisible
+
 /** HTTP 401/403/404 are terminal; keep retrying transport failures. */
 fun mailboxShouldRetry(httpCode: Int?): Boolean = when (httpCode) {
   401, 403, 404 -> false

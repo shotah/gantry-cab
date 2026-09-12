@@ -61,17 +61,57 @@ class AvatarApiTest {
   }
 
   @Test
-  fun fetchKeepsTheLastFaceOnDiskAndCachedReadsItBack() {
+  fun fetchKeepsTheLastFaceAndItsRevOnDiskAndCachedReadsItBack() {
     val cache = BlobCache(File(tmp.root, "blobs"))
     val api = AvatarApi(cache = cache)
     val origin = server.url("/").toString()
     assertNull(api.cached(origin, "kit"))
     val jpeg = fakeJpeg()
-    server.enqueue(MockResponse().setBody(Buffer().write(jpeg)))
+    server.enqueue(MockResponse().setBody(Buffer().write(jpeg)).setHeader("X-Pendant-Rev", "7").setHeader("ETag", "\"7\""))
     runBlocking { api.fetch(origin, "kit", "jwe", 1) }
+    assertNull(server.takeRequest().getHeader("If-None-Match"))
     assertTrue(jpeg.contentEquals(api.cached(origin, "kit")))
-    assertTrue(jpeg.contentEquals(cache.read(blobCacheKey(origin, "kit", "/api/avatar"))))
+    val stored = cache.read(blobCacheKey(origin, "kit", "/api/avatar"))!!
+    assertTrue(jpeg.contentEquals(stored.bytes))
+    assertEquals(7, stored.rev)
     assertNull(api.cached(origin, "kit", "/api/backdrop"))
+  }
+
+  @Test
+  fun fetchRevalidatesWithIfNoneMatchAndA304KeepsTheCachedBytes() {
+    val cache = BlobCache(File(tmp.root, "blobs"))
+    val api = AvatarApi(cache = cache)
+    val origin = server.url("/").toString()
+    val jpeg = fakeJpeg()
+    server.enqueue(MockResponse().setBody(Buffer().write(jpeg)).setHeader("X-Pendant-Rev", "7"))
+    runBlocking { api.fetch(origin, "kit", "jwe", 0) }
+    server.takeRequest()
+    server.enqueue(MockResponse().setResponseCode(304).setHeader("X-Pendant-Rev", "7").setHeader("ETag", "\"7\""))
+    assertTrue(jpeg.contentEquals(runBlocking { api.fetch(origin, "kit", "jwe", 0) }))
+    assertEquals("\"7\"", server.takeRequest().getHeader("If-None-Match"))
+    assertEquals(7, cache.rev(blobCacheKey(origin, "kit", "/api/avatar")))
+    // A new rev is a 200 with bytes; the next GET names it.
+    val next = fakeJpeg(200)
+    server.enqueue(MockResponse().setBody(Buffer().write(next)).setHeader("X-Pendant-Rev", "8"))
+    assertTrue(next.contentEquals(runBlocking { api.fetch(origin, "kit", "jwe", 8) }))
+    assertEquals("\"7\"", server.takeRequest().getHeader("If-None-Match"))
+    server.enqueue(MockResponse().setResponseCode(304))
+    assertTrue(next.contentEquals(runBlocking { api.fetch(origin, "kit", "jwe", 8) }))
+    assertEquals("\"8\"", server.takeRequest().getHeader("If-None-Match"))
+  }
+
+  @Test
+  fun aBlobWithoutARevIsKeptButNeverRevalidated() {
+    val api = AvatarApi(cache = BlobCache(File(tmp.root, "blobs")))
+    val origin = server.url("/").toString()
+    val jpeg = fakeJpeg()
+    server.enqueue(MockResponse().setBody(Buffer().write(jpeg)))
+    runBlocking { api.fetch(origin, "kit", "jwe", 0) }
+    server.takeRequest()
+    assertTrue(jpeg.contentEquals(api.cached(origin, "kit")))
+    server.enqueue(MockResponse().setBody(Buffer().write(jpeg)))
+    runBlocking { api.fetch(origin, "kit", "jwe", 0) }
+    assertNull(server.takeRequest().getHeader("If-None-Match"))
   }
 
   @Test
@@ -88,7 +128,7 @@ class AvatarApiTest {
     assertTrue(jpeg.contentEquals(runBlocking { api.fetch(origin, "kit", "expired", 1) }))
     // Offline: nothing listens on port 1.
     val dead = "http://127.0.0.1:1"
-    cache.write(blobCacheKey(dead, "kit", "/api/avatar"), jpeg)
+    cache.write(blobCacheKey(dead, "kit", "/api/avatar"), CachedBlob(2, jpeg))
     assertTrue(jpeg.contentEquals(runBlocking { api.fetch(dead, "kit", "jwe", 1) }))
   }
 

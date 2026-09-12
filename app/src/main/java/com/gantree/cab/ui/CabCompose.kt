@@ -36,6 +36,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
@@ -45,9 +46,11 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -57,9 +60,11 @@ import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import coil3.compose.AsyncImage
 import com.gantree.cab.R
 import com.gantree.cab.mailbox.SlashCommand
 import com.gantree.cab.mailbox.applyEmoji
+import com.gantree.cab.mailbox.composeHasTurn
 import com.gantree.cab.mailbox.matchSlash
 import com.gantree.cab.mailbox.searchEmoji
 import com.gantree.cab.mailbox.slashInsert
@@ -74,6 +79,8 @@ fun CabCompose(
   onSend: (String) -> Unit,
   onPhoto: () -> Unit,
   onCamera: () -> Unit,
+  onPhotoClear: () -> Unit = {},
+  photo: String? = null,
   onPin: () -> Unit,
   onGpsToggle: () -> Unit,
   onEngage: () -> Unit,
@@ -109,7 +116,7 @@ fun CabCompose(
 
   fun sendDraft() {
     val t = applyEmoji(draft.text, draft.text.length, "send").text.trim()
-    if (t.isEmpty() || disabled) {
+    if (!composeHasTurn(t, photo) || disabled) {
       return
     }
     emojiOpen = false
@@ -118,9 +125,35 @@ fun CabCompose(
     onSend(t)
   }
 
-  val canSend = !disabled && draft.text.isNotBlank()
+  val canSend = !disabled && composeHasTurn(draft.text, photo)
   Surface(tonalElevation = 2.dp, color = scheme.surface) {
     Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 8.dp)) {
+      if (photo != null) {
+        Row(
+          verticalAlignment = Alignment.CenterVertically,
+          horizontalArrangement = Arrangement.spacedBy(8.dp),
+          modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp),
+        ) {
+          AsyncImage(
+            model = photo,
+            contentDescription = "Photo to send",
+            contentScale = ContentScale.Crop,
+            modifier = Modifier.size(56.dp).clip(RoundedCornerShape(8.dp)),
+          )
+          Text(
+            "Goes with your next message.",
+            style = MaterialTheme.typography.bodySmall,
+            color = scheme.onSurfaceVariant,
+            modifier = Modifier.weight(1f),
+          )
+          TextButton(
+            onClick = onPhotoClear,
+            modifier = Modifier.semantics { contentDescription = "Remove photo" },
+          ) {
+            Text("Remove")
+          }
+        }
+      }
       if (emojiOpen) {
         EmojiPanel(
           query = emojiQuery,

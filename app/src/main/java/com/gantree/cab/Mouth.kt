@@ -100,9 +100,15 @@ class Mouth(
     _roomTheme.value = ""
   }
 
+  /** Another room (or human) is coming up; its transcript replays on connect. */
+  fun clearThread() {
+    _lines.value = emptyList()
+  }
+
   /**
    * Last run's thread from disk. Ids already on the thread win (the mailbox
    * got there first); drafts never come back. Mailbox order, then capped.
+   * Pendant `mergeThread`.
    */
   fun hydrate(cached: List<ChatLine>) {
     val have = _lines.value.mapTo(HashSet()) { it.id }
@@ -168,11 +174,8 @@ class Mouth(
       if (existing != null) {
         val nextSeq = frame.seq ?: existing.seq
         val nextAt = frame.at ?: existing.at
-        // A live echo still waits for its ack. A replay is the transcript itself:
-        // a bubble restored from disk as "sending" is in the room, so it landed.
-        val nextPending = existing.pending && !frame.replay
-        if (nextSeq != existing.seq || nextAt != existing.at || nextPending != existing.pending) {
-          commit(existing.copy(seq = nextSeq, at = nextAt, pending = nextPending))
+        if (nextSeq != existing.seq || nextAt != existing.at) {
+          commit(existing.copy(seq = nextSeq, at = nextAt))
         }
         return false
       }

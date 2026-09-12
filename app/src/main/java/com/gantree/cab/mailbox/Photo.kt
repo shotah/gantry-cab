@@ -105,6 +105,13 @@ fun photoDataUrl(bytes: ByteArray, mime: String = "image/jpeg"): PhotoResult {
   return PhotoResult.Ok("data:$kind;base64,$b64")
 }
 
+/**
+ * Attach encodes and holds; Send emits one inbound. Empty caption is allowed
+ * when a photo is staged. Same rule as pendant Compose (`!t && !photo`).
+ */
+fun composeHasTurn(text: String, photo: String?): Boolean =
+  text.trim().isNotEmpty() || !photo.isNullOrEmpty()
+
 fun parsePhotoFile(type: String, size: Int): PhotoResult {
   val kind = type.lowercase()
   if (kind !in ALLOWED) {

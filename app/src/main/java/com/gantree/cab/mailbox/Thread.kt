@@ -62,6 +62,16 @@ fun advanceCursor(current: ThreadCursor, id: String? = null, seq: Int? = null): 
 fun movesCursor(kind: String?): Boolean =
   kind != "ack" && kind != "error" && kind != "face" && kind != "backdrop" && kind != "theme"
 
+/**
+ * Highest mailbox `seq` on a thread already on the device, for the first
+ * `ack` `since` of a fresh socket. Bubbles the mailbox never stamped (refused
+ * or still sending) do not count. Pendant `cursorOf`.
+ */
+fun cursorOf(lines: List<ThreadOrder>): ThreadCursor =
+  lines.fold(ThreadCursor()) { cur, line ->
+    if (line.seq == null) cur else advanceCursor(cur, line.id, line.seq)
+  }
+
 fun ackSince(cursor: ThreadCursor): String? {
   if (cursor.seq > 0) {
     return cursor.seq.toString()

@@ -19,9 +19,10 @@ sealed class AvatarUpload {
   data class Err(val error: String) : AvatarUpload()
 }
 
-/** One GET of a room blob. Missing = the room has none; Failed = we do not know. */
+/** One GET of a room blob. Same = 304 for the rev we hold; Missing = the room has none; Failed = we do not know. */
 private sealed class Fetched {
-  class Got(val bytes: ByteArray) : Fetched()
+  class Got(val blob: CachedBlob) : Fetched()
+  object Same : Fetched()
   object Missing : Fetched()
   object Failed : Fetched()
 }
@@ -35,12 +36,13 @@ class AvatarApi(
 ) {
   /** What [fetch] last kept for this room — paint it before the mailbox answers. */
   fun cached(origin: String, slug: String, path: String = "/api/avatar"): ByteArray? =
-    cache?.read(blobCacheKey(origin, slug, path))
+    cache?.read(blobCacheKey(origin, slug, path))?.bytes
 
   /**
-   * Current bytes, or null when the room has none. A failed request (offline,
-   * 5xx, expired session) answers with the cached bytes instead of blanking
-   * the face; a 404 forgets them.
+   * Current bytes, or null when the room has none. Carries `If-None-Match`
+   * for the rev on disk, so an unchanged blob is a 304 and the cached bytes.
+   * A failed request (offline, 5xx, expired session) also answers with the
+   * cached bytes instead of blanking the face; a 404 forgets them.
    */
   suspend fun fetch(
     origin: String,
@@ -50,24 +52,31 @@ class AvatarApi(
     path: String = "/api/avatar",
   ): ByteArray? {
     val key = blobCacheKey(origin, slug, path)
+    val held = cache?.rev(key) ?: 0
     val req = Request.Builder().url(blobUrl(origin, path, slug, rev)).get()
     if (bearer.isNotBlank()) {
       req.header("Authorization", "Bearer $bearer")
+    }
+    if (held > 0) {
+      req.header("If-None-Match", blobEtag(held))
     }
     val call = client.newCall(req.build())
     return suspendCancellableCoroutine { cont ->
       cont.invokeOnCancellation { call.cancel() }
       call.enqueue(object : Callback {
         override fun onFailure(call: Call, e: IOException) {
-          if (cont.isActive) cont.resume(cache?.read(key))
+          if (cont.isActive) cont.resume(cache?.read(key)?.bytes)
         }
 
         override fun onResponse(call: Call, response: Response) {
           val got = try {
             response.use { res ->
               when {
+                res.code == 304 && held > 0 -> Fetched.Same
                 res.isSuccessful ->
-                  res.body?.bytes()?.takeIf { it.isNotEmpty() }?.let { Fetched.Got(it) } ?: Fetched.Missing
+                  res.body?.bytes()?.takeIf { it.isNotEmpty() }
+                    ?.let { Fetched.Got(CachedBlob(blobRev(res.header("X-Pendant-Rev"), res.header("ETag")), it)) }
+                    ?: Fetched.Missing
                 res.code == 404 -> Fetched.Missing
                 else -> Fetched.Failed
               }
@@ -77,14 +86,14 @@ class AvatarApi(
           }
           val bytes = when (got) {
             is Fetched.Got -> {
-              cache?.write(key, got.bytes)
-              got.bytes
+              cache?.write(key, got.blob)
+              got.blob.bytes
             }
             Fetched.Missing -> {
               cache?.write(key, null)
               null
             }
-            Fetched.Failed -> cache?.read(key)
+            Fetched.Same, Fetched.Failed -> cache?.read(key)?.bytes
           }
           if (cont.isActive) cont.resume(bytes)
         }

@@ -10,7 +10,6 @@ import com.gantree.cab.mailbox.PhoneContext
 import com.gantree.cab.mailbox.ThemeApi
 import com.gantree.cab.mailbox.WireFrame
 import com.gantree.cab.mailbox.inbound
-import com.gantree.cab.mailbox.isDraftBubble
 import com.gantree.cab.mailbox.shouldSpeak
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -49,6 +48,9 @@ class CabApp : Application() {
   /** A dev sample scene is on the thread; never write it over the room's cache. */
   @Volatile
   var sampleShown = false
+  /** Whose thread is on screen. The cache reads and writes only under this. */
+  @Volatile
+  private var threadRoom: ThreadRoom? = null
 
   override fun onCreate() {
     super.onCreate()
@@ -57,21 +59,39 @@ class CabApp : Application() {
     thread = ThreadCache(File(cacheDir, "thread.json"))
     // Paint what we knew last time before any socket or GET answers.
     mouth.setRoomTheme(prefs.roomTheme(prefs.slug))
-    mouth.hydrate(thread.read(prefs.origin, prefs.slug))
+    openThread()
     scope.launch {
       mouth.lines
-        .map { lines -> lines.filterNot { isDraftBubble(it.kind) } }
+        .map(::persistableThread)
         .distinctUntilChanged()
         .collectLatest { lines ->
           delay(THREAD_CACHE_SETTLE_MS)
-          if (!sampleShown) {
-            thread.write(prefs.origin, prefs.slug, lines)
+          val room = threadRoom
+          if (room != null && !sampleShown) {
+            thread.write(room, lines)
           }
         }
     }
     CarConnection(this).type.observeForever { type ->
       carAttached = carConnectionAttached(type)
     }
+  }
+
+  /**
+   * Point the thread at the room in prefs. A different room or human drops
+   * what is on screen (its transcript replays on connect) and paints that
+   * room's last thread instead — pendant's `[roomSlug]` reset + `loadThread`.
+   */
+  fun openThread() {
+    val room = ThreadRoom(prefs.origin, prefs.slug, prefs.email)
+    if (room == threadRoom) {
+      return
+    }
+    if (threadRoom != null) {
+      mouth.clearThread()
+    }
+    threadRoom = room
+    mouth.hydrate(thread.read(room))
   }
 }
 

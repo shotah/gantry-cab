@@ -65,6 +65,7 @@ val DOCS_SHOT_NAMES = listOf(
   "phone-settings",
   "phone-emoji",
   "phone-attach",
+  "phone-draft",
   "auto-empty",
   "auto-thread",
 )
@@ -79,6 +80,7 @@ fun renderDocsShot(name: String): BufferedImage = when (name) {
   "phone-settings" -> renderPhone("empty", settings = true)
   "phone-emoji" -> renderPhone("thread", emoji = true)
   "phone-attach" -> renderPhone("thread", attach = true)
+  "phone-draft" -> renderPhone("thread", draftPhoto = true)
   "auto-empty" -> renderAuto("empty")
   "auto-thread" -> renderAuto("thread")
   else -> error("unknown shot $name")
@@ -91,7 +93,7 @@ fun writeDocsShots(dir: File) {
   }
 }
 
-fun renderPhone(sampleId: String, settings: Boolean = false, emoji: Boolean = false, attach: Boolean = false): BufferedImage {
+fun renderPhone(sampleId: String, settings: Boolean = false, emoji: Boolean = false, attach: Boolean = false, draftPhoto: Boolean = false): BufferedImage {
   val scene = sampleScene(sampleId) ?: error("sample $sampleId")
   val img = BufferedImage(PHONE_W, PHONE_H, BufferedImage.TYPE_INT_ARGB)
   val g = img.graphics2d()
@@ -114,6 +116,7 @@ fun renderPhone(sampleId: String, settings: Boolean = false, emoji: Boolean = fa
   val overlayH = when {
     emoji -> 128
     attach -> 216
+    draftPhoto -> 72
     else -> 0
   }
   val overlayTop = composerTop - 8 - overlayH
@@ -201,6 +204,9 @@ fun renderPhone(sampleId: String, settings: Boolean = false, emoji: Boolean = fa
     }
     if (attach) {
       paintAttachMenu(g, font, overlayTop)
+    }
+    if (draftPhoto) {
+      paintDraftPhoto(g, font, overlayTop)
     }
     paintComposer(g, font, composerTop, scene.slug, emoji)
   }
@@ -462,6 +468,17 @@ private fun paintAttachMenu(g: Graphics2D, font: Font, top: Int) {
   g.color = Fg
   g.drawString("Drop a pin", x.toInt() + 44, y)
   paintVectorDrawable(g, VEC_PIN, x + 24f, y - 6f, 16, Muted)
+}
+
+private fun paintDraftPhoto(g: Graphics2D, font: Font, top: Int) {
+  g.color = Panel
+  g.fillRect(0, top, PHONE_W, 72)
+  paintHatchPhoto(g, 16f, (top + 8).toFloat(), 56f, 56f)
+  g.font = font.deriveFont(12f)
+  g.color = Dim
+  g.drawString("Goes with your next message.", 84, top + 32)
+  g.color = Muted
+  g.drawString("Remove", PHONE_W - 72, top + 32)
 }
 
 private fun paintComposer(g: Graphics2D, font: Font, composerTop: Int, slug: String, emojiOpen: Boolean) {

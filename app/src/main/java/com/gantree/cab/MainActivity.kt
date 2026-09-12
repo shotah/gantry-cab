@@ -32,10 +32,10 @@ class MainActivity : ComponentActivity() {
   private val askNotify = registerForActivityResult(ActivityResultContracts.RequestPermission()) { }
   private val askLoc = registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { }
   private val pickPhoto = registerForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
-    if (uri != null) vm.sendPhoto(this, uri)
+    if (uri != null) vm.stagePhoto(this, uri)
   }
   private val takePhoto = registerForActivityResult(ActivityResultContracts.TakePicture()) { taken ->
-    if (taken) vm.sendPhoto(this, cameraShotUri(this))
+    if (taken) vm.stagePhoto(this, cameraShotUri(this))
   }
   private val pickAvatar = registerForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
     if (uri != null) vm.uploadAvatar(this, uri)
@@ -74,6 +74,7 @@ class MainActivity : ComponentActivity() {
       val authHint by vm.authHint.collectAsStateWithLifecycle()
       val typingUntil by vm.typingUntil.collectAsStateWithLifecycle()
       val sub by vm.sub.collectAsStateWithLifecycle()
+      val stagedPhoto by vm.stagedPhoto.collectAsStateWithLifecycle()
       CabTheme(themeId = painted, fontId = font) {
         CabScreen(
           origin = origin,
@@ -95,10 +96,7 @@ class MainActivity : ComponentActivity() {
           onSignOut = vm::signOut,
           authHint = authHint,
           signingIn = signingIn,
-          onSend = { text ->
-            vm.persist()
-            MailboxService.sendText(this, text)
-          },
+          onSend = { text -> vm.sendDraft(this, text) },
           dev = BuildConfig.DEV,
           onSample = vm::showSample,
           themeId = painted,
@@ -126,6 +124,8 @@ class MainActivity : ComponentActivity() {
               (application as CabApp).mouth.setHint("No camera app on this phone.")
             }
           },
+          onPhotoClear = vm::clearStagedPhoto,
+          photo = stagedPhoto,
           onAvatar = {
             pickAvatar.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
           },
@@ -151,6 +151,8 @@ class MainActivity : ComponentActivity() {
   override fun onResume() {
     super.onResume()
     (application as CabApp).phoneResumed = true
+    // What the browser sent while this was in the background comes over on a connect flush.
+    MailboxService.sweep()
   }
 
   override fun onPause() {

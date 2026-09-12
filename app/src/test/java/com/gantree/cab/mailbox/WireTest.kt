@@ -64,6 +64,15 @@ class WireTest {
   }
 
   @Test
+  fun captionAndPhotoTravelOnOneInbound() {
+    val frame = inbound("this hatch?", "id-cap", null, listOf("data:image/jpeg;base64,QQ"))
+    val got = parseFrame(encodeFrame(frame))!!
+    assertEquals("this hatch?", got.text)
+    assertEquals(listOf("data:image/jpeg;base64,QQ"), got.images)
+    assertEquals("inbound", got.kind)
+  }
+
+  @Test
   fun photoOnlyInboundKeepsTheDataUrl() {
     val frame = inbound("", "id-2", null, listOf("data:image/jpeg;base64,QQ"))
     val got = parseFrame(encodeFrame(frame))!!

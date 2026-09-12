@@ -18,12 +18,14 @@ import com.gantree.cab.CabApp
 import com.gantree.cab.mailbox.BatteryHint
 import com.gantree.cab.mailbox.GEO_CACHE_MS
 import com.gantree.cab.mailbox.GEO_LAST_KNOWN_MS
+import com.gantree.cab.mailbox.SWEEP_EVERY_MS
 import com.gantree.cab.mailbox.Geo
 import com.gantree.cab.mailbox.MailboxClient
 import com.gantree.cab.mailbox.PhoneContext
 import com.gantree.cab.mailbox.WireFrame
 import com.gantree.cab.mailbox.applyEmoji
 import com.gantree.cab.mailbox.batteryHint
+import com.gantree.cab.mailbox.cursorOf
 import com.gantree.cab.mailbox.geoFromFix
 import com.gantree.cab.mailbox.geoHint
 import com.gantree.cab.mailbox.mailboxConnectError
@@ -36,11 +38,13 @@ import com.gantree.cab.mailbox.sessionExpired
 import com.gantree.cab.mailbox.pinFrame
 import com.gantree.cab.mailbox.sendGeoHint
 import com.gantree.cab.mailbox.surfaceHint
+import com.gantree.cab.mailbox.watchingThread
 import com.gantree.cab.outbound
 import com.gantree.cab.spoken
 import com.google.android.gms.location.LocationServices
 import com.google.android.gms.location.Priority
 import com.google.android.gms.tasks.Tasks
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.time.Instant
 import java.util.TimeZone
@@ -61,6 +65,23 @@ class MailboxService : LifecycleService() {
       startForeground(CabNotifier.CONNECTED_ID, CabNotifier.connected(this), ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE)
     } else {
       startForeground(CabNotifier.CONNECTED_ID, CabNotifier.connected(this))
+    }
+    lifecycleScope.launch {
+      while (true) {
+        delay(SWEEP_EVERY_MS)
+        sweep()
+      }
+    }
+  }
+
+  /**
+   * Quiet catch-up: what another mouth of yours sent, or what a frozen socket
+   * missed, folds into the thread by id and seq. No down state, no clear.
+   */
+  fun sweep() {
+    val app = application as CabApp
+    if (watchingThread(app.phoneResumed, app.carThreadVisible)) {
+      client?.sweep()
     }
   }
 
@@ -161,6 +182,9 @@ class MailboxService : LifecycleService() {
     )
     client = mailbox
     target = next
+    // Ack from what is already on the device so the mailbox skips what we hold.
+    val held = cursorOf(app.mouth.lines.value)
+    held.id?.let { mailbox.remember(it, held.seq) }
     mailbox.start(origin, slug, bearer)
     refreshFace(app, slug)
     return true
@@ -379,15 +403,21 @@ class MailboxService : LifecycleService() {
     }
 
     fun sendText(ctx: Context, text: String) {
-      sendBits(ctx) { it.send(text) }
+      sendTurn(ctx, text, null)
     }
 
-    fun sendPhoto(ctx: Context, url: String) {
-      sendBits(ctx) { it.send("", photo = url) }
+    /** Caption and photo on one inbound. Attach itself never calls this. */
+    fun sendTurn(ctx: Context, text: String, photo: String?) {
+      sendBits(ctx) { it.send(text, photo) }
     }
 
     fun sendPin(ctx: Context) {
       sendBits(ctx) { it.pin() }
+    }
+
+    /** The thread just came onto a screen. Nothing to do when no socket is up. */
+    fun sweep() {
+      instance?.sweep()
     }
 
     private fun sendBits(ctx: Context, fn: (MailboxService) -> Unit) {

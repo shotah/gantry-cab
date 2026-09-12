@@ -59,6 +59,14 @@ class MailboxConnectTest {
   }
 
   @Test
+  fun sweepOnlyWhileSomeoneWatchesAndNotBackToBack() {
+    assertTrue(watchingThread(phoneResumed = true, carThreadVisible = false))
+    assertTrue(watchingThread(phoneResumed = false, carThreadVisible = true))
+    assertFalse(watchingThread(phoneResumed = false, carThreadVisible = false))
+    assertTrue(SWEEP_MIN_GAP_MS < SWEEP_EVERY_MS)
+  }
+
+  @Test
   fun retryDelayDoublesThenCaps() {
     assertEquals(2_000L, mailboxRetryDelayMs(0))
     assertEquals(4_000L, mailboxRetryDelayMs(1))

@@ -33,6 +33,7 @@ letting another app read the thread are the failures that matter.
 - [ ] **Release minify + shrink.** Low. `isMinifyEnabled = true`, `isShrinkResources = true`. Faster `adb install` of the 51 MB APK; strips unused code and symbol names. Keep `proguard-rules.pro` for OkHttp/Compose. Debug stays unminified. Not a release-job gate.
 - [ ] **ktlint + `.editorconfig`.** `indent_size = 2`, `max_line_length = 120`, `ktlint_code_style = intellij_idea`. Plugin `org.jlleitschuh.gradle.ktlint` (or detekt with formatting). Run in pre-commit (sub-second warm). Drop `kotlin.code.style=official` or align to 4-space.
 - [ ] **Relisten on car connect.** `BootReceiver` covers reboot and APK update; `specialUse` removed the 6 h `dataSync` mute. Still open: a *Force stop* or an OEM battery killer leaves the car silent until Cab is opened. `CarConnection` only reports while the process lives, so this needs a manifest-safe wake (Bluetooth `ACL_CONNECTED` to the head unit, or FCM).
+- [ ] **Sibling phones (Worker, not Cab).** Browser-sent `inbound` is already on `t:<sub>` and hydrates on reconnect; Cab's open socket never hears it live. Quiet sweep (`MailboxClient.sweep`) is catch-up. The live path is a one-loop fan-out in the pendant DO — [sibling_phones.md](sibling_phones.md). Walk Cab when that Worker ships; no lockstep APK. Keep the sweep.
 
 ## Large
 
@@ -61,7 +62,6 @@ Pendant does not have these either (`gantry-pendant` `docs/todo.md`). Do not bui
 - Failed + retry on an unacked send; copy on long-press
 - Painted timestamps / day chips
 - Crane presence (`asleep` / `queued`) separate from socket `live`
-- Caption + photo in one send
 - Stop-a-turn, quote / reply-to, inline Yes / No, one non-image file
 - Mute pings, photo lightbox, voice into compose, share target
 - Reactions, read receipts, edit / delete, presence frames, delta streaming kinds

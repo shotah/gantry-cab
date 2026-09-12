@@ -96,6 +96,19 @@ class DocsShotTest {
   }
 
   @Test
+  fun draftPhotoSitsAboveComposer() {
+    val img = renderDocsShot("phone-draft")
+    assertEquals(0x171D22, img.getRGB(200, 720) and 0xFFFFFF)
+    var painted = 0
+    for (y in 700 until 756) {
+      for (x in 16 until 72) {
+        if (img.getRGB(x, y) and 0xFFFFFF != 0x171D22) painted += 1
+      }
+    }
+    assertTrue(painted > 40)
+  }
+
+  @Test
   fun composerLeavesAGapBeforeSend() {
     val img = renderPhone("thread")
     val y = 790

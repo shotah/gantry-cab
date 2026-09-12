@@ -28,6 +28,16 @@ class PhotoTest {
   }
 
   @Test
+  fun composeTurnAllowsAPhotoWithNoCaptionAndIgnoresABlank() {
+    // Pendant Compose: Send is live while a photo sits on the draft; attach itself sends nothing.
+    assertFalse(composeHasTurn("", null))
+    assertFalse(composeHasTurn("  ", null))
+    assertTrue(composeHasTurn("", "data:image/jpeg;base64,QQ"))
+    assertTrue(composeHasTurn("this hatch?", null))
+    assertTrue(composeHasTurn("this hatch?", "data:image/jpeg;base64,QQ"))
+  }
+
+  @Test
   fun jpegBudgetMatchesPendantAndKeepsTheDataUrlUnderTheWireCap() {
     // pendant lib/phone/photo.ts: floor((1_500_000 - 32) / 4) * 3
     assertEquals(1_124_976, PHOTO_JPEG_BYTES_MAX)

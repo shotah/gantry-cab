@@ -42,6 +42,15 @@ fun roomThemeNotice(kind: String?, themePresent: Boolean, themeNull: Boolean, th
   return knownTheme(themeRaw)
 }
 
+/** `If-None-Match` for a blob we hold; pendant `blobEtag`. */
+fun blobEtag(rev: Int): String = "\"$rev\""
+
+/** Rev a blob GET names itself with: `X-Pendant-Rev`, else the `ETag` digits. 0 = unknown. */
+fun blobRev(xRev: String?, etag: String?): Int {
+  xRev?.trim()?.toIntOrNull()?.takeIf { it > 0 }?.let { return it }
+  return etag?.trim()?.removePrefix("W/")?.trim('"')?.toIntOrNull()?.takeIf { it > 0 } ?: 0
+}
+
 fun blobUrl(origin: String, path: String, slug: String, rev: Int = 0): String {
   val base = "${httpOrigin(origin)}$path?slug=$slug"
   return if (rev > 0) "$base&v=$rev" else base

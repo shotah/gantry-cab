@@ -14,6 +14,18 @@ class AvatarTest {
   }
 
   @Test
+  fun blobEtagAndRevRoundTripThePendantHeaders() {
+    assertEquals("\"7\"", blobEtag(7))
+    assertEquals(7, blobRev("7", null))
+    assertEquals(7, blobRev(null, "\"7\""))
+    assertEquals(7, blobRev(null, "W/\"7\""))
+    assertEquals(12, blobRev("12", "\"7\""))
+    assertEquals(0, blobRev(null, null))
+    assertEquals(0, blobRev("0", "\"-3\""))
+    assertEquals(0, blobRev("nope", "\"abc\""))
+  }
+
+  @Test
   fun faceRevOnlyFromFaceKind() {
     assertEquals(9, faceRev("face", "9"))
     assertNull(faceRev("reply", "9"))

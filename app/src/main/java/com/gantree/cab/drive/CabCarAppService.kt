@@ -71,7 +71,10 @@ class CabThreadScreen(carContext: CarContext) : Screen(carContext) {
     lifecycle.addObserver(
       LifecycleEventObserver { _, event ->
         when (event) {
-          Lifecycle.Event.ON_START -> app.carThreadVisible = true
+          Lifecycle.Event.ON_START -> {
+            app.carThreadVisible = true
+            MailboxService.sweep()
+          }
           Lifecycle.Event.ON_STOP, Lifecycle.Event.ON_DESTROY -> app.carThreadVisible = false
           else -> {}
         }

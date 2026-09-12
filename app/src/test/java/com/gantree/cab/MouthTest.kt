@@ -328,14 +328,19 @@ class MouthTest {
   }
 
   @Test
-  fun replayEchoClearsARestoredPendingBubble() {
+  fun clearThreadDropsBubblesOnlyAndHydrateRefillsIt() {
     val mouth = Mouth()
-    mouth.hydrate(listOf(ChatLine("a1", true, "hi", "inbound", pending = true, at = 50L)))
-    assertTrue(mouth.lines.value.single().pending)
-    assertFalse(mouth.ingest(WireFrame(kind = "inbound", id = "a1", text = "hi", seq = 4, at = 50L, replay = true)))
-    val line = mouth.lines.value.single()
-    assertFalse(line.pending)
-    assertEquals(4, line.seq)
+    mouth.setUp(true)
+    mouth.setHint("live")
+    mouth.setRoomTheme("noir")
+    mouth.add(ChatLine("k1", false, "kit", "reply"))
+    mouth.clearThread()
+    assertTrue(mouth.lines.value.isEmpty())
+    assertTrue(mouth.up.value)
+    assertEquals("live", mouth.hint.value)
+    assertEquals("noir", mouth.roomTheme.value)
+    mouth.hydrate(listOf(ChatLine("c1", false, "cached", "reply", at = 1L)))
+    assertEquals(listOf("c1"), mouth.lines.value.map { it.id })
   }
 
   @Test

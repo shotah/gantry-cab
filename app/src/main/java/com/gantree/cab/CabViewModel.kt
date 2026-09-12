@@ -25,6 +25,7 @@ import com.gantree.cab.mailbox.persistSpikeAllowed
 import com.gantree.cab.mailbox.photoDataUrl
 import com.gantree.cab.mailbox.photoEdge
 import com.gantree.cab.mailbox.photoErrorToken
+import com.gantree.cab.mailbox.composeHasTurn
 import com.gantree.cab.mailbox.WireFrame
 import com.gantree.cab.ui.requestGoogleId
 import androidx.credentials.exceptions.GetCredentialException
@@ -58,6 +59,7 @@ class CabViewModel(private val app: CabApp) : ViewModel() {
   private val _authHint = MutableStateFlow("")
   private val _sub = MutableStateFlow("")
   private val _fetchOrigin = MutableStateFlow(app.prefs.origin)
+  private val _stagedPhoto = MutableStateFlow<String?>(null)
   val origin = _origin.asStateFlow()
   val slug = _slug.asStateFlow()
   val spike = _spike.asStateFlow()
@@ -74,6 +76,7 @@ class CabViewModel(private val app: CabApp) : ViewModel() {
   val signingIn = _signingIn.asStateFlow()
   val authHint = _authHint.asStateFlow()
   val sub = _sub.asStateFlow()
+  val stagedPhoto = _stagedPhoto.asStateFlow()
   val up = app.mouth.up.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), false)
   val hint = app.mouth.hint.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), "")
   val lines = app.mouth.lines.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
@@ -167,6 +170,7 @@ class CabViewModel(private val app: CabApp) : ViewModel() {
     app.mouth.setBackdropRev(0)
     app.mouth.setRoomTheme("")
     app.mouth.setFaceHint("")
+    _stagedPhoto.value = null
   }
 
   fun setTheme(v: String) {
@@ -228,6 +232,7 @@ class CabViewModel(private val app: CabApp) : ViewModel() {
     app.mouth.setBackdropRev(0)
     app.mouth.setRoomTheme("")
     app.mouth.setFaceHint("")
+    _stagedPhoto.value = null
   }
 
   fun persist() {
@@ -245,6 +250,7 @@ class CabViewModel(private val app: CabApp) : ViewModel() {
       )
     }
     _fetchOrigin.value = origin
+    app.openThread()
   }
 
   fun signOut() {
@@ -256,9 +262,12 @@ class CabViewModel(private val app: CabApp) : ViewModel() {
     app.face = null
     app.mouth.setHint("signed out")
     MailboxService.stop(app)
+    app.openThread()
+    _stagedPhoto.value = null
   }
 
-  fun sendPhoto(ctx: Context, uri: Uri) {
+  /** Encode now, send later. A pick or shot sits on the draft until Send. */
+  fun stagePhoto(ctx: Context, uri: Uri) {
     val edge = photoEdge(_photoSize.value)
     viewModelScope.launch {
       try {
@@ -267,8 +276,8 @@ class CabViewModel(private val app: CabApp) : ViewModel() {
         }
         when (val got = photoDataUrl(jpeg)) {
           is PhotoResult.Ok -> {
-            persist()
-            MailboxService.sendPhoto(ctx, got.url)
+            app.mouth.setHint("")
+            _stagedPhoto.value = got.url
           }
           is PhotoResult.Err -> app.mouth.setHint(describePhotoError(got.error))
         }
@@ -276,6 +285,20 @@ class CabViewModel(private val app: CabApp) : ViewModel() {
         app.mouth.setHint(describePhotoError(photoErrorToken(e.message)))
       }
     }
+  }
+
+  fun clearStagedPhoto() {
+    _stagedPhoto.value = null
+  }
+
+  fun sendDraft(ctx: Context, text: String) {
+    val photo = _stagedPhoto.value
+    if (!composeHasTurn(text, photo)) {
+      return
+    }
+    _stagedPhoto.value = null
+    persist()
+    MailboxService.sendTurn(ctx, text, photo)
   }
 
   fun uploadAvatar(ctx: Context, uri: Uri) {
@@ -333,6 +356,7 @@ class CabViewModel(private val app: CabApp) : ViewModel() {
           _slug.value = me.cranes.first()
           app.prefs.slug = me.cranes.first()
         }
+        app.openThread()
         _authHint.value = mailboxSignedInHint(session.email.orEmpty(), me.cranes)
         app.mouth.setHint(mailboxSignedInHint(session.email.orEmpty(), me.cranes))
         MailboxService.start(activity)

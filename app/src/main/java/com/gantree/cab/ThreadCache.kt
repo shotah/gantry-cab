@@ -15,24 +15,41 @@ const val THREAD_CACHE_CHARS_MAX = 4_000_000
 /** Quiet time after the last thread change before it is written. */
 const val THREAD_CACHE_SETTLE_MS = 750L
 
+/** Whose thread: mailbox origin, crane slug, and the signed-in human (email; empty on the spike). */
+data class ThreadRoom(
+  val origin: String,
+  val slug: String,
+  val user: String,
+)
+
 /**
- * Last thread on disk so launch paints it before the mailbox replays.
- * One file, one room: a different origin or slug reads back empty.
+ * Settled bubbles only, like pendant `persistableThread`: a `sending` bubble
+ * either lands (the transcript replays it) or never did; a draft is Kit
+ * mid-sentence. Neither should greet you as history.
+ */
+fun persistableThread(lines: List<ChatLine>): List<ChatLine> =
+  lines.filterNot { it.pending || isDraftBubble(it.kind) }
+
+/**
+ * Last thread on disk so launch paints it before the mailbox replays —
+ * pendant `thread:<slug>:<sub>` in IndexedDB. One file, one room, one
+ * human: anything else reads back empty. The mailbox transcript stays the
+ * record; this is the paint.
  */
 class ThreadCache(private val file: File) {
-  fun read(origin: String, slug: String): List<ChatLine> {
+  fun read(room: ThreadRoom): List<ChatLine> {
     return try {
-      if (file.isFile) decodeThread(file.readText(), origin, slug) else emptyList()
+      if (file.isFile) decodeThread(file.readText(), room) else emptyList()
     } catch (_: Exception) {
       emptyList()
     }
   }
 
-  fun write(origin: String, slug: String, lines: List<ChatLine>) {
+  fun write(room: ThreadRoom, lines: List<ChatLine>) {
     try {
       file.parentFile?.mkdirs()
       val tmp = File(file.path + ".tmp")
-      tmp.writeText(encodeThread(origin, slug, lines))
+      tmp.writeText(encodeThread(room, lines))
       Files.move(tmp.toPath(), file.toPath(), StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE)
     } catch (_: Exception) {
       /* a cache that cannot write is still a cache */
@@ -41,17 +58,13 @@ class ThreadCache(private val file: File) {
 }
 
 fun encodeThread(
-  origin: String,
-  slug: String,
+  room: ThreadRoom,
   lines: List<ChatLine>,
   maxChars: Int = THREAD_CACHE_CHARS_MAX,
 ): String {
   val kept = ArrayList<JSONObject>()
   var used = 0
-  for (line in lines.asReversed()) {
-    if (isDraftBubble(line.kind)) {
-      continue
-    }
+  for (line in persistableThread(lines).asReversed()) {
     val o = encodeLine(line)
     used += o.toString().length
     if (used > maxChars) {
@@ -63,13 +76,18 @@ fun encodeThread(
   for (o in kept.asReversed()) {
     arr.put(o)
   }
-  return JSONObject().put("origin", origin).put("slug", slug).put("lines", arr).toString()
+  return JSONObject()
+    .put("origin", room.origin)
+    .put("slug", room.slug)
+    .put("user", room.user)
+    .put("lines", arr)
+    .toString()
 }
 
-fun decodeThread(raw: String, origin: String, slug: String): List<ChatLine> {
+fun decodeThread(raw: String, room: ThreadRoom): List<ChatLine> {
   return try {
     val o = JSONObject(raw)
-    if (o.optString("origin") != origin || o.optString("slug") != slug) {
+    if (ThreadRoom(o.optString("origin"), o.optString("slug"), o.optString("user")) != room) {
       return emptyList()
     }
     val arr = o.optJSONArray("lines") ?: return emptyList()
@@ -88,7 +106,6 @@ private fun encodeLine(line: ChatLine): JSONObject {
     .put("id", line.id)
     .put("you", line.fromYou)
     .put("text", line.text)
-    .put("pending", line.pending)
     .put("at", line.at)
   o.putOpt("kind", line.kind)
   o.putOpt("photo", line.photo)
@@ -112,7 +129,6 @@ private fun decodeLine(o: JSONObject): ChatLine? {
     text = o.optString("text"),
     kind = kind,
     photo = o.optString("photo").takeIf { cachedPhotoOk(it) },
-    pending = o.optBoolean("pending"),
     at = o.optLong("at"),
     seq = if (o.isNull("seq")) null else o.optInt("seq").takeIf { it > 0 },
     failed = o.optString("failed").ifEmpty { null },
