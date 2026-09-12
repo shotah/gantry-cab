@@ -23,9 +23,12 @@ maps. Same room. Same [ai-gantry](https://github.com/shotah/ai-gantry)
 crane. The Mini still opens **zero** inbound ports.
 [gantree](https://github.com/shotah/gantree) is the yard board. It
 does not sit in a chat turn.
+[gantry-helm](https://github.com/shotah/gantry-helm) is the iPhone
+sister — same mailbox, CarPlay message cards.
 
 ```text
 gantry-cab APK  ─┐
+gantry-helm IPA ─┤
 pendant PWA     ─┼─►  pendant Worker (Durable Object)  ◄──  ai-gantry (outbound)
                  │
 gantree writes CHANNEL=pendant. It never sits in the turn.
@@ -34,12 +37,14 @@ gantree writes CHANNEL=pendant. It never sits in the turn.
 ```mermaid
 flowchart LR
   Cab["gantry-cab<br/>phone + Auto APK"]
+  Helm["gantry-helm<br/>iPhone + CarPlay"]
   PWA["gantry-pendant PWA"]
   Mailbox["pendant Worker<br/>Durable Object room"]
   Crane["ai-gantry<br/>KIT · outbound only"]
   Yard["gantree<br/>yard / operator board"]
 
   Cab -->|"wss · role=phone"| Mailbox
+  Helm -->|"wss · role=phone"| Mailbox
   PWA -->|"wss · role=phone"| Mailbox
   Crane -->|"wss · role=crane"| Mailbox
   Yard -->|"CHANNEL=pendant"| Crane
@@ -85,6 +90,7 @@ not this beta): [docs/fcm_design_and_todo.md](docs/fcm_design_and_todo.md).
 | Repo | Job |
 | --- | --- |
 | **gantry-cab** | This APK. Pocket thread + Auto message cards. |
+| [gantry-helm](https://github.com/shotah/gantry-helm) | iOS app. Pocket thread + CarPlay message cards. |
 | [gantry-pendant](https://github.com/shotah/gantry-pendant) | Mailbox Worker + handheld PWA. One room per crane slug. |
 | [ai-gantry](https://github.com/shotah/ai-gantry) | The crane. `CHANNEL=pendant`. Dials **out**. |
 | [gantree](https://github.com/shotah/gantree) | The yard. Writes env and files. Not a mouth. |

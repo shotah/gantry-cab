@@ -1,8 +1,9 @@
 # Setup
 
-Sister of gantry-pendant. The Worker is the mailbox. This APK is another
-phone. Android Auto is a `MessagingStyle` notification + a small
-`CarAppService`.
+Sister of gantry-pendant and [gantry-helm](https://github.com/shotah/gantry-helm).
+The Worker is the mailbox. This APK is another phone. Android Auto is a
+`MessagingStyle` notification + a small `CarAppService`. Helm is the
+iOS sister on the same room.
 
 ## Build
 

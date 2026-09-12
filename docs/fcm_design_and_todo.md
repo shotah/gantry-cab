@@ -87,8 +87,10 @@ public:  Worker ──FCM──► Play Services ──► Cab (seconds) ──�
 
 - Play Store listing, a Cab tile in a real car, or Car App Library
   unknown-sources. Unchanged: [android_auto_setup.md](android_auto_setup.md) §0 / §7.
-- Native APNs / iOS. Cloudflare will not send APNs for us. iOS native
-  is a later mouth; Web Push is its lock-screen if it stays a PWA.
+- Native APNs / Helm. Cloudflare will not send APNs for us. Helm
+  ([gantry-helm](https://github.com/shotah/gantry-helm)) is the iOS
+  mouth; APNs lock-screen is the same later as this FCM ticket. Web
+  Push is the PWA lock-screen.
 - Replacing the mailbox WebSocket with HTTP `getUpdates`.
 - Putting JPEGs, session JWEs, or GPS on FCM (4 KB data-message cap;
   those bytes are the thread).

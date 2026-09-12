@@ -46,7 +46,8 @@ sockets up, deployed origin:
 
 1. Type in the browser — Cab inserts it as "you" without "Connecting…",
    without clearing the thread, in seq order. Type in Cab — the
-   browser does the same without a tab hide.
+   browser does the same without a tab hide. Helm is a third mouth
+   on the same `sub` ([gantry-helm](https://github.com/shotah/gantry-helm)).
 2. Bob in the same room still does not see Ada's inbound. Kit's
    `reply` to Ada still only hits Ada's sockets.
 3. An old APK already knows how to paint extra `inbound`. Worst case

@@ -7,7 +7,8 @@ Do not wait for a pendant agent to touch Kotlin. Product / security
 work that is already Cab-local stays in [todo.md](todo.md).
 
 Wire: pendant
-[`docs/frontends.md`](https://github.com/shotah/gantry-pendant/blob/main/docs/frontends.md).
+[`docs/frontends.md`](https://github.com/shotah/gantry-pendant/blob/main/docs/frontends.md)
+(PWA, Cab, and Helm).
 Voice: pendant
 [`docs/voice.md`](https://github.com/shotah/gantry-pendant/blob/main/docs/voice.md).
 Sibling: [sibling_phones.md](sibling_phones.md). Audit leftovers:

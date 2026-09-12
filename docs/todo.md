@@ -67,6 +67,7 @@ letting another app read the thread are the failures that matter.
 - **`MAILBOX_SECRET`:** a phone that has it *is* the operator. Lab-only. Rotate on device loss; prefer Google sessions off the emulator.
 - **No certificate pinning.** Fine for a Cloudflare Worker + system trust store. Revisit only if the Worker moves behind a custom CA.
 - **Notifications `VISIBILITY_PRIVATE`.** Keep.
+- **Do not start Expo.** Helm is the iOS mouth. Same mailbox.
 - **Studio Sync/Make and CLI/pre-commit** writing the same `app/build` corrupts the Kotlin incremental cache (20 s full recompile). If it happens: `rm -rf app/build/kotlin` (no `clean`).
 - **Keep the daemon:** never `--no-daemon` locally. Bigger heaps and `org.gradle.daemon.idletimeout=10800000` belong in `~/.gradle/gradle.properties` (`-Xmx6g`, Kotlin daemon `-Xmx4g`) — in-repo stays at `-Xmx2048m` so GitHub runners do not OOM.
 - **Live Edit** + `@Preview`s in `ShotScenes.kt` before a full install.
