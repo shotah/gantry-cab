@@ -153,4 +153,6 @@ then Cab `POST`s `{ id_token, nonce }` to
   **Unknown sources**. That admits the `MessagingStyle` card — Kit read
   aloud, spoken reply — and that is the whole in-car product for a
   sideloaded GitHub APK. Settings → **Test car voice** proves the path.
+  Open Cab (send a line or Connect) before you drive, then lock the
+  phone. The socket does not come back on reboot.
 - Voice reply is Auto's STT. We never run `SpeechRecognition` in the dash.

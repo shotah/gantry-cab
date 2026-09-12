@@ -20,6 +20,8 @@ import com.gantree.cab.mailbox.displaySlug
 
 object CabNotifier {
   const val CHANNEL = "kit"
+  /** Silent FGS tax. Not a Kit conversation — Auto only reads [CHANNEL]. */
+  const val LIVE_CHANNEL = "mailbox"
   const val CONNECTED_ID = 7
   const val MESSAGE_ID = 42
   const val KEY_REPLY = "cab.reply"
@@ -32,23 +34,32 @@ object CabNotifier {
 
   fun ensureChannel(ctx: Context) {
     val mgr = ctx.getSystemService(NotificationManager::class.java)
-    val ch = NotificationChannel(CHANNEL, ctx.getString(R.string.notify_channel), NotificationManager.IMPORTANCE_HIGH)
-    ch.setShowBadge(true)
-    ch.enableVibration(true)
-    mgr.createNotificationChannel(ch)
+    val kit = NotificationChannel(CHANNEL, ctx.getString(R.string.notify_channel), NotificationManager.IMPORTANCE_HIGH)
+    kit.setShowBadge(true)
+    kit.enableVibration(true)
+    mgr.createNotificationChannel(kit)
+    val live = NotificationChannel(
+      LIVE_CHANNEL,
+      ctx.getString(R.string.notify_mailbox_channel),
+      NotificationManager.IMPORTANCE_MIN,
+    )
+    live.setShowBadge(false)
+    live.enableVibration(false)
+    live.setSound(null, null)
+    mgr.createNotificationChannel(live)
   }
 
   fun connected(ctx: Context): Notification {
     ensureChannel(ctx)
-    return NotificationCompat.Builder(ctx, CHANNEL)
+    return NotificationCompat.Builder(ctx, LIVE_CHANNEL)
       .setSmallIcon(R.drawable.ic_stat_cab)
       .setContentTitle(ctx.getString(R.string.app_name))
-      .setContentText(ctx.getString(R.string.notify_connected))
+      .setContentText(ctx.getString(R.string.notify_mailbox))
       .setContentIntent(openApp(ctx))
       .setOngoing(true)
       .setSilent(true)
       .setCategory(NotificationCompat.CATEGORY_SERVICE)
-      .setForegroundServiceBehavior(NotificationCompat.FOREGROUND_SERVICE_IMMEDIATE)
+      .setForegroundServiceBehavior(NotificationCompat.FOREGROUND_SERVICE_DEFERRED)
       .build()
   }
 

@@ -24,9 +24,11 @@ Install first: [sideload_to_android.md](sideload_to_android.md).
 - The same card sits in the phone's notification shade. Swiping it
   away there is fine; Cab forgets those turns so the car does not
   re-read them later.
-- Kit only reaches the car while Cab's socket is up. The tell is the
-  quiet **"cab · Listening for Kit"** notification in the shade. Auto
-  cannot start Cab for you.
+- Kit only reaches the car after you **open Cab** (Connect, or send
+  a line) so the mailbox socket is up, then **lock the phone**. Auto
+  cannot start Cab for you. There is no always-on "Listening for
+  Kit" card — the shade should only show Kit's message, not a second
+  status bubble. Reboot? Open Cab again before you drive.
 
 ## 1. Phone (Android settings)
 
@@ -39,8 +41,8 @@ Install first: [sideload_to_android.md](sideload_to_android.md).
    *Unrestricted*. Samsung: Device care → Battery → Background usage
    limits → take Cab out of *Sleeping apps*, add it to *Never sleeping
    apps*. Xiaomi / OnePlus / Oppo: Autostart on, battery saver *No
-   restrictions*. The OEM killer is the usual reason "Listening for
-   Kit" vanished by the time you got to the car.
+   restrictions*. The OEM killer is the usual reason the socket is
+   dead by the time you get to the car.
 3. **Text-to-speech engine: Google.** Settings → search *Text-to-speech*
    → Preferred engine → *Speech Services by Google*. Tap Play to hear
    it. A stale or third-party engine is the classic "card shows, no
@@ -77,8 +79,9 @@ Open it from Settings → Connected devices → Connection preferences →
 1. Settings (gear): **Mailbox** = the pendant Worker `https://…`,
    **Talking to** = the crane's room (`kit`), then *Continue with
    Google* or paste the phone secret.
-2. **Connect**, then wait for the bar to say **Live**.
-3. Pull down the shade: **"cab · Listening for Kit"** is there.
+2. **Connect** (or send a line), then wait for the bar to say **Live**.
+3. Lock the phone. The shade should show Kit's **message** card when
+   something arrives — not a second "Listening for Kit" bubble.
 4. Settings → **Test car voice**. Expect a *kit* card in the shade
    that starts "Car check from Cab". If Android settings opened
    instead, Cab found notifications off or the Kit category lowered —
@@ -119,10 +122,9 @@ Open it from Settings → Connected devices → Connection preferences →
 - If the socket drops (tunnel, dead zone), replies you speak are
   queued (up to 50) and sent when Live returns; the phone bubble says
   *sending* until then.
-- Long drives are fine: the socket is a `specialUse` foreground
-  service with no daily cap.
-- Reboot or APK update: Cab relistens by itself if you are signed in.
-  A *Force stop* is the only thing you have to undo by opening Cab.
+- Open Cab (or send a line) before you plug in. Reboot / APK update /
+  Force stop: open Cab again, then drive. The socket does not come
+  back by itself.
 - Do not drive with Cab open on the phone screen. The thread is the
   mouth then, and if Cab cannot see the head unit it skips the card.
   Lock the phone.
@@ -135,7 +137,7 @@ Open it from Settings → Connected devices → Connection preferences →
 | Test card shows on the phone, nothing in the car | Unknown sources off in Auto's developer settings; or Auto's notification access revoked; or Auto's DND on | §2.2, §1.4, §2.4 |
 | Card on the head unit, no voice | Text-to-speech engine, or car "Voice" volume at zero | §1.3; turn the knob while it is talking |
 | Card read, reply never reaches Kit | Cab not Live; reply is queued | Phone bubble says *sending*; comes through when Live. If it never does, Connect again |
-| Worked yesterday, silent today, no "Listening for Kit" in the shade | OEM battery killer, or Force stop | §1.2; open Cab once |
+| Worked yesterday, silent today | Reboot, Force stop, or OEM battery killer — Cab does not relisten on boot | §1.2; open Cab, send a line, then drive |
 | Kit answers on the phone but the car never speaks | Cab was open on the phone screen | Lock the phone |
 | Auto re-reads old turns | Older APK (ignores `replay`) on a mailbox that hydrates | Update Cab; this APK paints last 80 on connect but does not chime. Swiping a live card still clears history |
 | Looking for a Cab tile in Auto | Expected | There is none for a sideload. See §0 |

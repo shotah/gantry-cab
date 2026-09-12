@@ -111,9 +111,10 @@ turns it into text and Cab sends it to the crane as `inbound`.
    but not in the car until that setting exists again.
 4. In Android Auto settings → **Notifications**, keep **Show message
    notifications** on.
-5. Open Cab, tap **Listen**, wait for **Live**. The shade must show
-   Cab's "Listening for Kit" notification. Kit only reaches the car
-   while that is there — Auto cannot start Cab for you.
+5. Open Cab, send a line (or tap **Connect**), wait for **Live**,
+   then lock the phone. Kit only reaches the car while that session
+   is up — Auto cannot start Cab for you. After a reboot, open Cab
+   again before you drive.
 6. Plug the phone into the car. Open Cab → Settings → **Test car
    voice**. Auto should read a "Car check" card aloud; the words say
    whether the phone sees the head unit. If you hear it, Kit will be
@@ -135,5 +136,5 @@ Cab's notifications were denied in Android settings.
 | `http://` origin | This release APK blocks plain HTTP. Use the https Worker URL. |
 | Cab missing in the Android Auto app list | Expected for a sideload. Kit arrives as a message card, not a tile. Use Settings → **Test car voice** to prove the path. |
 | Test car voice shows on the phone, silent in the car | Unknown sources off in Auto developer settings, or Auto's notification access revoked. |
-| Kit answered on the phone yesterday, silent in the car today | Cab was not **Live** — the "Listening for Kit" notification was gone. Open Cab, Listen, then drive. |
+| Kit answered on the phone yesterday, silent in the car today | Cab was not opened this boot — the socket does not come back by itself. Open Cab, send a line, then drive. |
 | Update over an older Cab fails | Uninstall Cab, then install the new APK. |

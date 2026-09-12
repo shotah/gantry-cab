@@ -1,7 +1,6 @@
 package com.gantree.cab.drive
 
 import android.app.NotificationManager
-import android.content.Intent
 import androidx.car.app.connection.CarConnection
 
 /** Pendant `haptic.ts` visible-push buzz. */
@@ -30,16 +29,6 @@ fun shouldBuzz(resumed: Boolean, carAttached: Boolean, kind: String?): Boolean =
 
 fun carConnectionAttached(type: Int?): Boolean =
   type != null && type != CarConnection.CONNECTION_TYPE_NOT_CONNECTED
-
-/**
- * Auto cannot launch a sideloaded Cab, so the socket must already be up
- * when the phone meets the head unit. Reboot and APK update are the two
- * moments that silently take it down; both are allowed to start a
- * `specialUse` foreground service. Only when there is a credential.
- */
-fun bootShouldListen(action: String?, signedIn: Boolean): Boolean =
-  signedIn &&
-    (action == Intent.ACTION_BOOT_COMPLETED || action == Intent.ACTION_MY_PACKAGE_REPLACED)
 
 /**
  * Settings → **Test car voice** would be a lie if Android drops the card

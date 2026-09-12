@@ -79,7 +79,8 @@ Every screen: [docs/screens.md](docs/screens.md). `make shot` reshoots.
 Phone + Auto install: [docs/sideload_to_android.md](docs/sideload_to_android.md).
 Make the car talk: [docs/android_auto_setup.md](docs/android_auto_setup.md).
 Open work: [docs/todo.md](docs/todo.md). Mailbox handoff:
-[docs/pendant_handoff.md](docs/pendant_handoff.md).
+[docs/pendant_handoff.md](docs/pendant_handoff.md). FCM (public-scale,
+not this beta): [docs/fcm_design_and_todo.md](docs/fcm_design_and_todo.md).
 
 | Repo | Job |
 | --- | --- |
@@ -169,7 +170,9 @@ Play internal/closed testing only. Do not expect a Cab tile in a car.
 Settings → **Test car voice** posts a check card through the same
 path so you can hear it in the driveway.
 
-Foreground socket (`specialUse`, no 6 h cap) while the app is signed
-in; Auto cannot start Cab, so be **Live** before you plug in. FCM
-lock-screen when the process is dead is later — same later as pendant
-Web Push.
+Foreground socket while Cab is open, you Connect, or you send — not
+on boot. Auto cannot start Cab, so **open the app and send a line
+before you plug in**, then lock the phone. FCM lock-screen (process
+dead, WhatsApp-class) is not demo / POC / family-beta; it is if Cab
+becomes a public service. Design:
+[docs/fcm_design_and_todo.md](docs/fcm_design_and_todo.md).

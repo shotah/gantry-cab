@@ -58,6 +58,19 @@ class CabNotifierAutoContractTest {
       ?: error("no action with semantic $semantic")
 
   @Test
+  fun mailboxNoticeIsNotAKitConversation() {
+    val n = CabNotifier.connected(app)
+    assertEquals(CabNotifier.LIVE_CHANNEL, n.channelId)
+    assertEquals(Notification.CATEGORY_SERVICE, n.category)
+    assertNull(NotificationCompat.MessagingStyle.extractMessagingStyleFromNotification(n))
+    assertEquals(
+      NotificationManager.IMPORTANCE_MIN,
+      nm.getNotificationChannel(CabNotifier.LIVE_CHANNEL).importance,
+    )
+    assertEquals(NotificationManager.IMPORTANCE_HIGH, nm.getNotificationChannel(CabNotifier.CHANNEL).importance)
+  }
+
+  @Test
   fun kitCardIsAConversationAutoCanRead() {
     val n = post("leave by 8")
     assertEquals(Notification.CATEGORY_MESSAGE, n.category)
@@ -117,6 +130,7 @@ class CabNotifierAutoContractTest {
   fun channelIsHighSoAutoHeadsUp() {
     post("yo")
     assertEquals(NotificationManager.IMPORTANCE_HIGH, nm.getNotificationChannel(CabNotifier.CHANNEL).importance)
+    assertEquals(CabNotifier.CHANNEL, post("yo").channelId)
   }
 
   @Test

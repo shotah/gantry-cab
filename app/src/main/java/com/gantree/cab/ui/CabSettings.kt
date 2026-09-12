@@ -286,8 +286,8 @@ fun CabSettings(
     Text("Android Auto", style = MaterialTheme.typography.labelLarge, color = scheme.onSurfaceVariant)
     Text(
       "Cab has no tile in the car from a sideload. Kit arrives as a message card that Auto reads aloud; " +
-        "tap the card to reply by voice. Needs Android Auto → Developer settings → Unknown sources, " +
-        "and Cab must be Live before you plug in. Plug in, then tap Test to hear a check message.",
+        "tap the card to reply by voice. Needs Android Auto → Developer settings → Unknown sources. " +
+        "Open Cab and send a line before you drive, then lock the phone. Plug in, then tap Test to hear a check message.",
       style = MaterialTheme.typography.bodySmall,
       color = scheme.onSurfaceVariant,
     )

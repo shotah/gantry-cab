@@ -48,16 +48,6 @@ class NotifyGateTest {
   }
 
   @Test
-  fun bootAndUpdateRelistenOnlyWhenSignedIn() {
-    assertTrue(bootShouldListen("android.intent.action.BOOT_COMPLETED", signedIn = true))
-    assertTrue(bootShouldListen("android.intent.action.MY_PACKAGE_REPLACED", signedIn = true))
-    assertFalse(bootShouldListen("android.intent.action.BOOT_COMPLETED", signedIn = false))
-    assertFalse(bootShouldListen("android.intent.action.MY_PACKAGE_REPLACED", signedIn = false))
-    assertFalse(bootShouldListen("android.intent.action.SCREEN_ON", signedIn = true))
-    assertFalse(bootShouldListen(null, signedIn = true))
-  }
-
-  @Test
   fun carTestIsBlockedWhenAndroidWouldDropTheCard() {
     // IMPORTANCE_NONE 0, MIN 1, LOW 2, DEFAULT 3, HIGH 4 — Auto only heads-up (and reads) HIGH.
     assertTrue(carTestBlocked(notificationsEnabled = false, channelImportance = 4))

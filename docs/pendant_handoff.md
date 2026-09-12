@@ -108,6 +108,8 @@ unless that walk is the ticket ([todo.md](todo.md) Not this version).
       are already dropped.
 - [ ] Handheld mic → compose (`SpeechRecognizer`), no auto-send. Auto
       stays host STT. Design: pendant `docs/voice.md`.
+- [ ] FCM lock-screen — public-scale only, not demo/beta. Design:
+      [fcm_design_and_todo.md](fcm_design_and_todo.md).
 
 ---
 
