@@ -25,10 +25,12 @@ data class ThreadRoom(
 /**
  * Settled bubbles only, like pendant `persistableThread`: a `sending` bubble
  * either lands (the transcript replays it) or never did; a draft is Kit
- * mid-sentence. Neither should greet you as history.
+ * mid-sentence. Neither should greet you as history. `live` is a this-session
+ * Compose key — a reload must not keep it.
  */
 fun persistableThread(lines: List<ChatLine>): List<ChatLine> =
   lines.filterNot { it.pending || isDraftBubble(it.kind) }
+    .map { if (it.live) it.copy(live = false) else it }
 
 /**
  * Last thread on disk so launch paints it before the mailbox replays —

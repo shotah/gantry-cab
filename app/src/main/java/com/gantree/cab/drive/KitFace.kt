@@ -9,6 +9,7 @@ import androidx.core.app.Person
 import androidx.core.graphics.drawable.IconCompat
 import com.gantree.cab.mailbox.JpegCheck
 import com.gantree.cab.mailbox.acceptJpeg
+import com.gantree.cab.mailbox.displaySlug
 
 /** Auto copies this across processes; keep it well under the binder cap. */
 const val KIT_FACE_EDGE = 256
@@ -61,7 +62,7 @@ fun kitFaceIcon(jpeg: ByteArray?): IconCompat? =
   kitFaceBitmap(jpeg)?.let { IconCompat.createWithBitmap(it) }
 
 fun kitPerson(slug: String, icon: IconCompat? = null): Person {
-  val b = Person.Builder().setName(slug).setKey(CabNotifier.conversationId(slug))
+  val b = Person.Builder().setName(displaySlug(slug)).setKey(CabNotifier.conversationId(slug))
   if (icon != null) {
     b.setIcon(icon)
   }

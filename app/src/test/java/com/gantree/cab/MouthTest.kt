@@ -200,6 +200,26 @@ class MouthTest {
   }
 
   @Test
+  fun draftToReplyKeepsTheLiveComposeKey() {
+    val mouth = Mouth()
+    mouth.ingest(WireFrame(kind = "draft", text = "Hello"))
+    val draft = mouth.lines.value.single()
+    assertEquals(true, draft.live)
+    assertEquals(LIVE_COMPOSE_KEY, composeKey(draft))
+    mouth.ingest(WireFrame(kind = "reply", id = "r1", text = "Hello"))
+    val reply = mouth.lines.value.single()
+    assertEquals("r1", reply.id)
+    assertEquals(true, reply.live)
+    assertEquals(LIVE_COMPOSE_KEY, composeKey(reply))
+    mouth.ingest(WireFrame(kind = "inbound", id = "a1", text = "thanks"))
+    assertEquals(false, mouth.lines.value.first { it.id == "r1" }.live)
+    assertEquals("r1", composeKey(mouth.lines.value.first { it.id == "r1" }))
+    mouth.ingest(WireFrame(kind = "draft", text = "Next"))
+    assertEquals(false, mouth.lines.value.first { it.id == "r1" }.live)
+    assertEquals(LIVE_COMPOSE_KEY, composeKey(mouth.lines.value.first { it.id == DRAFT_ID }))
+  }
+
+  @Test
   fun emptyReplyStillDropsTheDraft() {
     val mouth = Mouth()
     mouth.ingest(WireFrame(kind = "draft", text = "⏳…"))

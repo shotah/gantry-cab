@@ -64,11 +64,11 @@ class CabNotifierAutoContractTest {
     assertNotNull(n.smallIcon)
     val style = style(n)
     assertEquals("You", style.user.name.toString())
-    assertEquals("kit", style.conversationTitle.toString())
+    assertNull(style.conversationTitle)
     assertFalse(style.isGroupConversation)
     val m = style.messages.single()
     assertEquals("leave by 8", m.text.toString())
-    assertEquals("kit", m.person?.name.toString())
+    assertEquals("Kit", m.person?.name.toString())
     assertNull(m.person?.icon)
     assertTrue(m.timestamp > 0L)
   }
@@ -137,6 +137,24 @@ class CabNotifierAutoContractTest {
     val shortcut = ShortcutManagerCompat.getDynamicShortcuts(app).firstOrNull { it.id == "cab-kit" }
       ?: error("no conversation shortcut")
     assertTrue(shortcut.categories?.contains("android.shortcut.conversation") == true)
+    assertEquals("Kit", shortcut.shortLabel.toString())
+    assertEquals("Kit", shortcut.longLabel.toString())
+  }
+
+  @Test
+  fun oneToOneCardDoesNotRepeatTheSlug() {
+    CabNotifier.kitMessage(app, "tim", "How was that debug session?")
+    val n = shadowOf(nm).getNotification(CabNotifier.MESSAGE_ID) ?: error("no Kit card posted")
+    val style = style(n)
+    assertNull(style.conversationTitle)
+    assertFalse(style.isGroupConversation)
+    assertEquals("Tim", style.messages.single().person?.name.toString())
+    assertEquals("How was that debug session?", style.messages.single().text.toString())
+    assertEquals("Tim", n.extras.getCharSequence(Notification.EXTRA_TITLE)?.toString())
+    assertNull(n.extras.getCharSequence(Notification.EXTRA_CONVERSATION_TITLE))
+    val shortcut = ShortcutManagerCompat.getDynamicShortcuts(app).firstOrNull { it.id == "cab-tim" }
+      ?: error("no conversation shortcut")
+    assertEquals("Tim", shortcut.shortLabel.toString())
   }
 
   @Test

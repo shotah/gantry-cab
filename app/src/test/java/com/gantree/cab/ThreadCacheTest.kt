@@ -47,6 +47,14 @@ class ThreadCacheTest {
   }
 
   @Test
+  fun persistableThreadStripsLive() {
+    val live = ChatLine("r1", false, "Hello", "reply", live = true)
+    val kept = persistableThread(listOf(live)).single()
+    assertEquals("r1", kept.id)
+    assertEquals(false, kept.live)
+  }
+
+  @Test
   fun anotherRoomOriginOrHumanReadsBackEmpty() {
     val cache = ThreadCache(File(tmp.root, "thread.json"))
     cache.write(room, thread())

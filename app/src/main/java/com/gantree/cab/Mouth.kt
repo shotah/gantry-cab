@@ -17,8 +17,13 @@ import java.util.UUID
 
 const val DRAFT_ID = "__draft__"
 
+/** This-session LazyColumn key so draft→reply does not remount ChatMarkdown. */
+const val LIVE_COMPOSE_KEY = "kit-live"
+
 /** Phone TTL after the last typing frame. Crane refresh is ~4s. */
 const val TYPING_TTL_MS = 6_000L
+
+fun composeKey(line: ChatLine): String = if (line.live) LIVE_COMPOSE_KEY else line.id
 
 fun clearsTyping(kind: String?): Boolean =
   kind == "reply" || kind == "push" || kind == "error"
@@ -34,6 +39,8 @@ data class ChatLine(
   override val seq: Int? = null,
   /** Mailbox refused it; sentence from [describeSendError]. */
   val failed: String? = null,
+  /** This-session Compose key; never persist (pendant `live`). */
+  val live: Boolean = false,
 ) : ThreadOrder
 
 class Mouth(
@@ -168,6 +175,7 @@ class Mouth(
     if (clearsTyping(frame.kind)) {
       _typingUntil.value = 0L
     }
+    val fromDraft = frame.kind == "reply" && _lines.value.any { it.id == DRAFT_ID }
     val id = frame.id
     if (id != null) {
       val existing = _lines.value.find { it.id == id }
@@ -180,12 +188,12 @@ class Mouth(
         return false
       }
     }
-    if (frame.kind == "reply") {
-      dropDraft()
-    }
     val text = frame.text?.trim().orEmpty()
     val photo = frame.images?.firstOrNull()
     if (text.isEmpty() && photo == null && frame.kind != "push") {
+      if (fromDraft) {
+        dropDraft()
+      }
       return false
     }
     commit(
@@ -197,6 +205,7 @@ class Mouth(
         photo = photo,
         at = frame.at ?: now(),
         seq = frame.seq,
+        live = fromDraft,
       ),
     )
     return true
@@ -228,7 +237,7 @@ class Mouth(
   }
 
   private fun applyDraft(text: String) {
-    val rest = _lines.value.filter { it.id != DRAFT_ID }
+    val rest = dropLive(_lines.value.filter { it.id != DRAFT_ID })
     if (text.trim().isEmpty()) {
       _lines.value = rest
       return
@@ -237,15 +246,23 @@ class Mouth(
     _lines.value = capThread(
       placeInThread(
         rest,
-        ChatLine(DRAFT_ID, false, text, "draft", at = prev?.at ?: now()),
+        ChatLine(DRAFT_ID, false, text, "draft", at = prev?.at ?: now(), live = true),
       ),
       THREAD_MAX,
     )
   }
 
   private fun commit(line: ChatLine) {
-    _lines.value = capThread(placeInThread(_lines.value, line), THREAD_MAX)
+    val base = if (line.kind == "reply") {
+      _lines.value.filter { it.id != DRAFT_ID }
+    } else {
+      _lines.value
+    }
+    _lines.value = capThread(placeInThread(dropLive(base), line), THREAD_MAX)
   }
+
+  private fun dropLive(lines: List<ChatLine>): List<ChatLine> =
+    lines.map { if (it.live) it.copy(live = false) else it }
 
   private fun dropDraft() {
     val rest = _lines.value.filter { it.id != DRAFT_ID }

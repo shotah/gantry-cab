@@ -16,6 +16,7 @@ import androidx.core.content.pm.ShortcutManagerCompat
 import androidx.core.graphics.drawable.IconCompat
 import com.gantree.cab.MainActivity
 import com.gantree.cab.R
+import com.gantree.cab.mailbox.displaySlug
 
 object CabNotifier {
   const val CHANNEL = "kit"
@@ -63,8 +64,8 @@ object CabNotifier {
     val next = pushKitTurn(history, historySlug, slug, text, System.currentTimeMillis())
     historySlug = next.first
     history = next.second
+    // 1:1 — a conversation title is "tim : tim" on the watch.
     val style = NotificationCompat.MessagingStyle(you)
-      .setConversationTitle(slug)
       .setGroupConversation(false)
     for (turn in history) {
       style.addMessage(turn.text, turn.at, kit)
@@ -90,7 +91,7 @@ object CabNotifier {
       .build()
     val n = NotificationCompat.Builder(ctx, CHANNEL)
       .setSmallIcon(R.drawable.ic_stat_cab)
-      .setContentTitle(slug)
+      .setContentTitle(displaySlug(slug))
       .setContentText(text)
       .setLargeIcon(faceBmp)
       .setContentIntent(openApp(ctx))
@@ -126,9 +127,10 @@ object CabNotifier {
   }
 
   private fun publishConversation(ctx: Context, slug: String, kit: Person, face: IconCompat?) {
+    val label = displaySlug(slug)
     val shortcut = ShortcutInfoCompat.Builder(ctx, conversationId(slug))
-      .setShortLabel(slug)
-      .setLongLabel(slug)
+      .setShortLabel(label)
+      .setLongLabel(label)
       .setIcon(face ?: IconCompat.createWithResource(ctx, R.drawable.ic_stat_cab))
       .setIntent(Intent(ctx, MainActivity::class.java).setAction(Intent.ACTION_MAIN))
       .setPerson(kit)

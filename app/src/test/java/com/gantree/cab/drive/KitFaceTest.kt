@@ -31,12 +31,12 @@ class KitFaceTest {
   }
 
   @Test
-  fun kitPersonKeepsTheSlugAndDropsAMissingIcon() {
-    val bare = kitPerson("kit")
-    assertEquals("kit", bare.name.toString())
-    assertEquals("cab-kit", bare.key)
+  fun kitPersonTitleCasesTheSlugAndDropsAMissingIcon() {
+    val bare = kitPerson("tim")
+    assertEquals("Tim", bare.name.toString())
+    assertEquals("cab-tim", bare.key)
     assertNull(bare.icon)
-    assertNotNull(kitPerson("kit", kitFaceIcon(solidJpeg())).icon)
+    assertNotNull(kitPerson("tim", kitFaceIcon(solidJpeg())).icon)
   }
 }
 

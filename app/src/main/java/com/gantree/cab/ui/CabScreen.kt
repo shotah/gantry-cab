@@ -58,6 +58,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
 import com.gantree.cab.ChatLine
+import com.gantree.cab.composeKey
 import com.gantree.cab.dev.SAMPLE_IDS
 import com.gantree.cab.mailbox.DEFAULT_PHOTO_SIZE
 import com.gantree.cab.mailbox.SlashCommand
@@ -379,7 +380,7 @@ fun CabScreen(
               verticalArrangement = Arrangement.spacedBy(8.dp),
               contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp),
             ) {
-              items(threadNewestFirst(lines), key = { it.id }) { line ->
+              items(threadNewestFirst(lines), key = { composeKey(it) }) { line ->
                 val mine = line.fromYou
                 Row(
                   modifier = Modifier.fillMaxWidth(),

@@ -34,8 +34,12 @@ letting another app read the thread are the failures that matter.
       `reply` / `push` on connect with additive `replay: true`.
       `Mouth.ingest` already paints; `shouldSpeak(kind, replay)` skips
       Auto HUNs. Ship this APK with the pendant Worker that hydrates.
+- [x] **Draft→reply Compose key.** `ChatLine.live` this-session only
+      (`kit-live` via `composeKey`). Draft and the reply that replaces
+      it share that key so `ChatMarkdown` does not remount. Not on the
+      wire; `persistableThread` / hydrate drop it. Pendant
+      `docs/frontends.md` Draft→reply remount.
 - [ ] **"Drop a pin" launcher shortcut.** Parity P2. Pendant has a PWA shortcut `/?pin=1`. Cab already pushes a conversation shortcut; add a static `shortcuts.xml` that starts `MailboxService.sendPin`.
-- [ ] **Drop `DocsShotTest` coordinate assertions.** `img.getRGB(200, 500)` fails on any layout tweak and says nothing about behaviour. Keep a "renders without throwing" test until the screenshot replacement lands.
 - [ ] **Tag slow/IO tests** (MockWebServer, Java2D) with a JUnit `Category` so `make watch` can exclude them.
 
 ## Medium
