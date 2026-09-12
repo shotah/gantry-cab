@@ -1,5 +1,6 @@
 package com.gantree.cab.mailbox
 
+import okhttp3.CookieJar
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.Request
@@ -27,6 +28,7 @@ data class NativeSession(
 
 class AuthApi(
   private val client: OkHttpClient = OkHttpClient.Builder()
+    .cookieJar(CookieJar.NO_COOKIES)
     .connectTimeout(15, TimeUnit.SECONDS)
     .readTimeout(15, TimeUnit.SECONDS)
     .build(),
@@ -37,6 +39,21 @@ class AuthApi(
       mode = body.optStringOrNull("mode"),
       google = body.optBoolean("google", false),
     )
+  }
+
+  /**
+   * Server-issued native nonce when the Worker has `GET /api/auth/nonce`.
+   * Missing route, junk body, or empty value → null so the phone can mint.
+   */
+  fun nonce(origin: String): String? {
+    return try {
+      val body = get(httpOrigin(origin) + "/api/auth/nonce")
+      body.optStringOrNull("nonce")
+    } catch (_: AuthException) {
+      null
+    } catch (_: org.json.JSONException) {
+      null
+    }
   }
 
   fun me(origin: String, token: String): Me {

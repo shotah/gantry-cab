@@ -54,8 +54,21 @@ class MailboxConnectTest {
     assertFalse(mailboxShouldRetry(401))
     assertFalse(mailboxShouldRetry(403))
     assertFalse(mailboxShouldRetry(404))
+    assertFalse(mailboxShouldRetry(4401))
     assertTrue(mailboxShouldRetry(null))
     assertTrue(mailboxShouldRetry(500))
+  }
+
+  @Test
+  fun sessionDropsOnHandshake401AndClose4401NotOn403() {
+    assertTrue(mailboxHttpDropsSession(401))
+    assertFalse(mailboxHttpDropsSession(403))
+    assertFalse(mailboxHttpDropsSession(404))
+    assertFalse(mailboxHttpDropsSession(null))
+    assertTrue(mailboxCloseDropsAuth(MAILBOX_CLOSE_UNAUTHORIZED))
+    assertFalse(mailboxCloseDropsAuth(1000))
+    assertFalse(mailboxCloseDropsAuth(1001))
+    assertTrue(mailboxAuthLostHint().contains("sign in again"))
   }
 
   @Test

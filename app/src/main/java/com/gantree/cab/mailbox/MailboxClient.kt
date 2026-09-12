@@ -1,5 +1,6 @@
 package com.gantree.cab.mailbox
 
+import okhttp3.CookieJar
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
@@ -14,7 +15,9 @@ class MailboxClient(
   private val onFrame: (WireFrame) -> Unit,
   private val onState: (Boolean) -> Unit,
   private val onError: (Throwable, Response?) -> Unit = { _, _ -> },
+  private val onAuthLost: () -> Unit = {},
   private val client: OkHttpClient = OkHttpClient.Builder()
+    .cookieJar(CookieJar.NO_COOKIES)
     .pingInterval(20, TimeUnit.SECONDS)
     .connectTimeout(15, TimeUnit.SECONDS)
     .readTimeout(0, TimeUnit.SECONDS)
@@ -29,6 +32,7 @@ class MailboxClient(
   private val retrying = AtomicBoolean(false)
   private val attempt = AtomicInteger(0)
   private val up = AtomicBoolean(false)
+  private val authLost = AtomicBoolean(false)
   @Volatile
   private var openedAt = 0L
   @Volatile
@@ -45,6 +49,7 @@ class MailboxClient(
   fun start(origin: String, slug: String, bearer: String) {
     room = Triple(origin, slug, bearer)
     stopped.set(false)
+    authLost.set(false)
     attempt.set(0)
     connect(origin, slug, bearer)
   }
@@ -147,11 +152,18 @@ class MailboxClient(
       }
 
       override fun onClosing(webSocket: WebSocket, code: Int, reason: String) {
+        if (dropAuthIfNeeded(code)) {
+          webSocket.close(code, null)
+          return
+        }
         webSocket.close(1000, null)
       }
 
       override fun onClosed(webSocket: WebSocket, code: Int, reason: String) {
         if (!mine()) {
+          return
+        }
+        if (dropAuthIfNeeded(code)) {
           return
         }
         up.set(false)
@@ -166,9 +178,31 @@ class MailboxClient(
         onError(t, response)
         up.set(false)
         onState(false)
+        if (mailboxHttpDropsSession(response?.code)) {
+          dropAuth()
+          return
+        }
         retry(origin, slug, bearer, response?.code)
       }
     })
+  }
+
+  private fun dropAuthIfNeeded(code: Int): Boolean {
+    if (!mailboxCloseDropsAuth(code)) {
+      return false
+    }
+    dropAuth()
+    return true
+  }
+
+  private fun dropAuth() {
+    if (!authLost.compareAndSet(false, true)) {
+      return
+    }
+    stopped.set(true)
+    up.set(false)
+    onState(false)
+    onAuthLost()
   }
 
   private fun retry(origin: String, slug: String, bearer: String, httpCode: Int?) {

@@ -27,6 +27,7 @@ import com.gantree.cab.mailbox.photoEdge
 import com.gantree.cab.mailbox.photoErrorToken
 import com.gantree.cab.mailbox.composeHasTurn
 import com.gantree.cab.mailbox.WireFrame
+import com.gantree.cab.ui.mintNonce
 import com.gantree.cab.ui.requestGoogleId
 import androidx.credentials.exceptions.GetCredentialException
 import androidx.credentials.exceptions.NoCredentialException
@@ -340,7 +341,10 @@ class CabViewModel(private val app: CabApp) : ViewModel() {
       _signingIn.value = true
       _authHint.value = "Opening Google…"
       try {
-        val google = requestGoogleId(activity, web)
+        val nonce = withContext(Dispatchers.IO) {
+          app.auth.nonce(_origin.value) ?: mintNonce()
+        }
+        val google = requestGoogleId(activity, web, nonce)
         val session = withContext(Dispatchers.IO) {
           app.auth.token(_origin.value, google.idToken, google.nonce)
         }

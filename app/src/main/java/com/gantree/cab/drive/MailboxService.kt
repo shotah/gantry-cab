@@ -28,6 +28,7 @@ import com.gantree.cab.mailbox.batteryHint
 import com.gantree.cab.mailbox.cursorOf
 import com.gantree.cab.mailbox.geoFromFix
 import com.gantree.cab.mailbox.geoHint
+import com.gantree.cab.mailbox.mailboxAuthLostHint
 import com.gantree.cab.mailbox.mailboxConnectError
 import com.gantree.cab.mailbox.mailboxSocketHint
 import com.gantree.cab.mailbox.mailboxTimeoutHint
@@ -178,6 +179,10 @@ class MailboxService : LifecycleService() {
       },
       onError = { err, res ->
         app.mouth.setHint(mailboxSocketHint(res?.code, err.message))
+      },
+      onAuthLost = {
+        app.prefs.signOut()
+        giveUp(mailboxAuthLostHint())
       },
     )
     client = mailbox

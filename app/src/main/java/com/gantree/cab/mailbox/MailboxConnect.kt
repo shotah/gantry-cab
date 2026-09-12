@@ -101,9 +101,23 @@ fun watchingThread(phoneResumed: Boolean, carThreadVisible: Boolean): Boolean =
 
 /** HTTP 401/403/404 are terminal; keep retrying transport failures. */
 fun mailboxShouldRetry(httpCode: Int?): Boolean = when (httpCode) {
-  401, 403, 404 -> false
+  401, 403, 404, 4401 -> false
   else -> true
 }
+
+/** Handshake 401: this JWE is no good. Do not drop on 403 (wrong room, same human). */
+fun mailboxHttpDropsSession(httpCode: Int?): Boolean = httpCode == 401
+
+/**
+ * Mailbox close `4401` is "this credential may not talk" — yanked `sub`,
+ * expired session on the next frame, later an `iat` floor. Drop the JWE.
+ */
+const val MAILBOX_CLOSE_UNAUTHORIZED = 4401
+
+fun mailboxCloseDropsAuth(code: Int): Boolean = code == MAILBOX_CLOSE_UNAUTHORIZED
+
+fun mailboxAuthLostHint(): String =
+  "Mailbox closed the session — sign in again."
 
 /** 2s, 4s, 8s, 16s, 32s, then cap at 60s. */
 fun mailboxRetryDelayMs(attempt: Int): Long {

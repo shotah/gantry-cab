@@ -78,7 +78,8 @@ the full catalog.
 Every screen: [docs/screens.md](docs/screens.md). `make shot` reshoots.
 Phone + Auto install: [docs/sideload_to_android.md](docs/sideload_to_android.md).
 Make the car talk: [docs/android_auto_setup.md](docs/android_auto_setup.md).
-Open work: [docs/todo.md](docs/todo.md).
+Open work: [docs/todo.md](docs/todo.md). Mailbox handoff:
+[docs/pendant_handoff.md](docs/pendant_handoff.md).
 
 | Repo | Job |
 | --- | --- |

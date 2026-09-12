@@ -12,10 +12,13 @@ import java.security.SecureRandom
 
 data class GoogleId(val idToken: String, val nonce: String)
 
-suspend fun requestGoogleId(activity: Activity, webClientId: String): GoogleId {
+fun mintNonce(): String {
   val nonceBytes = ByteArray(24)
   SecureRandom().nextBytes(nonceBytes)
-  val nonce = Base64.encodeToString(nonceBytes, Base64.URL_SAFE or Base64.NO_WRAP or Base64.NO_PADDING)
+  return Base64.encodeToString(nonceBytes, Base64.URL_SAFE or Base64.NO_WRAP or Base64.NO_PADDING)
+}
+
+suspend fun requestGoogleId(activity: Activity, webClientId: String, nonce: String = mintNonce()): GoogleId {
   val option = GetSignInWithGoogleOption.Builder(webClientId)
     .setNonce(nonce)
     .build()

@@ -374,4 +374,38 @@ class MailboxClientTest {
       client.stop()
     }
   }
+
+  @Test
+  fun close4401DropsAuthAndDoesNotRedial() {
+    val lost = CountDownLatch(1)
+    val up = CountDownLatch(1)
+    val peer = AtomicReference<WebSocket>()
+    val upgrades = AtomicInteger(0)
+    server.enqueue(
+      MockResponse().withWebSocketUpgrade(
+        object : WebSocketListener() {
+          override fun onOpen(webSocket: WebSocket, response: Response) {
+            upgrades.incrementAndGet()
+            peer.set(webSocket)
+          }
+        },
+      ),
+    )
+    val client = MailboxClient(
+      onFrame = {},
+      onState = { if (it) up.countDown() },
+      onAuthLost = { lost.countDown() },
+    )
+    client.start(server.url("/").toString(), "kit", "tok")
+    try {
+      assertTrue(up.await(5, TimeUnit.SECONDS))
+      peer.get().close(MAILBOX_CLOSE_UNAUTHORIZED, "unauthorized")
+      assertTrue(lost.await(5, TimeUnit.SECONDS))
+      Thread.sleep(400)
+      assertEquals(1, upgrades.get())
+      assertFalse(client.send(inbound("hi", "1", null)))
+    } finally {
+      client.stop()
+    }
+  }
 }

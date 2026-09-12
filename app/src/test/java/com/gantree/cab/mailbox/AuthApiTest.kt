@@ -4,6 +4,7 @@ import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
@@ -44,6 +45,38 @@ class AuthApiTest {
   }
 
   @Test
+  fun configIgnoresAdditiveKeys() {
+    server.enqueue(MockResponse().setBody("""{"mode":"google","google":true,"version":"0.4.0","dev":true}"""))
+    val got = api.config(server.url("/").toString())
+    assertEquals("google", got.mode)
+    assertEquals(true, got.google)
+    assertEquals(null, server.takeRequest().getHeader("Cookie"))
+  }
+
+  @Test
+  fun nonceReadsTheValue() {
+    server.enqueue(MockResponse().setBody("""{"nonce":"nce-1"}"""))
+    val got = api.nonce(server.url("/").toString())
+    assertEquals("nce-1", got)
+    val req = server.takeRequest()
+    assertEquals("/api/auth/nonce", req.path)
+    assertEquals("GET", req.method)
+    assertEquals(null, req.getHeader("Cookie"))
+  }
+
+  @Test
+  fun nonceMissingRouteReturnsNull() {
+    server.enqueue(MockResponse().setResponseCode(404).setBody("""{"error":"not found"}"""))
+    assertEquals(null, api.nonce(server.url("/").toString()))
+  }
+
+  @Test
+  fun nonceEmptyBodyReturnsNull() {
+    server.enqueue(MockResponse().setBody("{}"))
+    assertEquals(null, api.nonce(server.url("/").toString()))
+  }
+
+  @Test
   fun configDefaultsWhenTheBodyIsEmpty() {
     server.enqueue(MockResponse().setBody("{}"))
     val got = api.config(server.url("/").toString())
@@ -68,6 +101,7 @@ class AuthApiTest {
     assertEquals(9L, got.exp)
     val req = server.takeRequest()
     assertEquals("POST", req.method)
+    assertNull(req.getHeader("Cookie"))
     assertTrue(req.body.readUtf8().contains("id_token"))
   }
 
