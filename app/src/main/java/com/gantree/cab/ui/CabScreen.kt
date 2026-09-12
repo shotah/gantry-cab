@@ -348,7 +348,7 @@ fun CabScreen(
               hint,
               style = MaterialTheme.typography.bodySmall,
               color = scheme.onSurfaceVariant,
-              modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+              modifier = Modifier.padding(start = 96.dp, end = 16.dp, top = 8.dp, bottom = 8.dp),
             )
           }
           if (lines.isEmpty()) {

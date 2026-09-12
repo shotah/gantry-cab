@@ -78,8 +78,8 @@ class DocsShotTest {
   fun settingsIsAFullScreen() {
     val img = renderDocsShot("phone-settings")
     assertEquals(0x171D22, img.getRGB(200, 32) and 0xFFFFFF)
-    assertEquals(0x171D22, img.getRGB(200, 500) and 0xFFFFFF)
-    assertEquals(0x171D22, img.getRGB(200, 790) and 0xFFFFFF)
+    assertEquals(0x171D22, img.getRGB(8, 500) and 0xFFFFFF)
+    assertEquals(0x171D22, img.getRGB(8, 790) and 0xFFFFFF)
   }
 
   @Test
@@ -206,6 +206,54 @@ class DocsShotTest {
       }
     }
     assertTrue(tape > 40)
+  }
+
+  @Test
+  fun lampAndPaperThreadsUseTheirCanvas() {
+    val boom = renderPhone("thread")
+    val lamp = renderDocsShot("phone-thread-lamp")
+    val paper = renderDocsShot("phone-thread-paper")
+    assertEquals(0x0E1316, boom.getRGB(200, 500) and 0xFFFFFF)
+    assertEquals(0x0C0C16, lamp.getRGB(200, 500) and 0xFFFFFF)
+    assertEquals(0xF6F1E8, paper.getRGB(200, 500) and 0xFFFFFF)
+    assertEquals(PHONE_W, lamp.width)
+    assertEquals(PHONE_H, paper.height)
+  }
+
+  @Test
+  fun settingsShowsAFourthThemeChip() {
+    val img = renderDocsShot("phone-settings")
+    var canvasChip = 0
+    for (y in 340 until 390) {
+      if ((img.getRGB(350, y) and 0xFFFFFF) == 0x0E1316) canvasChip += 1
+    }
+    assertTrue(canvasChip > 20)
+  }
+
+  @Test
+  fun hintSitsRightOfTheHangingFace() {
+    val img = renderPhone("empty")
+    val face = img.getRGB(51, 72) and 0xFFFFFF
+    val canvas = 0x0E1316
+    val panel = 0x171D22
+    val track = 0x232B32
+    assertTrue(face != canvas && face != track)
+    var painted = 0
+    for (y in 70 until 96) {
+      for (x in 100 until 280) {
+        val rgb = img.getRGB(x, y) and 0xFFFFFF
+        if (rgb != canvas && rgb != panel && rgb != track) painted += 1
+      }
+    }
+    assertTrue(painted > 20)
+    var hintUnderFace = 0
+    for (y in 78 until 96) {
+      for (x in 16 until 48) {
+        val rgb = img.getRGB(x, y) and 0xFFFFFF
+        if (rgb == 0x9AA3AB) hintUnderFace += 1
+      }
+    }
+    assertEquals(0, hintUnderFace)
   }
 
   @Test

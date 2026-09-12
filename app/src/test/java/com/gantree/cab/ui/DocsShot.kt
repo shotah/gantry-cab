@@ -1,9 +1,15 @@
 package com.gantree.cab.ui
 
+import androidx.compose.ui.graphics.toArgb
 import com.gantree.cab.dev.sampleScene
 import com.gantree.cab.drive.carRows
+import com.gantree.cab.mailbox.DEFAULT_THEME
+import com.gantree.cab.mailbox.PHOTO_SIZE_IDS
+import com.gantree.cab.mailbox.THEME_IDS
 import com.gantree.cab.mailbox.displaySlug
+import com.gantree.cab.mailbox.photoSizeChip
 import com.gantree.cab.mailbox.searchEmoji
+import com.gantree.cab.mailbox.themeLabel
 import java.awt.AlphaComposite
 import java.awt.BasicStroke
 import java.awt.Color
@@ -22,25 +28,48 @@ import org.kordamp.ikonli.material2.Material2OutlinedAL
 import org.kordamp.ikonli.material2.Material2OutlinedMZ
 import org.kordamp.ikonli.swing.FontIcon
 
-private val Canvas = Color(0x0E1316)
-private val Panel = Color(0x171D22)
-private val Track = Color(0x232B32)
-private val Body = Color(0xDCD6CE)
-private val Fg = Color(0xF4F0EA)
-private val Muted = Color(0x9AA3AB)
-private val Dim = Color(0x84909A)
-private val Accent = Color(0xF07848)
-private val Live = Color(0x3DB8A0)
-private val You = Color(0x2A1612)
-private val Kit = Color(0x232B32)
-private val Field = Color(0x3A4550)
-private val AccentSoft = Color(0x2A1612)
-private val Mark = Color(0xF3B199)
-private val Edge = Color(0x5C6772)
 private val CarBg = Color(0x121212)
 private val CarLine = Color(0x2A2A2A)
 private val CarTitle = Color(0xF2F2F2)
 private val CarBody = Color(0xB8B8B8)
+private val CarAccent = Color(0xF07848)
+
+internal data class ShotInk(
+  val canvas: Color,
+  val panel: Color,
+  val track: Color,
+  val line: Color,
+  val edge: Color,
+  val fg: Color,
+  val muted: Color,
+  val dim: Color,
+  val accent: Color,
+  val mark: Color,
+  val accentSoft: Color,
+  val ok: Color,
+  val kit: Color,
+)
+
+internal fun shotInk(themeId: String): ShotInk {
+  val c = cabColors(themeId)
+  return ShotInk(
+    canvas = awt(c.canvas),
+    panel = awt(c.panel),
+    track = awt(c.track),
+    line = awt(c.line),
+    edge = awt(c.edge),
+    fg = awt(c.fg),
+    muted = awt(c.muted),
+    dim = awt(c.dim),
+    accent = awt(c.accent),
+    mark = awt(c.mark),
+    accentSoft = awt(c.accentSoft),
+    ok = awt(c.ok),
+    kit = awt(c.kit),
+  )
+}
+
+private fun awt(c: androidx.compose.ui.graphics.Color): Color = Color(c.toArgb(), true)
 
 const val PHONE_W = 390
 const val PHONE_H = 844
@@ -54,6 +83,7 @@ private const val HEADER_FACE_SLOT_H = 40f
 private const val HEADER_FACE_NUDGE_X = -2f
 private const val HEADER_FACE_NUDGE_Y = -4f
 private const val HEADER_PAD = 12f
+private const val HINT_X = 96
 
 val DOCS_SHOT_NAMES = listOf(
   "phone-unsigned",
@@ -66,6 +96,8 @@ val DOCS_SHOT_NAMES = listOf(
   "phone-emoji",
   "phone-attach",
   "phone-draft",
+  "phone-thread-lamp",
+  "phone-thread-paper",
   "auto-empty",
   "auto-thread",
 )
@@ -81,6 +113,8 @@ fun renderDocsShot(name: String): BufferedImage = when (name) {
   "phone-emoji" -> renderPhone("thread", emoji = true)
   "phone-attach" -> renderPhone("thread", attach = true)
   "phone-draft" -> renderPhone("thread", draftPhoto = true)
+  "phone-thread-lamp" -> renderPhone("thread", themeId = "lamp")
+  "phone-thread-paper" -> renderPhone("thread", themeId = "paper")
   "auto-empty" -> renderAuto("empty")
   "auto-thread" -> renderAuto("thread")
   else -> error("unknown shot $name")
@@ -93,24 +127,32 @@ fun writeDocsShots(dir: File) {
   }
 }
 
-fun renderPhone(sampleId: String, settings: Boolean = false, emoji: Boolean = false, attach: Boolean = false, draftPhoto: Boolean = false): BufferedImage {
+fun renderPhone(
+  sampleId: String,
+  settings: Boolean = false,
+  emoji: Boolean = false,
+  attach: Boolean = false,
+  draftPhoto: Boolean = false,
+  themeId: String = DEFAULT_THEME,
+): BufferedImage {
   val scene = sampleScene(sampleId) ?: error("sample $sampleId")
+  val ink = shotInk(themeId)
   val img = BufferedImage(PHONE_W, PHONE_H, BufferedImage.TYPE_INT_ARGB)
   val g = img.graphics2d()
   val font = noto()
   val door = sampleId == "unsigned"
-  g.color = Canvas
+  g.color = ink.canvas
   g.fillRect(0, 0, PHONE_W, PHONE_H)
   if (settings) {
-    paintSettings(g, font, scene.slug, scene.email)
+    paintSettings(g, ink, font, scene.slug, scene.email)
     g.dispose()
     return img
   }
   var y = BAR_H + 8
   if (!door && scene.hint.isNotBlank()) {
     g.font = font.deriveFont(12f)
-    g.color = Muted
-    y = g.drawLine(scene.hint, 16, y, 12)
+    g.color = ink.muted
+    y = g.drawLine(scene.hint, HINT_X, y, 12)
   }
   val composerTop = PHONE_H - COMPOSE_H
   val overlayH = when {
@@ -121,24 +163,24 @@ fun renderPhone(sampleId: String, settings: Boolean = false, emoji: Boolean = fa
   }
   val overlayTop = composerTop - 8 - overlayH
   if (door) {
-    paintAvatar(g, (PHONE_W - 72) / 2f, 280f, 72f)
+    paintAvatar(g, ink, (PHONE_W - 72) / 2f, 280f, 72f)
     g.font = font.deriveFont(16f)
-    g.color = Muted
+    g.color = ink.muted
     val msg = "Sign in with Google to talk."
     g.drawString(msg, (PHONE_W - g.fontMetrics.stringWidth(msg)) / 2, 380)
     val btn = "Continue with Google"
     g.font = font.deriveFont(14f)
     val bw = g.fontMetrics.stringWidth(btn) + 40
     val bx = (PHONE_W - bw) / 2
-    g.color = Accent
+    g.color = ink.accent
     g.fill(RoundRectangle2D.Float(bx.toFloat(), 396f, bw.toFloat(), 44f, 24f, 24f))
-    g.color = Canvas
+    g.color = ink.canvas
     g.drawString(btn, bx + 20, 424)
   } else {
     if (scene.lines.isEmpty()) {
-      paintAvatar(g, (PHONE_W - 72) / 2f, 200f, 72f)
+      paintAvatar(g, ink, (PHONE_W - 72) / 2f, 200f, 72f)
       g.font = font.deriveFont(16f)
-      g.color = Muted
+      g.color = ink.muted
       val empty = "No messages yet. Say hello, or type / for commands."
       val wrapped = wrap(g, empty, PHONE_W - 80)
       var ty = 296
@@ -164,25 +206,25 @@ fun renderPhone(sampleId: String, settings: Boolean = false, emoji: Boolean = fa
         val textW = if (wrapped.isEmpty()) 0 else wrapped.maxOf { g.fontMetrics.stringWidth(it) } + 28
         val bw = (maxOf(textW, if (photo) 220 else 0)).coerceAtMost(PHONE_W - 64).coerceAtLeast(96)
         val x = if (line.fromYou) PHONE_W - 16 - bw else 16
-        g.color = if (line.fromYou) You else Kit
+        g.color = if (line.fromYou) ink.accentSoft else ink.kit
         g.fill(RoundRectangle2D.Float(x.toFloat(), y.toFloat(), bw.toFloat(), bh.toFloat(), 20f, 20f))
         var ty = y + 12
         if (ping) {
           g.font = font.deriveFont(11f)
-          g.color = Dim
+          g.color = ink.dim
           g.drawString("Ping", x + 14, ty + g.fontMetrics.ascent)
           ty += pingH + 6
         }
         if (photo) {
-          paintHatchPhoto(g, x + 10f, ty.toFloat(), (bw - 20).toFloat(), photoH.toFloat())
+          paintHatchPhoto(g, ink, x + 10f, ty.toFloat(), (bw - 20).toFloat(), photoH.toFloat())
           ty += photoH + 6
         }
         if (wrapped.isNotEmpty()) {
           g.font = if (draft) font.deriveFont(Font.ITALIC, 16f) else font.deriveFont(16f)
           g.color = when {
-            draft -> Dim
-            line.fromYou -> Mark
-            else -> Fg
+            draft -> ink.dim
+            line.fromYou -> ink.mark
+            else -> ink.fg
           }
           for (w in wrapped) {
             g.drawString(w, x + 14, ty + g.fontMetrics.ascent)
@@ -192,7 +234,7 @@ fun renderPhone(sampleId: String, settings: Boolean = false, emoji: Boolean = fa
         if (sending) {
           if (wrapped.isNotEmpty() || photo) ty += 6
           g.font = font.deriveFont(11f)
-          g.color = Dim
+          g.color = ink.dim
           g.drawString("sending", x + 14, ty + g.fontMetrics.ascent)
         }
         y += bh + 10
@@ -200,17 +242,17 @@ fun renderPhone(sampleId: String, settings: Boolean = false, emoji: Boolean = fa
       }
     }
     if (emoji) {
-      paintEmojiPanel(g, font, overlayTop)
+      paintEmojiPanel(g, ink, font, overlayTop)
     }
     if (attach) {
-      paintAttachMenu(g, font, overlayTop)
+      paintAttachMenu(g, ink, font, overlayTop)
     }
     if (draftPhoto) {
-      paintDraftPhoto(g, font, overlayTop)
+      paintDraftPhoto(g, ink, font, overlayTop)
     }
-    paintComposer(g, font, composerTop, scene.slug, emoji)
+    paintComposer(g, ink, font, composerTop, scene.slug, emoji)
   }
-  paintHeader(g, font, scene.slug, scene.up, scene.typing)
+  paintHeader(g, ink, font, scene.slug, scene.up, scene.typing)
   g.dispose()
   return img
 }
@@ -225,7 +267,7 @@ fun renderAuto(sampleId: String): BufferedImage {
   g.fillRect(0, 0, AUTO_W, AUTO_H)
   var y = 28
   g.font = font.deriveFont(28f)
-  g.color = Accent
+  g.color = CarAccent
   y = g.drawLine(scene.slug.ifBlank { "cab" }, 48, y, 28)
   y += 12
   g.color = CarLine
@@ -250,13 +292,14 @@ fun renderAuto(sampleId: String): BufferedImage {
   return img
 }
 
-private fun paintHeader(g: Graphics2D, font: Font, slug: String, up: Boolean, typing: Boolean = false) {
-  g.color = Panel
+private fun paintHeader(g: Graphics2D, ink: ShotInk, font: Font, slug: String, up: Boolean, typing: Boolean = false) {
+  g.color = ink.panel
   g.fillRect(0, 0, PHONE_W, BAR_H)
   val slotX = HEADER_PAD
   val slotY = (BAR_H - HEADER_FACE_SLOT_H) / 2f
   paintAvatar(
     g,
+    ink,
     slotX + HEADER_FACE_NUDGE_X,
     slotY + HEADER_FACE_NUDGE_Y,
     HEADER_FACE,
@@ -264,9 +307,9 @@ private fun paintHeader(g: Graphics2D, font: Font, slug: String, up: Boolean, ty
   )
   val titleX = (HEADER_PAD + HEADER_FACE_SLOT_W + HEADER_PAD).toInt()
   g.font = font.deriveFont(18f)
-  g.color = Fg
+  g.color = ink.fg
   g.drawString(displaySlug(slug), titleX, 32)
-  g.color = if (up) Live else Dim
+  g.color = if (up) ink.ok else ink.dim
   g.fill(Ellipse2D.Float(titleX.toFloat(), 42f, 8f, 8f))
   g.font = font.deriveFont(11f)
   val subtitle = when {
@@ -275,10 +318,10 @@ private fun paintHeader(g: Graphics2D, font: Font, slug: String, up: Boolean, ty
     else -> "Live"
   }
   g.drawString(subtitle, titleX + 14, 50)
-  paintIkon(g, Material2OutlinedMZ.SETTINGS, PHONE_W - 28f, 32f, 22, Muted)
+  paintIkon(g, Material2OutlinedMZ.SETTINGS, PHONE_W - 28f, 32f, 22, ink.muted)
 }
 
-private fun paintAvatar(g: Graphics2D, x: Float, y: Float, size: Float, ring: Boolean = false) {
+private fun paintAvatar(g: Graphics2D, ink: ShotInk, x: Float, y: Float, size: Float, ring: Boolean = false) {
   val face = sampleFace()
   val clip = g.clip
   g.clip = Ellipse2D.Float(x, y, size, size)
@@ -296,134 +339,170 @@ private fun paintAvatar(g: Graphics2D, x: Float, y: Float, size: Float, ring: Bo
       null,
     )
   } else {
-    g.color = Track
+    g.color = ink.track
     g.fill(Ellipse2D.Float(x, y, size, size))
   }
   g.clip = clip
   if (ring) {
     val saved = g.stroke
     g.stroke = BasicStroke(2f)
-    g.color = Field
+    g.color = ink.line
     g.draw(Ellipse2D.Float(x + 1f, y + 1f, size - 2f, size - 2f))
     g.stroke = saved
   }
 }
 
-private fun paintSettings(g: Graphics2D, font: Font, slug: String, email: String) {
-  g.color = Panel
+private fun paintSettings(g: Graphics2D, ink: ShotInk, font: Font, slug: String, email: String) {
+  g.color = ink.panel
   g.fillRect(0, 0, PHONE_W, PHONE_H)
-  paintIkon(g, Material2OutlinedAL.ARROW_BACK, 28f, 32f, 22, Fg)
+  paintIkon(g, Material2OutlinedAL.ARROW_BACK, 28f, 32f, 22, ink.fg)
   g.font = font.deriveFont(18f)
-  g.color = Fg
+  g.color = ink.fg
   g.drawString("Settings", 56, 40)
   val inset = 24
   val fieldW = (PHONE_W - 48).toFloat()
   var y = BAR_H + 12
   g.font = font.deriveFont(13f)
-  g.color = Muted
+  g.color = ink.muted
   for (w in wrap(g, "You are the operator. The name in the chat bar is the crane.", PHONE_W - 48)) {
     y = g.drawLine(w, inset, y, 13)
   }
-  y = g.outlinedField(font, "Mailbox", "https://pendant.example.com", inset, y + 8, fieldW)
-  y = g.outlinedField(font, "Talking to", slug, inset, y + 8, fieldW)
-  y = g.outlinedField(font, "Phone secret", "••••••••", inset, y + 8, fieldW)
+  y = g.outlinedField(ink, font, "Mailbox", "https://pendant.example.com", inset, y + 8, fieldW)
+  y = g.outlinedField(ink, font, "Talking to", slug, inset, y + 8, fieldW)
+  y = g.outlinedField(ink, font, "Phone secret", "••••••••", inset, y + 8, fieldW)
   g.font = font.deriveFont(12f)
-  g.color = Muted
+  g.color = ink.muted
   y = g.drawLine("Theme", inset, y + 12, 12)
-  var x = inset.toFloat()
-  for (label in listOf("Boom", "Inlay", "Lamp")) {
-    val on = label == "Boom"
-    val cw = 88f
-    g.color = if (on) Track else Canvas
-    g.fill(RoundRectangle2D.Float(x, y.toFloat(), cw, 36f, 8f, 8f))
-    g.color = if (on) Accent else Edge
-    g.stroke = BasicStroke(1f)
-    g.draw(RoundRectangle2D.Float(x, y.toFloat(), cw, 36f, 8f, 8f))
-    paintThemeSwatch(g, x + 10f, y + 12f, label.lowercase())
-    g.font = font.deriveFont(12f)
-    g.color = Fg
-    g.drawString(label, x.toInt() + 28, y + 24)
-    x += cw + 8f
-  }
-  y += 48
-  g.color = Muted
+  y = paintChipRow(
+    g,
+    ink,
+    font,
+    inset,
+    y,
+    THEME_IDS.take(5).map { ChipSpec(themeLabel(it), it == "boom", it) },
+    72f,
+  )
+  g.color = ink.muted
   g.font = font.deriveFont(12f)
   y = g.drawLine("Font size", inset, y, 12)
-  x = inset.toFloat()
-  for (label in listOf("Small", "Medium", "Large", "XL")) {
-    val on = label == "Small"
-    val cw = 78f
-    g.color = if (on) Track else Canvas
-    g.fill(RoundRectangle2D.Float(x, y.toFloat(), cw, 36f, 8f, 8f))
-    g.color = if (on) Accent else Edge
-    g.stroke = BasicStroke(1f)
-    g.draw(RoundRectangle2D.Float(x, y.toFloat(), cw, 36f, 8f, 8f))
-    g.font = font.deriveFont(12f)
-    g.color = Fg
-    g.drawString(label, x.toInt() + 12, y + 24)
-    x += cw + 8f
-  }
+  y = paintChipRow(
+    g,
+    ink,
+    font,
+    inset,
+    y,
+    listOf("Small", "Medium", "Large", "XL").map { ChipSpec(it, it == "Small") },
+    78f,
+  )
+  g.color = ink.muted
+  g.font = font.deriveFont(12f)
+  y = g.drawLine("Photo size", inset, y, 12)
+  y = paintChipRow(
+    g,
+    ink,
+    font,
+    inset,
+    y,
+    PHOTO_SIZE_IDS.map { ChipSpec(photoSizeChip(it), it == "medium") },
+    114f,
+  )
+  g.color = ink.muted
+  g.font = font.deriveFont(12f)
+  y = g.drawLine("Follow Kit's mood", inset, y, 12)
+  y = paintChipRow(g, ink, font, inset, y, listOf(ChipSpec("On", true)), 56f)
+  g.color = ink.muted
+  g.font = font.deriveFont(12f)
+  y = g.drawLine("Backdrop", inset, y, 12)
+  y = paintChipRow(g, ink, font, inset, y, listOf(ChipSpec("On", true)), 56f)
+  g.color = ink.track
+  g.fill(RoundRectangle2D.Float(inset.toFloat(), y.toFloat(), 148f, 40f, 20f, 20f))
+  g.font = font.deriveFont(14f)
+  g.color = ink.fg
+  g.drawString("Test car voice", inset + 16, y + 26)
   y += 52
-  g.color = AccentSoft
+  g.color = ink.accentSoft
   g.fill(RoundRectangle2D.Float(inset.toFloat(), y.toFloat(), 108f, 40f, 20f, 20f))
   g.font = font.deriveFont(14f)
-  g.color = Mark
+  g.color = ink.mark
   g.drawString("Connect", inset + 22, y + 26)
   if (email.isNotBlank()) {
-    g.color = Accent
+    g.color = ink.accent
     g.font = font.deriveFont(14f)
     g.drawString("Sign out", inset + 128, y + 26)
     y += 54
     g.font = font.deriveFont(12f)
-    g.color = Muted
+    g.color = ink.muted
     g.drawString(email, inset, y)
   }
 }
 
+private data class ChipSpec(val label: String, val on: Boolean, val themeId: String? = null)
+
+private fun paintChipRow(
+  g: Graphics2D,
+  ink: ShotInk,
+  font: Font,
+  inset: Int,
+  y: Int,
+  chips: List<ChipSpec>,
+  width: Float,
+): Int {
+  var x = inset.toFloat()
+  for (chip in chips) {
+    g.color = if (chip.on) ink.track else ink.canvas
+    g.fill(RoundRectangle2D.Float(x, y.toFloat(), width, 36f, 8f, 8f))
+    g.color = if (chip.on) ink.accent else ink.edge
+    g.stroke = BasicStroke(1f)
+    g.draw(RoundRectangle2D.Float(x, y.toFloat(), width, 36f, 8f, 8f))
+    val textX = if (chip.themeId != null) {
+      paintThemeSwatch(g, x + 10f, y + 12f, chip.themeId)
+      x.toInt() + 28
+    } else {
+      x.toInt() + 12
+    }
+    g.font = font.deriveFont(11f)
+    g.color = ink.fg
+    g.drawString(chip.label, textX, y + 24)
+    x += width + 8f
+  }
+  return y + 48
+}
+
 private fun paintThemeSwatch(g: Graphics2D, x: Float, y: Float, themeId: String) {
   val size = 12f
-  val canvas = when (themeId) {
-    "inlay" -> Color(0x0C110F)
-    "lamp" -> Color(0x0C0C16)
-    else -> Canvas
-  }
-  val accent = when (themeId) {
-    "inlay" -> Color(0xE6D3B0)
-    "lamp" -> Color(0xC5D24A)
-    else -> Accent
-  }
+  val swatch = cabColors(themeId)
   val clip = g.clip
   g.clip = Ellipse2D.Float(x, y, size, size)
-  g.color = canvas
+  g.color = awt(swatch.canvas)
   g.fillRect(x.toInt(), y.toInt(), (size / 2).toInt() + 1, size.toInt())
-  g.color = accent
+  g.color = awt(swatch.accent)
   g.fillRect((x + size / 2).toInt(), y.toInt(), (size / 2).toInt() + 1, size.toInt())
   g.clip = clip
 }
 
-private fun Graphics2D.outlinedField(font: Font, label: String, value: String, x: Int, y: Int, width: Float): Int {
-  color = Canvas
+private fun Graphics2D.outlinedField(ink: ShotInk, font: Font, label: String, value: String, x: Int, y: Int, width: Float): Int {
+  color = ink.canvas
   fill(RoundRectangle2D.Float(x.toFloat(), y.toFloat() + 8f, width, 52f, 4f, 4f))
-  color = Edge
+  color = ink.edge
   stroke = BasicStroke(1f)
   draw(RoundRectangle2D.Float(x.toFloat(), y.toFloat() + 8f, width, 52f, 4f, 4f))
   this.font = font.deriveFont(11f)
-  color = Muted
+  color = ink.muted
   drawString(label, x + 12, y + 6)
   this.font = font.deriveFont(14f)
-  color = Fg
+  color = ink.fg
   drawString(value, x + 12, y + 40)
   return y + 60
 }
 
-private fun paintEmojiPanel(g: Graphics2D, font: Font, top: Int) {
+private fun paintEmojiPanel(g: Graphics2D, ink: ShotInk, font: Font, top: Int) {
   val faces = searchEmoji("").take(16)
-  g.color = Track
+  g.color = ink.track
   g.fill(RoundRectangle2D.Float(12f, top.toFloat(), (PHONE_W - 24).toFloat(), 120f, 12f, 12f))
-  g.color = Field
+  g.color = ink.line
   g.fill(RoundRectangle2D.Float(20f, (top + 8).toFloat(), (PHONE_W - 40).toFloat(), 32f, 18f, 18f))
   g.font = font.deriveFont(12f)
-  g.color = Muted
+  g.color = ink.muted
   g.drawString("Search or :shrug:", 32, top + 29)
   var i = 0
   for (row in 0 until 2) {
@@ -437,62 +516,62 @@ private fun paintEmojiPanel(g: Graphics2D, font: Font, top: Int) {
   }
 }
 
-private fun paintAttachMenu(g: Graphics2D, font: Font, top: Int) {
+private fun paintAttachMenu(g: Graphics2D, ink: ShotInk, font: Font, top: Int) {
   val w = 196f
   val h = 208f
   val x = 16f
-  g.color = Panel
+  g.color = ink.panel
   g.fill(RoundRectangle2D.Float(x, top.toFloat(), w, h, 8f, 8f))
   g.font = font.deriveFont(14f)
   var y = top + 28
-  g.color = Fg
+  g.color = ink.fg
   g.drawString("Photo", x.toInt() + 44, y)
-  paintVectorDrawable(g, VEC_PHOTO, x + 24f, y - 6f, 16, Muted)
+  paintVectorDrawable(g, VEC_PHOTO, x + 24f, y - 6f, 16, ink.muted)
   y += 40
-  g.color = Fg
+  g.color = ink.fg
   g.drawString("Camera", x.toInt() + 44, y)
-  paintVectorDrawable(g, VEC_CAMERA, x + 24f, y - 6f, 16, Muted)
+  paintVectorDrawable(g, VEC_CAMERA, x + 24f, y - 6f, 16, ink.muted)
   y += 40
-  g.color = Fg
+  g.color = ink.fg
   g.drawString("Commands", x.toInt() + 44, y)
-  paintVectorDrawable(g, VEC_CODE, x + 24f, y - 6f, 16, Muted)
+  paintVectorDrawable(g, VEC_CODE, x + 24f, y - 6f, 16, ink.muted)
   y += 40
-  g.color = Fg
+  g.color = ink.fg
   g.drawString("Location", x.toInt() + 44, y)
-  paintIkon(g, Material2OutlinedAL.LOCATION_ON, x + 24f, y - 6f, 16, Muted)
-  g.color = Live
+  paintIkon(g, Material2OutlinedAL.LOCATION_ON, x + 24f, y - 6f, 16, ink.muted)
+  g.color = ink.ok
   g.fill(RoundRectangle2D.Float(x + 148f, y - 14f, 32f, 18f, 10f, 10f))
-  g.color = Canvas
+  g.color = ink.canvas
   g.fill(Ellipse2D.Float(x + 164f, y - 12f, 14f, 14f))
   y += 40
-  g.color = Fg
+  g.color = ink.fg
   g.drawString("Drop a pin", x.toInt() + 44, y)
-  paintVectorDrawable(g, VEC_PIN, x + 24f, y - 6f, 16, Muted)
+  paintVectorDrawable(g, VEC_PIN, x + 24f, y - 6f, 16, ink.muted)
 }
 
-private fun paintDraftPhoto(g: Graphics2D, font: Font, top: Int) {
-  g.color = Panel
+private fun paintDraftPhoto(g: Graphics2D, ink: ShotInk, font: Font, top: Int) {
+  g.color = ink.panel
   g.fillRect(0, top, PHONE_W, 72)
-  paintHatchPhoto(g, 16f, (top + 8).toFloat(), 56f, 56f)
+  paintHatchPhoto(g, ink, 16f, (top + 8).toFloat(), 56f, 56f)
   g.font = font.deriveFont(12f)
-  g.color = Dim
+  g.color = ink.dim
   g.drawString("Goes with your next message.", 84, top + 32)
-  g.color = Muted
+  g.color = ink.muted
   g.drawString("Remove", PHONE_W - 72, top + 32)
 }
 
-private fun paintComposer(g: Graphics2D, font: Font, composerTop: Int, slug: String, emojiOpen: Boolean) {
-  g.color = Panel
+private fun paintComposer(g: Graphics2D, ink: ShotInk, font: Font, composerTop: Int, slug: String, emojiOpen: Boolean) {
+  g.color = ink.panel
   g.fillRect(0, composerTop, PHONE_W, PHONE_H - composerTop)
   val send = 48
   val sendX = PHONE_W - 12 - send
   val fieldX = 12f
   val fieldW = (sendX - 8 - fieldX.toInt()).toFloat()
-  g.color = Track
+  g.color = ink.track
   g.fill(RoundRectangle2D.Float(fieldX, (composerTop + 12).toFloat(), fieldW, 48f, 28f, 28f))
   val iconY = composerTop + 36f
-  paintVectorDrawable(g, VEC_ATTACH, fieldX + 22f, iconY, 18, Muted)
-  g.color = Live
+  paintVectorDrawable(g, VEC_ATTACH, fieldX + 22f, iconY, 18, ink.muted)
+  g.color = ink.ok
   g.fill(Ellipse2D.Float(fieldX + 28f, composerTop + 16f, 8f, 8f))
   paintVectorDrawable(
     g,
@@ -500,29 +579,29 @@ private fun paintComposer(g: Graphics2D, font: Font, composerTop: Int, slug: Str
     fieldX + fieldW - 22f,
     iconY,
     18,
-    if (emojiOpen) Accent else Muted,
+    if (emojiOpen) ink.accent else ink.muted,
   )
   g.font = font.deriveFont(14f)
-  g.color = Muted
+  g.color = ink.muted
   g.drawString("Message ${displaySlug(slug)}", fieldX.toInt() + 44, composerTop + 42)
   val saved = g.composite
   g.composite = AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 0.4f)
-  g.color = Accent
+  g.color = ink.accent
   g.fill(Ellipse2D.Float(sendX.toFloat(), (composerTop + 12).toFloat(), send.toFloat(), send.toFloat()))
   g.composite = saved
-  paintIkon(g, Material2OutlinedMZ.SEND, sendX + send / 2f, composerTop + 36f, 20, Canvas)
+  paintIkon(g, Material2OutlinedMZ.SEND, sendX + send / 2f, composerTop + 36f, 20, ink.canvas)
 }
 
-private fun paintHatchPhoto(g: Graphics2D, x: Float, y: Float, w: Float, h: Float) {
+private fun paintHatchPhoto(g: Graphics2D, ink: ShotInk, x: Float, y: Float, w: Float, h: Float) {
   val clip = g.clip
   g.clip = RoundRectangle2D.Float(x, y, w, h, 12f, 12f)
   val hatch = sampleHatch()
   if (hatch != null) {
     g.drawImage(hatch, x.toInt(), y.toInt(), w.toInt(), h.toInt(), null)
   } else {
-    g.color = You
+    g.color = ink.accentSoft
     g.fill(RoundRectangle2D.Float(x, y, w, h, 12f, 12f))
-    g.color = Mark
+    g.color = ink.mark
     g.fillRect(x.toInt(), (y + h * 0.42f).toInt(), w.toInt(), 14)
   }
   g.clip = clip

@@ -6,9 +6,9 @@ import com.gantree.cab.dev.sampleScene
 import com.gantree.cab.drive.carRows
 
 @Composable
-fun PhoneShot(sampleId: String) {
+fun PhoneShot(sampleId: String, themeId: String = "boom") {
   val scene = sampleScene(sampleId) ?: return
-  CabTheme {
+  CabTheme(themeId = themeId) {
     CabScreen(
       origin = "http://10.0.2.2:3000",
       slug = scene.slug,
@@ -26,6 +26,7 @@ fun PhoneShot(sampleId: String) {
       onSignOut = {},
       onSend = {},
       compact = true,
+      themeId = themeId,
       typingUntil = if (scene.typing) System.currentTimeMillis() + 60_000L else 0L,
     )
   }
@@ -58,6 +59,18 @@ private fun PreviewPhoneStream() {
 @Composable
 private fun PreviewPhonePhoto() {
   PhoneShot("photo")
+}
+
+@Preview(name = "phone-thread-lamp", widthDp = 390, heightDp = 844)
+@Composable
+private fun PreviewPhoneThreadLamp() {
+  PhoneShot("thread", themeId = "lamp")
+}
+
+@Preview(name = "phone-thread-paper", widthDp = 390, heightDp = 844)
+@Composable
+private fun PreviewPhoneThreadPaper() {
+  PhoneShot("thread", themeId = "paper")
 }
 
 @Preview(name = "auto-thread", widthDp = 1024, heightDp = 576)

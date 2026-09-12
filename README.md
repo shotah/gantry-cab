@@ -11,30 +11,81 @@
   <a href="LICENSE"><img src="https://img.shields.io/github/license/shotah/gantry-cab" alt="License"></a>
 </p>
 
-The in-car mouth for [gantry-pendant](https://github.com/shotah/gantry-pendant).
-Pendant is the handheld. Cab is the seat. Same mailbox. Same crane.
-Nothing inbound on the Mini.
+> **gantry** *(n.)* — the rigid frame that holds and positions tools.
+>
+> **cab** *(n.)* — the seat on that crane. You sit in the car. You still
+> talk to the same crane.
+
+[gantry-pendant](https://github.com/shotah/gantry-pendant) is the
+handheld: a Vinext PWA and the Durable Object mailbox. **This APK is
+the seat** — the phone in your pocket, and Kit as a message card over
+maps. Same room. Same [ai-gantry](https://github.com/shotah/ai-gantry)
+crane. The Mini still opens **zero** inbound ports.
+[gantree](https://github.com/shotah/gantree) is the yard board. It
+does not sit in a chat turn.
 
 ```text
-car / phone APK  →  gantry-pendant Worker (Durable Object)  ←  crane (outbound)
+gantry-cab APK  ─┐
+pendant PWA     ─┼─►  pendant Worker (Durable Object)  ◄──  ai-gantry (outbound)
+                 │
+gantree writes CHANNEL=pendant. It never sits in the turn.
+```
+
+```mermaid
+flowchart LR
+  Cab["gantry-cab<br/>phone + Auto APK"]
+  PWA["gantry-pendant PWA"]
+  Mailbox["pendant Worker<br/>Durable Object room"]
+  Crane["ai-gantry<br/>KIT · outbound only"]
+  Yard["gantree<br/>yard / operator board"]
+
+  Cab -->|"wss · role=phone"| Mailbox
+  PWA -->|"wss · role=phone"| Mailbox
+  Crane -->|"wss · role=crane"| Mailbox
+  Yard -->|"CHANNEL=pendant"| Crane
 ```
 
 Android Auto reads Kit aloud and stuffs spoken replies into
-`RemoteInput`. This app turns that string into an `inbound` frame.
-It does not wrap the Vinext PWA. It does not run React Native.
+`RemoteInput`. Cab turns that string into an `inbound` frame. It does
+not wrap the Vinext PWA. It does not run React Native.
+
+Paperclip is the rest of the mouth: photo or camera (caption + JPEG
+travel together), slash commands, GPS on send, drop a pin. Kit can
+pick the room's mood; you can unfollow and keep yours. Boom is the
+default. Lamp and Paper are the other two on this page — Settings has
+the full catalog.
 
 <p align="center">
-  <img src="assets/docs/phone-thread.png" alt="Cab on a phone" width="180">
+  <img src="assets/docs/phone-thread.png" alt="Ada talking to Kit" width="180">
   &nbsp;
-  <img src="assets/docs/phone-stream.png" alt="Kit drafting a reply" width="180">
+  <img src="assets/docs/phone-photo.png" alt="Hatch photo in a you-bubble" width="180">
   &nbsp;
-  <img src="assets/docs/auto-thread.png" alt="Cab in Android Auto" width="320">
+  <img src="assets/docs/phone-attach.png" alt="Attach menu: photo, camera, commands, GPS, pin" width="180">
+  &nbsp;
+  <img src="assets/docs/phone-draft.png" alt="Staged photo on the next send" width="180">
+</p>
+
+<p align="center">
+  <img src="assets/docs/phone-thread-lamp.png" alt="Same thread in Lamp" width="180">
+  &nbsp;
+  <img src="assets/docs/phone-thread-paper.png" alt="Same thread in Paper" width="180">
+  &nbsp;
+  <img src="assets/docs/phone-settings.png" alt="Settings: theme, photo size, follow Kit" width="180">
+  &nbsp;
+  <img src="assets/docs/auto-thread.png" alt="Cab in Android Auto" width="280">
 </p>
 
 Every screen: [docs/screens.md](docs/screens.md). `make shot` reshoots.
 Phone + Auto install: [docs/sideload_to_android.md](docs/sideload_to_android.md).
 Make the car talk: [docs/android_auto_setup.md](docs/android_auto_setup.md).
 Open work: [docs/todo.md](docs/todo.md).
+
+| Repo | Job |
+| --- | --- |
+| **gantry-cab** | This APK. Pocket thread + Auto message cards. |
+| [gantry-pendant](https://github.com/shotah/gantry-pendant) | Mailbox Worker + handheld PWA. One room per crane slug. |
+| [ai-gantry](https://github.com/shotah/ai-gantry) | The crane. `CHANNEL=pendant`. Dials **out**. |
+| [gantree](https://github.com/shotah/gantree) | The yard. Writes env and files. Not a mouth. |
 
 ## This is not
 
