@@ -3,6 +3,7 @@ package com.gantree.cab.ui
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Typography
 import androidx.compose.material3.darkColorScheme
+import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.staticCompositionLocalOf
@@ -30,6 +31,7 @@ data class CabColors(
   val ok: Color,
   val you: Color,
   val kit: Color,
+  val scheme: String = "dark",
 )
 
 val LocalCabColors = staticCompositionLocalOf { boomColors() }
@@ -41,6 +43,11 @@ fun cabColors(themeId: String): CabColors = when (parseTheme(themeId)) {
   "ember" -> emberColors()
   "tide" -> tideColors()
   "bloom" -> bloomColors()
+  "paper" -> paperColors()
+  "chalk" -> chalkColors()
+  "foam" -> foamColors()
+  "petal" -> petalColors()
+  "ink" -> inkColors()
   else -> boomColors()
 }
 
@@ -184,34 +191,169 @@ private fun bloomColors() = CabColors(
   kit = Color(0xFF221C2A),
 )
 
-fun CabColors.toColorScheme() = darkColorScheme(
-  primary = accent,
-  onPrimary = canvas,
-  primaryContainer = accentSoft,
-  onPrimaryContainer = mark,
-  secondary = ok,
-  onSecondary = canvas,
-  secondaryContainer = track,
-  onSecondaryContainer = ok,
-  tertiary = ok,
-  onTertiary = canvas,
-  background = canvas,
-  onBackground = body,
-  surface = panel,
-  onSurface = fg,
-  surfaceVariant = track,
-  onSurfaceVariant = muted,
-  surfaceContainerLowest = canvas,
-  surfaceContainerLow = panel,
-  surfaceContainer = track,
-  surfaceContainerHigh = line,
-  surfaceContainerHighest = kit,
-  outline = edge,
-  outlineVariant = line,
-  error = danger,
-  onError = fg,
-  inversePrimary = accentLine,
+private fun paperColors() = CabColors(
+  canvas = Color(0xFFF6F1E8),
+  panel = Color(0xFFEFE8DC),
+  track = Color(0xFFE4DCCF),
+  line = Color(0xFF8E8270),
+  edge = Color(0xFF5A5248),
+  fg = Color(0xFF1C1814),
+  body = Color(0xFF2E2822),
+  muted = Color(0xFF524A42),
+  dim = Color(0xFF5C544C),
+  accent = Color(0xFFC24A28),
+  mark = Color(0xFF8A2808),
+  accentLine = Color(0xFFA83818),
+  accentSoft = Color(0xFFF3D8CC),
+  danger = Color(0xFFB42858),
+  ok = Color(0xFF1A7A64),
+  you = Color(0xFFE4C4B0),
+  kit = Color(0xFFE4DCCF),
+  scheme = "light",
 )
+
+private fun chalkColors() = CabColors(
+  canvas = Color(0xFFF2F5F8),
+  panel = Color(0xFFE6ECF2),
+  track = Color(0xFFD8E0E8),
+  line = Color(0xFF7A8A98),
+  edge = Color(0xFF4A5A68),
+  fg = Color(0xFF12161C),
+  body = Color(0xFF1E2630),
+  muted = Color(0xFF3A4856),
+  dim = Color(0xFF465462),
+  accent = Color(0xFF1E5A8C),
+  mark = Color(0xFF0E3A60),
+  accentLine = Color(0xFF164A74),
+  accentSoft = Color(0xFFD0E0F0),
+  danger = Color(0xFFB42858),
+  ok = Color(0xFF1A7060),
+  you = Color(0xFFC8D6E4),
+  kit = Color(0xFFD8E0E8),
+  scheme = "light",
+)
+
+private fun foamColors() = CabColors(
+  canvas = Color(0xFFEEF6F5),
+  panel = Color(0xFFE0EEEC),
+  track = Color(0xFFD0E4E0),
+  line = Color(0xFF5E8884),
+  edge = Color(0xFF3A5C58),
+  fg = Color(0xFF102018),
+  body = Color(0xFF1A2C2A),
+  muted = Color(0xFF345250),
+  dim = Color(0xFF425E5C),
+  accent = Color(0xFF0C6E68),
+  mark = Color(0xFF064840),
+  accentLine = Color(0xFF0A5C58),
+  accentSoft = Color(0xFFC4E8E4),
+  danger = Color(0xFFB42858),
+  ok = Color(0xFF1A7A64),
+  you = Color(0xFFB8D8D4),
+  kit = Color(0xFFD0E4E0),
+  scheme = "light",
+)
+
+private fun petalColors() = CabColors(
+  canvas = Color(0xFFF7F1F6),
+  panel = Color(0xFFEFE4EE),
+  track = Color(0xFFE6D8E6),
+  line = Color(0xFF8E748E),
+  edge = Color(0xFF5A485A),
+  fg = Color(0xFF1A121C),
+  body = Color(0xFF2A2030),
+  muted = Color(0xFF4E3E56),
+  dim = Color(0xFF5A4A62),
+  accent = Color(0xFFA02080),
+  mark = Color(0xFF6E0858),
+  accentLine = Color(0xFF881068),
+  accentSoft = Color(0xFFF4D0E8),
+  danger = Color(0xFFB42858),
+  ok = Color(0xFF1A7A64),
+  you = Color(0xFFE4C0DC),
+  kit = Color(0xFFE6D8E6),
+  scheme = "light",
+)
+
+private fun inkColors() = CabColors(
+  canvas = Color(0xFF050506),
+  panel = Color(0xFF141416),
+  track = Color(0xFF262628),
+  line = Color(0xFF6A6A70),
+  edge = Color(0xFF9A9AA0),
+  fg = Color(0xFFFAFAFA),
+  body = Color(0xFFE4E4E6),
+  muted = Color(0xFFB0B0B6),
+  dim = Color(0xFFC4C4CA),
+  accent = Color(0xFFF0B020),
+  mark = Color(0xFFFFE08A),
+  accentLine = Color(0xFFC88810),
+  accentSoft = Color(0xFF2A220C),
+  danger = Color(0xFFF07090),
+  ok = Color(0xFF3CC8A8),
+  you = Color(0xFF3A2410),
+  kit = Color(0xFF262628),
+)
+
+fun CabColors.toColorScheme() = if (scheme == "light") {
+  lightColorScheme(
+    primary = accent,
+    onPrimary = canvas,
+    primaryContainer = accentSoft,
+    onPrimaryContainer = mark,
+    secondary = ok,
+    onSecondary = canvas,
+    secondaryContainer = track,
+    onSecondaryContainer = ok,
+    tertiary = ok,
+    onTertiary = canvas,
+    background = canvas,
+    onBackground = body,
+    surface = panel,
+    onSurface = fg,
+    surfaceVariant = track,
+    onSurfaceVariant = muted,
+    surfaceContainerLowest = canvas,
+    surfaceContainerLow = panel,
+    surfaceContainer = track,
+    surfaceContainerHigh = line,
+    surfaceContainerHighest = kit,
+    outline = edge,
+    outlineVariant = line,
+    error = danger,
+    onError = fg,
+    inversePrimary = accentLine,
+  )
+} else {
+  darkColorScheme(
+    primary = accent,
+    onPrimary = canvas,
+    primaryContainer = accentSoft,
+    onPrimaryContainer = mark,
+    secondary = ok,
+    onSecondary = canvas,
+    secondaryContainer = track,
+    onSecondaryContainer = ok,
+    tertiary = ok,
+    onTertiary = canvas,
+    background = canvas,
+    onBackground = body,
+    surface = panel,
+    onSurface = fg,
+    surfaceVariant = track,
+    onSurfaceVariant = muted,
+    surfaceContainerLowest = canvas,
+    surfaceContainerLow = panel,
+    surfaceContainer = track,
+    surfaceContainerHigh = line,
+    surfaceContainerHighest = kit,
+    outline = edge,
+    outlineVariant = line,
+    error = danger,
+    onError = fg,
+    inversePrimary = accentLine,
+  )
+}
 
 private fun cabTypography(chat: Float): Typography {
   val base = Typography()

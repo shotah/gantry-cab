@@ -10,6 +10,7 @@ import androidx.car.app.messaging.model.CarMessage
 import androidx.car.app.messaging.model.ConversationCallback
 import androidx.car.app.messaging.model.ConversationItem
 import androidx.car.app.model.Action
+import androidx.car.app.model.CarIcon
 import androidx.car.app.model.CarText
 import androidx.car.app.model.Header
 import androidx.car.app.model.ItemList
@@ -89,7 +90,7 @@ class CabThreadScreen(carContext: CarContext) : Screen(carContext) {
   override fun onGetTemplate(): Template {
     val app = carContext.applicationContext as CabApp
     val slug = app.prefs.slug.ifBlank { "cab" }
-    val kit = Person.Builder().setName(slug).setKey(CabNotifier.conversationId(slug)).build()
+    val kit = kitPerson(slug, kitFaceIcon(app.face))
     val messages = carTurns(app.mouth.lines.value).map { turn ->
       val body = CarText.create(turn.text)
       CarMessage.Builder()
@@ -105,7 +106,8 @@ class CabThreadScreen(carContext: CarContext) : Screen(carContext) {
       you,
       messages,
       conversationCallback,
-    ).build()
+    )
+    kit.icon?.let { conversation.setIcon(CarIcon.Builder(it).build()) }
     return ListTemplate.Builder()
       .setHeader(
         Header.Builder()
@@ -113,7 +115,7 @@ class CabThreadScreen(carContext: CarContext) : Screen(carContext) {
           .setTitle(slug)
           .build(),
       )
-      .setSingleList(ItemList.Builder().addItem(conversation).build())
+      .setSingleList(ItemList.Builder().addItem(conversation.build()).build())
       .build()
   }
 }

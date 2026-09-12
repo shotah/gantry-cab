@@ -14,6 +14,22 @@ class DocsShotTest {
   }
 
   @Test
+  fun headerFaceHangsWithoutGrowingTheBar() {
+    val img = renderPhone("thread")
+    val bar = 0x171D22
+    val canvas = 0x0E1316
+    assertEquals(bar, img.getRGB(200, 32) and 0xFFFFFF)
+    assertEquals(canvas, img.getRGB(200, 70) and 0xFFFFFF)
+    val mid = img.getRGB(51, 49) and 0xFFFFFF
+    val hang = img.getRGB(51, 70) and 0xFFFFFF
+    val toe = img.getRGB(51, 85) and 0xFFFFFF
+    val track = 0x232B32
+    assertTrue(mid != bar && mid != canvas && mid != track)
+    assertTrue(hang != bar && hang != canvas && hang != track)
+    assertTrue(toe != canvas && toe != track)
+  }
+
+  @Test
   fun autoThreadIsLandscape() {
     val img = renderAuto("thread")
     assertEquals(AUTO_W, img.width)

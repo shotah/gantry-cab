@@ -14,8 +14,10 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -54,6 +56,7 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.zIndex
 import com.gantree.cab.ChatLine
 import com.gantree.cab.dev.SAMPLE_IDS
 import com.gantree.cab.mailbox.DEFAULT_PHOTO_SIZE
@@ -159,8 +162,9 @@ fun CabScreen(
   LaunchedEffect(keepScreen) {
     view.keepScreenOn = keepScreen
   }
+  Box(modifier = Modifier.fillMaxSize().imePadding()) {
   Scaffold(
-    modifier = Modifier.fillMaxSize().imePadding(),
+    modifier = Modifier.fillMaxSize(),
     containerColor = scheme.background,
     topBar = {
       if (showSettings) {
@@ -179,15 +183,11 @@ fun CabScreen(
       } else {
         TopAppBar(
           navigationIcon = {
-            Box(modifier = Modifier.padding(start = 8.dp)) {
-              KitAvatar(
-                slug = slug,
-                bytes = avatarBytes,
-                size = 40.dp,
-                editable = !googleDoor,
-                onClick = onAvatar,
-              )
-            }
+            Box(
+              modifier = Modifier
+                .padding(start = 8.dp)
+                .size(width = HEADER_FACE_SLOT_W, height = HEADER_FACE_SLOT_H),
+            )
           },
           title = {
             Column {
@@ -422,6 +422,23 @@ fun CabScreen(
         }
       }
     }
+  }
+  if (!showSettings) {
+    KitAvatar(
+      slug = slug,
+      bytes = avatarBytes,
+      modifier = Modifier
+        .zIndex(1f)
+        .align(Alignment.TopStart)
+        .windowInsetsPadding(TopAppBarDefaults.windowInsets)
+        .padding(start = 12.dp, top = 12.dp)
+        .offset(x = HEADER_FACE_NUDGE_X, y = HEADER_FACE_NUDGE_Y),
+      size = HEADER_FACE_SIZE,
+      stroke = HEADER_FACE_STROKE,
+      editable = !googleDoor,
+      onClick = onAvatar,
+    )
+  }
   }
 }
 

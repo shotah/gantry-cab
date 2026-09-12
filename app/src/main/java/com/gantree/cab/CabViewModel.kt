@@ -93,7 +93,9 @@ class CabViewModel(private val app: CabApp) : ViewModel() {
           if (origin.isBlank() || app.prefs.bearer.isBlank()) {
             return@collectLatest
           }
-          _face.value = app.avatar.fetch(origin, room, app.prefs.bearer, rev)
+          val bytes = app.avatar.fetch(origin, room, app.prefs.bearer, rev)
+          _face.value = bytes
+          app.face = bytes
         }
     }
     viewModelScope.launch {
@@ -132,6 +134,8 @@ class CabViewModel(private val app: CabApp) : ViewModel() {
 
   fun setSlug(v: String) {
     _slug.value = v
+    _face.value = null
+    app.face = null
     app.mouth.setAvatarRev(0)
     app.mouth.setBackdropRev(0)
     app.mouth.setRoomTheme("")
@@ -220,6 +224,8 @@ class CabViewModel(private val app: CabApp) : ViewModel() {
     _email.value = ""
     _cranes.value = emptyList()
     _sub.value = ""
+    _face.value = null
+    app.face = null
     app.mouth.setHint("signed out")
     MailboxService.stop(app)
   }

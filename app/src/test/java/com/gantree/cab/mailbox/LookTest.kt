@@ -11,7 +11,25 @@ class LookTest {
     assertEquals("inlay", parseTheme("inlay"))
     assertEquals("lamp", parseTheme("lamp"))
     assertEquals("noir", parseTheme("noir"))
-    assertEquals(listOf("boom", "inlay", "lamp", "noir", "ember", "tide", "bloom"), THEME_IDS)
+    assertEquals(
+      listOf(
+        "boom",
+        "inlay",
+        "lamp",
+        "noir",
+        "ember",
+        "tide",
+        "bloom",
+        "paper",
+        "chalk",
+        "foam",
+        "petal",
+        "ink",
+      ),
+      THEME_IDS,
+    )
+    assertEquals("paper", parseTheme("paper"))
+    assertEquals("ink", knownTheme("ink"))
     assertEquals("noir", knownTheme("noir"))
     assertEquals(null, knownTheme("nope"))
   }
@@ -43,6 +61,11 @@ class LookTest {
     assertEquals("Boom", themeLabel("nope"))
     assertEquals("Inlay", themeLabel("inlay"))
     assertEquals("Noir", themeLabel("noir"))
+    assertEquals("Paper", themeLabel("paper"))
+    assertEquals("Chalk", themeLabel("chalk"))
+    assertEquals("Foam", themeLabel("foam"))
+    assertEquals("Petal", themeLabel("petal"))
+    assertEquals("Ink", themeLabel("ink"))
     assertEquals("Small", fontLabel("sm"))
     assertEquals("Medium", fontLabel("md"))
     assertEquals("Large", fontLabel("lg"))

@@ -182,7 +182,7 @@ class MainActivity : ComponentActivity() {
       return
     }
     val app = application as CabApp
-    CabNotifier.kitMessage(this, parseSlug(slug) ?: "cab", carCheckText(app.carAttached))
+    CabNotifier.kitMessage(this, parseSlug(slug) ?: "cab", carCheckText(app.carAttached), app.face)
   }
 
   private fun requestLoc() {

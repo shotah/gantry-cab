@@ -48,6 +48,12 @@ const val AUTO_W = 1024
 const val AUTO_H = 576
 private const val BAR_H = 64
 private const val COMPOSE_H = 72
+private const val HEADER_FACE = 82f
+private const val HEADER_FACE_SLOT_W = 80f
+private const val HEADER_FACE_SLOT_H = 40f
+private const val HEADER_FACE_NUDGE_X = -2f
+private const val HEADER_FACE_NUDGE_Y = -4f
+private const val HEADER_PAD = 12f
 
 val DOCS_SHOT_NAMES = listOf(
   "phone-unsigned",
@@ -98,7 +104,6 @@ fun renderPhone(sampleId: String, settings: Boolean = false, emoji: Boolean = fa
     g.dispose()
     return img
   }
-  paintHeader(g, font, scene.slug, scene.up, scene.typing)
   var y = BAR_H + 8
   if (!door && scene.hint.isNotBlank()) {
     g.font = font.deriveFont(12f)
@@ -199,6 +204,7 @@ fun renderPhone(sampleId: String, settings: Boolean = false, emoji: Boolean = fa
     }
     paintComposer(g, font, composerTop, scene.slug, emoji)
   }
+  paintHeader(g, font, scene.slug, scene.up, scene.typing)
   g.dispose()
   return img
 }
@@ -241,33 +247,60 @@ fun renderAuto(sampleId: String): BufferedImage {
 private fun paintHeader(g: Graphics2D, font: Font, slug: String, up: Boolean, typing: Boolean = false) {
   g.color = Panel
   g.fillRect(0, 0, PHONE_W, BAR_H)
-  paintAvatar(g, 12f, 12f, 40f)
+  val slotX = HEADER_PAD
+  val slotY = (BAR_H - HEADER_FACE_SLOT_H) / 2f
+  paintAvatar(
+    g,
+    slotX + HEADER_FACE_NUDGE_X,
+    slotY + HEADER_FACE_NUDGE_Y,
+    HEADER_FACE,
+    ring = true,
+  )
+  val titleX = (HEADER_PAD + HEADER_FACE_SLOT_W + HEADER_PAD).toInt()
   g.font = font.deriveFont(18f)
   g.color = Fg
-  g.drawString(displaySlug(slug), 64, 32)
+  g.drawString(displaySlug(slug), titleX, 32)
   g.color = if (up) Live else Dim
-  g.fill(Ellipse2D.Float(64f, 42f, 8f, 8f))
+  g.fill(Ellipse2D.Float(titleX.toFloat(), 42f, 8f, 8f))
   g.font = font.deriveFont(11f)
   val subtitle = when {
     !up -> "Offline"
     typing -> "Live · typing…"
     else -> "Live"
   }
-  g.drawString(subtitle, 78, 50)
+  g.drawString(subtitle, titleX + 14, 50)
   paintIkon(g, Material2OutlinedMZ.SETTINGS, PHONE_W - 28f, 32f, 22, Muted)
 }
 
-private fun paintAvatar(g: Graphics2D, x: Float, y: Float, size: Float) {
-  g.color = Track
-  g.fill(Ellipse2D.Float(x, y, size, size))
-  paintVectorDrawable(
-    g,
-    VEC_SMILE,
-    x + size / 2f,
-    y + size / 2f,
-    (size * 0.55f).toInt().coerceAtLeast(12),
-    Muted,
-  )
+private fun paintAvatar(g: Graphics2D, x: Float, y: Float, size: Float, ring: Boolean = false) {
+  val face = sampleFace()
+  val clip = g.clip
+  g.clip = Ellipse2D.Float(x, y, size, size)
+  if (face != null) {
+    val scale = maxOf(size / face.width, size / face.height)
+    val dw = face.width * scale
+    val dh = face.height * scale
+    g.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BILINEAR)
+    g.drawImage(
+      face,
+      (x + (size - dw) / 2f).toInt(),
+      (y + (size - dh) / 2f).toInt(),
+      dw.toInt().coerceAtLeast(1),
+      dh.toInt().coerceAtLeast(1),
+      null,
+    )
+  } else {
+    g.color = Track
+    g.fill(Ellipse2D.Float(x, y, size, size))
+  }
+  g.clip = clip
+  if (ring) {
+    val saved = g.stroke
+    g.stroke = BasicStroke(2f)
+    g.color = Field
+    g.draw(Ellipse2D.Float(x + 1f, y + 1f, size - 2f, size - 2f))
+    g.stroke = saved
+  }
 }
 
 private fun paintSettings(g: Graphics2D, font: Font, slug: String, email: String) {
@@ -474,12 +507,14 @@ private fun paintHatchPhoto(g: Graphics2D, x: Float, y: Float, w: Float, h: Floa
   g.clip = clip
 }
 
-private fun sampleHatch(): BufferedImage? {
+private fun sampleHatch(): BufferedImage? = sampleNodpi("sample_hatch.jpg")
+
+private fun sampleFace(): BufferedImage? = sampleNodpi("kit_face.jpg")
+
+private fun sampleNodpi(name: String): BufferedImage? {
   val file = listOf(
-    File("src/main/res/drawable-nodpi/sample_hatch.jpg"),
-    File("app/src/main/res/drawable-nodpi/sample_hatch.jpg"),
-    File("src/main/res/drawable/sample_hatch.jpg"),
-    File("app/src/main/res/drawable/sample_hatch.jpg"),
+    File("src/main/res/drawable-nodpi/$name"),
+    File("app/src/main/res/drawable-nodpi/$name"),
   ).firstOrNull { it.isFile } ?: return null
   return ImageIO.read(file)
 }

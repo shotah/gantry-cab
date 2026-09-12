@@ -26,6 +26,9 @@ class CabApp : Application() {
   /** Cab's Auto conversation screen is in the foreground (not maps / launcher). */
   @Volatile
   var carThreadVisible = false
+  /** Last JPEG from `/api/avatar`. Auto's Person icon; letter fallback when null. */
+  @Volatile
+  var face: ByteArray? = null
 
   override fun onCreate() {
     super.onCreate()

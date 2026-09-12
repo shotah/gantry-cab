@@ -9,6 +9,7 @@ import android.os.Bundle
 import androidx.core.app.NotificationCompat
 import androidx.core.app.RemoteInput
 import androidx.core.content.pm.ShortcutManagerCompat
+import androidx.core.graphics.drawable.IconCompat
 import androidx.test.core.app.ApplicationProvider
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -68,6 +69,7 @@ class CabNotifierAutoContractTest {
     val m = style.messages.single()
     assertEquals("leave by 8", m.text.toString())
     assertEquals("kit", m.person?.name.toString())
+    assertNull(m.person?.icon)
     assertTrue(m.timestamp > 0L)
   }
 
@@ -115,6 +117,17 @@ class CabNotifierAutoContractTest {
   fun channelIsHighSoAutoHeadsUp() {
     post("yo")
     assertEquals(NotificationManager.IMPORTANCE_HIGH, nm.getNotificationChannel(CabNotifier.CHANNEL).importance)
+  }
+
+  @Test
+  fun kitCardUsesTheAvatarBitmapInsteadOfALetter() {
+    CabNotifier.kitMessage(app, "kit", "yo", solidJpeg())
+    val n = shadowOf(nm).getNotification(CabNotifier.MESSAGE_ID) ?: error("no Kit card posted")
+    val person = style(n).messages.single().person ?: error("no sender")
+    assertNotNull(person.icon)
+    assertEquals(IconCompat.TYPE_BITMAP, person.icon?.type)
+    assertNotNull(n.getLargeIcon())
+    assertNotNull(ShortcutManagerCompat.getDynamicShortcuts(app).firstOrNull { it.id == "cab-kit" })
   }
 
   @Test

@@ -52,12 +52,14 @@ object CabNotifier {
   }
 
   @Synchronized
-  fun kitMessage(ctx: Context, slug: String, text: String) {
+  fun kitMessage(ctx: Context, slug: String, text: String, face: ByteArray? = null) {
     ensureChannel(ctx)
     val shortcutId = conversationId(slug)
     val you = Person.Builder().setName("You").setKey("you").build()
-    val kit = Person.Builder().setName(slug).setKey(shortcutId).build()
-    publishConversation(ctx, slug, kit)
+    val faceBmp = kitFaceBitmap(face)
+    val faceIcon = faceBmp?.let { IconCompat.createWithBitmap(it) }
+    val kit = kitPerson(slug, faceIcon)
+    publishConversation(ctx, slug, kit, faceIcon)
     val next = pushKitTurn(history, historySlug, slug, text, System.currentTimeMillis())
     historySlug = next.first
     history = next.second
@@ -90,6 +92,7 @@ object CabNotifier {
       .setSmallIcon(R.drawable.ic_stat_cab)
       .setContentTitle(slug)
       .setContentText(text)
+      .setLargeIcon(faceBmp)
       .setContentIntent(openApp(ctx))
       // Swipe / tap-away on the phone forgets the shown turns; otherwise the
       // next Kit reply re-posts them and Auto reads the whole backlog again.
@@ -122,11 +125,11 @@ object CabNotifier {
     ctx.getSystemService(NotificationManager::class.java).cancel(MESSAGE_ID)
   }
 
-  private fun publishConversation(ctx: Context, slug: String, kit: Person) {
+  private fun publishConversation(ctx: Context, slug: String, kit: Person, face: IconCompat?) {
     val shortcut = ShortcutInfoCompat.Builder(ctx, conversationId(slug))
       .setShortLabel(slug)
       .setLongLabel(slug)
-      .setIcon(IconCompat.createWithResource(ctx, R.drawable.ic_stat_cab))
+      .setIcon(face ?: IconCompat.createWithResource(ctx, R.drawable.ic_stat_cab))
       .setIntent(Intent(ctx, MainActivity::class.java).setAction(Intent.ACTION_MAIN))
       .setPerson(kit)
       .setLongLived(true)

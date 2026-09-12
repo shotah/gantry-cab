@@ -13,6 +13,7 @@ import android.os.BatteryManager
 import android.os.Build
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.LifecycleService
+import androidx.lifecycle.lifecycleScope
 import com.gantree.cab.CabApp
 import com.gantree.cab.mailbox.BatteryHint
 import com.gantree.cab.mailbox.GEO_CACHE_MS
@@ -40,6 +41,7 @@ import com.gantree.cab.spoken
 import com.google.android.gms.location.LocationServices
 import com.google.android.gms.location.Priority
 import com.google.android.gms.tasks.Tasks
+import kotlinx.coroutines.launch
 import java.time.Instant
 import java.util.TimeZone
 import java.util.concurrent.TimeUnit
@@ -130,11 +132,14 @@ class MailboxService : LifecycleService() {
     val mailbox = MailboxClient(
       onFrame = { frame ->
         val fresh = app.mouth.ingest(frame)
+        if (frame.kind == "face") {
+          refreshFace(app, slug)
+        }
         if (fresh && frame.spoken()) {
           val kind = frame.kind
           val body = notifyBody(frame.text, !frame.images.isNullOrEmpty())
           if (shouldPost(app.phoneResumed, app.carAttached, kind, app.carThreadVisible)) {
-            CabNotifier.kitMessage(this, slug, body)
+            CabNotifier.kitMessage(this, slug, body, app.face)
           } else if (shouldBuzz(app.phoneResumed, app.carAttached, kind)) {
             CabNotifier.buzzPush(this)
           }
@@ -154,7 +159,20 @@ class MailboxService : LifecycleService() {
     client = mailbox
     target = next
     mailbox.start(origin, slug, bearer)
+    refreshFace(app, slug)
     return true
+  }
+
+  private fun refreshFace(app: CabApp, slug: String) {
+    val origin = app.prefs.origin
+    val bearer = app.prefs.bearer
+    if (origin.isBlank() || bearer.isBlank()) {
+      return
+    }
+    val rev = app.mouth.avatarRev.value
+    lifecycleScope.launch {
+      app.face = app.avatar.fetch(origin, slug, bearer, rev)
+    }
   }
 
   fun send(text: String, photo: String? = null) {
