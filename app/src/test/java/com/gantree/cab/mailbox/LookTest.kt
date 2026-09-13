@@ -43,6 +43,14 @@ class LookTest {
   }
 
   @Test
+  fun fetchedThemeKeepsALiveNoticeOverAStaleGet() {
+    assertEquals("lamp", fetchedRoomTheme("noir", "lamp", "boom"))
+    assertEquals("lamp", fetchedRoomTheme("", "lamp", ""))
+    assertEquals("tide", fetchedRoomTheme("noir", "noir", "tide"))
+    assertEquals("", fetchedRoomTheme("noir", "noir", ""))
+  }
+
+  @Test
   fun fontFallsBackToSmall() {
     assertEquals(DEFAULT_FONT, parseFont(null))
     assertEquals("sm", parseFont("nope"))

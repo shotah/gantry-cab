@@ -2,6 +2,7 @@ package com.gantree.cab
 
 import com.gantree.cab.mailbox.SlashCommand
 import com.gantree.cab.mailbox.WireFrame
+import com.gantree.cab.mailbox.foldBlobRev
 import com.gantree.cab.mailbox.movesCursor
 import com.gantree.cab.mailbox.parseFrame
 import org.junit.Assert.assertEquals
@@ -29,6 +30,16 @@ class MouthTest {
     assertTrue(mouth.lines.value.isEmpty())
     mouth.ingest(WireFrame(kind = "backdrop"))
     assertEquals(0, mouth.backdropRev.value)
+  }
+
+  @Test
+  fun epochMsBackdropNoticeUpdatesTheWallpaperRev() {
+    val epoch = 1_726_185_600_000L
+    val mouth = Mouth()
+    val frame = parseFrame("""{"kind":"backdrop","rev":$epoch}""")!!
+    assertFalse(mouth.ingest(frame))
+    assertEquals(foldBlobRev(epoch), mouth.backdropRev.value)
+    assertTrue(mouth.lines.value.isEmpty())
   }
 
   @Test

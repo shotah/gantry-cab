@@ -54,3 +54,10 @@ fun paintedTheme(follow: Boolean, roomTheme: String, mine: String): String {
   }
   return knownTheme(roomTheme) ?: parseTheme(mine)
 }
+
+/**
+ * GET `/api/theme` vs a live notice. If the room id changed while GET was in
+ * flight, keep the notice so Kit's mood is not overwritten by a stale body.
+ */
+fun fetchedRoomTheme(before: String, live: String, got: String): String =
+  if (live != before) live else got

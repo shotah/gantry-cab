@@ -136,6 +136,9 @@ class WireTest {
     val cleared = parseFrame("""{"kind":"backdrop","rev":0}""")!!
     assertEquals(0, cleared.rev)
     assertNull(parseFrame("""{"kind":"backdrop","rev":-1}""")!!.rev)
+    val epoch = 1_726_185_600_000L
+    val live = parseFrame("""{"kind":"backdrop","rev":$epoch}""")!!
+    assertEquals(foldBlobRev(epoch), live.rev)
   }
 
   @Test

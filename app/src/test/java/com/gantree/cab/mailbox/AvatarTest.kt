@@ -2,6 +2,7 @@ package com.gantree.cab.mailbox
 
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class AvatarTest {
@@ -23,6 +24,9 @@ class AvatarTest {
     assertEquals(0, blobRev(null, null))
     assertEquals(0, blobRev("0", "\"-3\""))
     assertEquals(0, blobRev("nope", "\"abc\""))
+    val epoch = 1_726_185_600_000L
+    assertEquals(foldBlobRev(epoch), blobRev("1726185600000", null))
+    assertEquals(foldBlobRev(epoch), blobRev(null, "\"1726185600000\""))
   }
 
   @Test
@@ -33,6 +37,8 @@ class AvatarTest {
     assertNull(faceRev("face", "0"))
     assertNull(faceRev("face", "-1"))
     assertNull(faceRev("face", null))
+    val epoch = 1_726_185_600_000L
+    assertEquals(foldBlobRev(epoch), faceRev("face", epoch.toString()))
   }
 
   @Test
@@ -71,6 +77,19 @@ class AvatarTest {
     assertEquals(null, backdropRev("backdrop", 1.5))
     assertEquals(null, backdropRev("face", 9))
     assertEquals(null, backdropRev("backdrop", null))
+  }
+
+  @Test
+  fun epochMsBlobRevFoldsInsteadOfDropping() {
+    val epoch = 1_726_185_600_000L
+    val folded = foldBlobRev(epoch)!!
+    assertTrue(folded > 0)
+    assertEquals(folded, backdropRev("backdrop", epoch))
+    assertEquals(folded, backdropRev("backdrop", epoch.toDouble()))
+    assertEquals(folded, backdropRev("backdrop", "1726185600000"))
+    assertEquals(0, foldBlobRev(0))
+    assertNull(foldBlobRev(-1))
+    assertEquals(1, foldBlobRev(1L shl 31))
   }
 
   @Test

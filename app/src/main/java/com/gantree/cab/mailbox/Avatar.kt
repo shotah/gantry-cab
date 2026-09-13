@@ -8,12 +8,31 @@ fun displaySlug(slug: String): String {
   return s.replaceFirstChar { it.uppercase() }
 }
 
+/**
+ * Worker blob revs are `Date.now()` (epoch ms). That does not fit in Int;
+ * dropping those notices left wallpaper stuck while the face still moved
+ * (face travels as a decimal string and was truncated instead).
+ */
+fun foldBlobRev(n: Long): Int? {
+  if (n < 0L) {
+    return null
+  }
+  if (n == 0L) {
+    return 0
+  }
+  if (n <= Int.MAX_VALUE) {
+    return n.toInt()
+  }
+  val folded = (n and 0x7FFFFFFF).toInt()
+  return if (folded == 0) 1 else folded
+}
+
 fun faceRev(kind: String?, text: String?): Int? {
   if (kind != "face") {
     return null
   }
   val n = text?.toLongOrNull() ?: return null
-  return if (n > 0) n.toInt() else null
+  return foldBlobRev(n)?.takeIf { it > 0 }
 }
 
 /** `rev` 0 = cleared. Junk (missing, negative, not an int) is not a backdrop notice. */
@@ -21,11 +40,8 @@ fun backdropRev(kind: String?, raw: Any?): Int? {
   if (kind != "backdrop") {
     return null
   }
-  val n = jsonWholeNumber(raw) ?: return null
-  if (n < 0 || n > Int.MAX_VALUE) {
-    return null
-  }
-  return n.toInt()
+  val n = jsonWholeNumber(raw) ?: (raw as? String)?.toLongOrNull() ?: return null
+  return foldBlobRev(n)
 }
 
 /**
@@ -47,9 +63,12 @@ fun blobEtag(rev: Int): String = "\"$rev\""
 
 /** Rev a blob GET names itself with: `X-Pendant-Rev`, else the `ETag` digits. 0 = unknown. */
 fun blobRev(xRev: String?, etag: String?): Int {
-  xRev?.trim()?.toIntOrNull()?.takeIf { it > 0 }?.let { return it }
-  return etag?.trim()?.removePrefix("W/")?.trim('"')?.toIntOrNull()?.takeIf { it > 0 } ?: 0
+  headerBlobRev(xRev)?.let { return it }
+  return headerBlobRev(etag?.trim()?.removePrefix("W/")?.trim('"')) ?: 0
 }
+
+private fun headerBlobRev(raw: String?): Int? =
+  foldBlobRev(raw?.trim()?.toLongOrNull() ?: return null)?.takeIf { it > 0 }
 
 fun blobUrl(origin: String, path: String, slug: String, rev: Int = 0): String {
   val base = "${httpOrigin(origin)}$path?slug=$slug"

@@ -20,6 +20,7 @@ import com.gantree.cab.mailbox.googleSignInHint
 import com.gantree.cab.mailbox.mailboxSignedInHint
 import com.gantree.cab.mailbox.normalizeMailboxOrigin
 import com.gantree.cab.mailbox.parseSlug
+import com.gantree.cab.mailbox.fetchedRoomTheme
 import com.gantree.cab.mailbox.paintedTheme
 import com.gantree.cab.mailbox.persistSpikeAllowed
 import com.gantree.cab.mailbox.photoDataUrl
@@ -87,7 +88,7 @@ class CabViewModel(private val app: CabApp) : ViewModel() {
     paintedTheme(follow, room, mine)
   }.stateIn(
     viewModelScope,
-    SharingStarted.WhileSubscribed(5_000),
+    SharingStarted.Eagerly,
     paintedTheme(app.prefs.followTheme, app.mouth.roomTheme.value, app.prefs.theme),
   )
   val faceHint = app.mouth.faceHint.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), "")
@@ -136,10 +137,12 @@ class CabViewModel(private val app: CabApp) : ViewModel() {
           if (app.mouth.roomTheme.value.isEmpty()) {
             app.mouth.setRoomTheme(app.prefs.roomTheme(room))
           }
+          val before = app.mouth.roomTheme.value
           val got = withContext(Dispatchers.IO) { app.theme.fetch(origin, room, app.prefs.bearer) }
           if (got != null) {
-            app.mouth.setRoomTheme(got)
-            app.prefs.putRoomTheme(room, got)
+            val keep = fetchedRoomTheme(before, app.mouth.roomTheme.value, got)
+            app.mouth.setRoomTheme(keep)
+            app.prefs.putRoomTheme(room, keep)
           }
         }
     }
