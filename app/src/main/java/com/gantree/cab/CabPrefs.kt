@@ -73,6 +73,19 @@ class CabPrefs(ctx: Context) {
     get() = p.getString(FOLLOW_THEME, "on") != "off"
     set(value) { p.edit().putString(FOLLOW_THEME, if (value) "on" else "off").apply() }
 
+  /** Header mic: hold-to-talk instead of typing. Off unless it says `"on"` — same as `pendant.voice`. */
+  var voice: Boolean
+    get() = p.getString(VOICE, "off") == "on"
+    set(value) { p.edit().putString(VOICE, if (value) "on" else "off").apply() }
+
+  /**
+   * Last `/api/auth/config` `voice` answer, so the header mic paints on launch
+   * instead of flickering in when the GET lands. Only a 2xx JSON body writes it.
+   */
+  var voiceOffered: Boolean
+    get() = p.getString(VOICE_OFFERED, "off") == "on"
+    set(value) { p.edit().putString(VOICE_OFFERED, if (value) "on" else "off").apply() }
+
   /**
    * Last mood the room announced, per slug, so launch paints it before
    * `/api/theme` answers. Same idea as the PWA's `localStorage["pendant.roomTheme"]`.
@@ -116,6 +129,8 @@ class CabPrefs(ctx: Context) {
     private const val PHOTO = "photo"
     private const val BACKDROP = "backdrop"
     private const val FOLLOW_THEME = "followTheme"
+    private const val VOICE = "voice"
+    private const val VOICE_OFFERED = "voiceOffered"
     private const val ROOM_THEME = "roomTheme"
   }
 }

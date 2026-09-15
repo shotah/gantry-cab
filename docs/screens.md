@@ -11,6 +11,11 @@ Samples are canned Ada/Kit turns — not a live crane. Release builds ignore
 `sample` extras. Boom is the default mood; Lamp and Paper are the other two
 README themes. The rest of the catalog lives in Settings.
 
+Not shot yet: the header mic (left of the cog, only when the Worker
+publishes `voice`) and the hold-to-talk bar it swaps in for compose,
+and the Settings → Access rows (microphone / location / notifications).
+`phone-settings` predates Access.
+
 ---
 
 ## Phone

@@ -15,6 +15,7 @@ import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.gantree.cab.drive.CabNotifier
@@ -25,12 +26,25 @@ import com.gantree.cab.mailbox.cameraShotUri
 import com.gantree.cab.mailbox.parseSlug
 import com.gantree.cab.ui.CabScreen
 import com.gantree.cab.ui.CabTheme
+import com.gantree.cab.ui.Permits
 
 class MainActivity : ComponentActivity() {
   private val vm: CabViewModel by viewModels { CabViewModel.factory(application as CabApp) }
 
-  private val askNotify = registerForActivityResult(ActivityResultContracts.RequestPermission()) { }
-  private val askLoc = registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { }
+  /** What Settings → Access paints. Re-read after every prompt and on resume (the OS Settings page changes it too). */
+  private val permits = mutableStateOf(Permits())
+  /** Access → Enable location: flip send-on-turns on with the grant, like pendant `GeoEnable`. */
+  private var latchGps = false
+
+  private val askNotify = registerForActivityResult(ActivityResultContracts.RequestPermission()) { readPermits() }
+  private val askLoc = registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { grants ->
+    readPermits()
+    if (latchGps && grants[Manifest.permission.ACCESS_FINE_LOCATION] == true && !vm.gps.value) {
+      vm.toggleGps()
+    }
+    latchGps = false
+  }
+  private val askMic = registerForActivityResult(ActivityResultContracts.RequestPermission()) { readPermits() }
   private val pickPhoto = registerForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
     if (uri != null) vm.stagePhoto(this, uri)
   }
@@ -44,6 +58,7 @@ class MainActivity : ComponentActivity() {
   override fun onCreate(savedInstanceState: Bundle?) {
     super.onCreate(savedInstanceState)
     enableEdgeToEdge()
+    readPermits()
     requestNotify()
     if (BuildConfig.DEV) {
       intent.getStringExtra(EXTRA_SAMPLE)?.let { vm.showSample(it) }
@@ -75,6 +90,10 @@ class MainActivity : ComponentActivity() {
       val typingUntil by vm.typingUntil.collectAsStateWithLifecycle()
       val sub by vm.sub.collectAsStateWithLifecycle()
       val stagedPhoto by vm.stagedPhoto.collectAsStateWithLifecycle()
+      val voiceOn by vm.voice.collectAsStateWithLifecycle()
+      val voiceOffered by vm.voiceOffered.collectAsStateWithLifecycle()
+      val speakPhase by vm.speakPhase.collectAsStateWithLifecycle()
+      val granted by permits
       CabTheme(themeId = painted, fontId = font) {
         CabScreen(
           origin = origin,
@@ -143,6 +162,19 @@ class MainActivity : ComponentActivity() {
           followTheme = followTheme,
           onBackdropToggle = vm::toggleBackdrop,
           onFollowToggle = vm::toggleFollowTheme,
+          voiceOffered = voiceOffered,
+          voiceOn = voiceOn,
+          speakPhase = speakPhase,
+          permits = granted,
+          onVoiceToggle = vm::toggleVoice,
+          onVoice = { text -> vm.sendVoice(this, text) },
+          onHoldStart = vm::hushVoice,
+          onMicAsk = ::requestMic,
+          onLocAsk = {
+            latchGps = true
+            requestLoc()
+          },
+          onNotifyAsk = ::requestNotify,
         )
       }
     }
@@ -150,6 +182,7 @@ class MainActivity : ComponentActivity() {
 
   override fun onResume() {
     super.onResume()
+    readPermits()
     (application as CabApp).phoneResumed = true
     // What the browser sent while this was in the background comes over on a connect flush.
     MailboxService.sweep()
@@ -160,14 +193,30 @@ class MainActivity : ComponentActivity() {
     super.onPause()
   }
 
+  private fun has(permission: String): Boolean =
+    ContextCompat.checkSelfPermission(this, permission) == PackageManager.PERMISSION_GRANTED
+
   private fun notifyGranted(): Boolean =
-    Build.VERSION.SDK_INT < 33 ||
-      ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) ==
-      PackageManager.PERMISSION_GRANTED
+    Build.VERSION.SDK_INT < 33 || has(Manifest.permission.POST_NOTIFICATIONS)
+
+  private fun readPermits() {
+    permits.value = Permits(
+      mic = has(Manifest.permission.RECORD_AUDIO),
+      location = has(Manifest.permission.ACCESS_FINE_LOCATION),
+      notify = notifyGranted(),
+    )
+  }
 
   private fun requestNotify() {
     if (!notifyGranted()) {
       askNotify.launch(Manifest.permission.POST_NOTIFICATIONS)
+    }
+  }
+
+  /** Hold bar without the grant, or Access → Enable microphone. Never from the car pane. */
+  private fun requestMic() {
+    if (!has(Manifest.permission.RECORD_AUDIO)) {
+      askMic.launch(Manifest.permission.RECORD_AUDIO)
     }
   }
 
@@ -202,7 +251,7 @@ class MainActivity : ComponentActivity() {
   private fun requestLoc() {
     val fine = Manifest.permission.ACCESS_FINE_LOCATION
     val coarse = Manifest.permission.ACCESS_COARSE_LOCATION
-    if (ContextCompat.checkSelfPermission(this, fine) != PackageManager.PERMISSION_GRANTED) {
+    if (!has(fine)) {
       askLoc.launch(arrayOf(fine, coarse))
     }
   }

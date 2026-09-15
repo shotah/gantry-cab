@@ -14,6 +14,7 @@ import com.gantree.cab.mailbox.AVATAR_EDGE
 import com.gantree.cab.mailbox.AVATAR_MAX_BYTES
 import com.gantree.cab.mailbox.PHOTO_JPEG_BYTES_MAX
 import com.gantree.cab.mailbox.PhotoResult
+import com.gantree.cab.mailbox.SpeakPhase
 import com.gantree.cab.mailbox.describePhotoError
 import com.gantree.cab.mailbox.jpegFromUri
 import com.gantree.cab.mailbox.googleSignInHint
@@ -62,6 +63,8 @@ class CabViewModel(private val app: CabApp) : ViewModel() {
   private val _sub = MutableStateFlow("")
   private val _fetchOrigin = MutableStateFlow(app.prefs.origin)
   private val _stagedPhoto = MutableStateFlow<String?>(null)
+  private val _voice = MutableStateFlow(app.prefs.voice)
+  private val _voiceOffered = MutableStateFlow(app.prefs.voiceOffered)
   val origin = _origin.asStateFlow()
   val slug = _slug.asStateFlow()
   val spike = _spike.asStateFlow()
@@ -79,6 +82,11 @@ class CabViewModel(private val app: CabApp) : ViewModel() {
   val authHint = _authHint.asStateFlow()
   val sub = _sub.asStateFlow()
   val stagedPhoto = _stagedPhoto.asStateFlow()
+  /** Header mic: hold-to-talk instead of the typed row. Mirrors `pendant.voice`. */
+  val voice = _voice.asStateFlow()
+  /** `/api/auth/config` `voice`. Off → no mic, no bar, whatever the pref says. */
+  val voiceOffered = _voiceOffered.asStateFlow()
+  val speakPhase = app.voice.phase.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), SpeakPhase.IDLE)
   val up = app.mouth.up.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), false)
   val hint = app.mouth.hint.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), "")
   val lines = app.mouth.lines.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
@@ -144,6 +152,22 @@ class CabViewModel(private val app: CabApp) : ViewModel() {
             app.mouth.setRoomTheme(keep)
             app.prefs.putRoomTheme(room, keep)
           }
+        }
+    }
+    viewModelScope.launch {
+      // Does this Worker publish pocket voice? Asked on launch, on an origin
+      // change, and again when the socket comes up so a key added later shows.
+      // Only a real answer moves it; offline keeps the last one.
+      combine(_fetchOrigin, app.mouth.up) { origin, up -> origin to up }
+        .collectLatest { (origin, _) ->
+          if (origin.isBlank()) {
+            return@collectLatest
+          }
+          val offered = withContext(Dispatchers.IO) {
+            runCatching { app.auth.config(origin).voice }.getOrNull()
+          } ?: return@collectLatest
+          _voiceOffered.value = offered
+          app.prefs.voiceOffered = offered
         }
     }
   }
@@ -218,6 +242,18 @@ class CabViewModel(private val app: CabApp) : ViewModel() {
     _gps.value = next
     app.prefs.gps = next
     app.mouth.setHint(if (next) "GPS attaches on send if the OS allows it." else "GPS off")
+  }
+
+  /** Header mic tap: typing ↔ hold-to-talk. Remembered so a voice person opens into voice. */
+  fun toggleVoice() {
+    val next = !_voice.value
+    _voice.value = next
+    app.prefs.voice = next
+  }
+
+  /** Hold pressed: quiet Kit so the mic does not hear the reply. */
+  fun hushVoice() {
+    app.voice.hush()
   }
 
   fun showSample(id: String) {
@@ -303,6 +339,22 @@ class CabViewModel(private val app: CabApp) : ViewModel() {
     _stagedPhoto.value = null
     persist()
     MailboxService.sendTurn(ctx, text, photo)
+  }
+
+  /**
+   * Hold-to-talk release. The words go out as `inbound` + `input: spoken`
+   * (nothing lands in compose), a photo staged before the hold rides along,
+   * and the next live reply is read aloud. Pendant `sendText(..., { spoken })`.
+   */
+  fun sendVoice(ctx: Context, text: String) {
+    val photo = _stagedPhoto.value
+    if (!composeHasTurn(text, photo)) {
+      return
+    }
+    _stagedPhoto.value = null
+    persist()
+    app.voice.arm()
+    MailboxService.sendSpoken(ctx, text, photo)
   }
 
   fun uploadAvatar(ctx: Context, uri: Uri) {

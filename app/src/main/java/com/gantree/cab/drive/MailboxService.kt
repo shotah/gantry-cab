@@ -155,6 +155,7 @@ class MailboxService : LifecycleService() {
     val mailbox = MailboxClient(
       onFrame = { frame ->
         val fresh = app.mouth.ingest(frame)
+        app.voice.heard(frame, fresh)
         if (frame.kind == "face") {
           refreshFace(app, slug)
         }
@@ -410,12 +411,14 @@ class MailboxService : LifecycleService() {
     }
 
     /**
-     * Auto host STT — Reply on the HUN card or the in-dash thread. The words
-     * came from a mic, so the frame carries `input: spoken` and the crane
-     * answers in read-aloud prose. Typed compose goes through [sendTurn].
+     * Spoken words — Auto host STT (Reply on the HUN card or the in-dash
+     * thread) or the handheld hold-to-talk bar. The words came from a mic, so
+     * the frame carries `input: spoken` and the crane answers in read-aloud
+     * prose. A photo staged before the hold rides along. Typed compose goes
+     * through [sendTurn].
      */
-    fun sendSpoken(ctx: Context, text: String) {
-      sendBits(ctx) { it.send(text, null, spoken = true) }
+    fun sendSpoken(ctx: Context, text: String, photo: String? = null) {
+      sendBits(ctx) { it.send(text, photo, spoken = true) }
     }
 
     /** Caption and photo on one inbound. Attach itself never calls this. */

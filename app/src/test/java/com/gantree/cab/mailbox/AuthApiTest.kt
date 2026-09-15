@@ -50,7 +50,16 @@ class AuthApiTest {
     val got = api.config(server.url("/").toString())
     assertEquals("google", got.mode)
     assertEquals(true, got.google)
+    assertEquals(false, got.voice)
     assertEquals(null, server.takeRequest().getHeader("Cookie"))
+  }
+
+  @Test
+  fun configReadsVoiceWhenTheWorkerPublishesIt() {
+    server.enqueue(MockResponse().setBody("""{"mode":"google","google":true,"voice":true}"""))
+    assertEquals(true, api.config(server.url("/").toString()).voice)
+    server.enqueue(MockResponse().setBody("""{"mode":"google","google":true,"voice":"yes"}"""))
+    assertEquals(false, api.config(server.url("/").toString()).voice)
   }
 
   @Test
@@ -82,6 +91,7 @@ class AuthApiTest {
     val got = api.config(server.url("/").toString())
     assertEquals(null, got.mode)
     assertEquals(false, got.google)
+    assertEquals(false, got.voice)
   }
 
   @Test

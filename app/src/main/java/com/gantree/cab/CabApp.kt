@@ -8,6 +8,7 @@ import com.gantree.cab.mailbox.AvatarApi
 import com.gantree.cab.mailbox.BlobCache
 import com.gantree.cab.mailbox.PhoneContext
 import com.gantree.cab.mailbox.ThemeApi
+import com.gantree.cab.mailbox.TtsApi
 import com.gantree.cab.mailbox.WireFrame
 import com.gantree.cab.mailbox.inbound
 import com.gantree.cab.mailbox.shouldSpeak
@@ -29,6 +30,9 @@ class CabApp : Application() {
     private set
   /** Last thread for the room on disk (`cacheDir/thread.json`). */
   lateinit var thread: ThreadCache
+    private set
+  /** Handheld reply-aloud gate + player. The car keeps Auto's engine. */
+  lateinit var voice: KitVoice
     private set
   val mouth = Mouth()
   val auth = AuthApi()
@@ -57,6 +61,7 @@ class CabApp : Application() {
     prefs = CabPrefs(this)
     avatar = AvatarApi(cache = BlobCache(File(cacheDir, "blobs")))
     thread = ThreadCache(File(cacheDir, "thread.json"))
+    voice = KitVoice(TtsApi(), { prefs.origin }, { prefs.bearer }, mouth::setHint)
     // Paint what we knew last time before any socket or GET answers.
     mouth.setRoomTheme(prefs.roomTheme(prefs.slug))
     openThread()

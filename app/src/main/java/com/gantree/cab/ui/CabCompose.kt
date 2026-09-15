@@ -129,30 +129,7 @@ fun CabCompose(
   Surface(tonalElevation = 2.dp, color = scheme.surface) {
     Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 8.dp)) {
       if (photo != null) {
-        Row(
-          verticalAlignment = Alignment.CenterVertically,
-          horizontalArrangement = Arrangement.spacedBy(8.dp),
-          modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp),
-        ) {
-          AsyncImage(
-            model = photo,
-            contentDescription = "Photo to send",
-            contentScale = ContentScale.Crop,
-            modifier = Modifier.size(56.dp).clip(RoundedCornerShape(8.dp)),
-          )
-          Text(
-            "Goes with your next message.",
-            style = MaterialTheme.typography.bodySmall,
-            color = scheme.onSurfaceVariant,
-            modifier = Modifier.weight(1f),
-          )
-          TextButton(
-            onClick = onPhotoClear,
-            modifier = Modifier.semantics { contentDescription = "Remove photo" },
-          ) {
-            Text("Remove")
-          }
-        }
+        StagedPhoto(photo = photo, onPhotoClear = onPhotoClear)
       }
       if (emojiOpen) {
         EmojiPanel(
@@ -272,6 +249,36 @@ fun CabCompose(
           Icon(Icons.AutoMirrored.Filled.Send, contentDescription = "Send")
         }
       }
+    }
+  }
+}
+
+/** Thumbnail + Remove above the row. Shared with the hold-to-talk bar so a photo staged before the flip rides along. */
+@Composable
+internal fun StagedPhoto(photo: String, onPhotoClear: () -> Unit) {
+  val scheme = MaterialTheme.colorScheme
+  Row(
+    verticalAlignment = Alignment.CenterVertically,
+    horizontalArrangement = Arrangement.spacedBy(8.dp),
+    modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp),
+  ) {
+    AsyncImage(
+      model = photo,
+      contentDescription = "Photo to send",
+      contentScale = ContentScale.Crop,
+      modifier = Modifier.size(56.dp).clip(RoundedCornerShape(8.dp)),
+    )
+    Text(
+      "Goes with your next message.",
+      style = MaterialTheme.typography.bodySmall,
+      color = scheme.onSurfaceVariant,
+      modifier = Modifier.weight(1f),
+    )
+    TextButton(
+      onClick = onPhotoClear,
+      modifier = Modifier.semantics { contentDescription = "Remove photo" },
+    ) {
+      Text("Remove")
     }
   }
 }

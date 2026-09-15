@@ -35,8 +35,10 @@ These landed on the Worker. Old Cab APKs stay valid.
   <jwe>` with **no** session cookie. Missing `Sec-Fetch-Site` is
   allowed. Do not add a CookieJar that stores `pendant_session`.
 - **`GET /api/auth/config`** may include additive `version` (package.json
-  semver) and `dev`. `AuthConfig` keeps `mode` / `google` and drops
-  unknown keys. `AuthApiTest.configIgnoresAdditiveKeys`.
+  semver) and `dev`. `AuthConfig` keeps `mode` / `google` / `voice` and
+  drops unknown keys. `AuthApiTest.configIgnoresAdditiveKeys`. `voice`
+  (missing → `false`) is whether the Worker has a TTS key and
+  `VOICE` is not `off`; it gates the header mic and the hold bar.
 - **Push host allowlist** is PWA Web Push (`PUT /api/push`). Cab does
   not subscribe that way. Do not invent a Cab push URL.
 - **Google return-to** (`/?slug=` on the OAuth state cookie) is the PWA
@@ -107,8 +109,24 @@ unless that walk is the ticket ([todo.md](todo.md) Not this version).
 - [ ] Parse `version` from `/api/auth/config` (settings chip, "mailbox
       is newer than this APK"). Additive; skip is fine — unknown keys
       are already dropped.
-- [ ] Handheld mic → compose (`SpeechRecognizer`), no auto-send. Auto
-      stays host STT. Design: pendant `docs/voice.md`.
+- [x] **Pocket voice** (pendant `docs/voice.md`, Cab parity). Header
+      mic left of the cog (only when `/api/auth/config` says `voice`)
+      flips typing ↔ hold-to-talk, remembered in `CabPrefs.voice`.
+      Voice on swaps the compose row for one wide hold bar
+      (`ui/HoldToTalk.kt`): press listens on `SpeechRecognizer`
+      (`ui/HoldListener.kt`), growing hypotheses fold to one line
+      (`mailbox/Speech.kt`), release sends `inbound` + `input:
+      spoken` (`MailboxService.sendSpoken`), slide-off aborts, a
+      watchdog ends a hung session. The next live `reply` after a hold
+      is read via `POST /api/tts` with the Bearer session
+      (`mailbox/TtsApi.kt`, `KitVoice`), markdown → words first
+      (`mailbox/Speakable.kt`); `push` / `replay` / typed turns never
+      speak, `error` disarms (`mailbox/Speaker.kt`). Header says
+      `Live · voice…` / `· speaking`. Settings → Access: Enable
+      microphone / location / notifications. **Auto is untouched**:
+      host STT in, Auto reads the card out; `KitVoice` is
+      `MainActivity`-only and the recognizer never runs on the
+      template.
 - [ ] FCM lock-screen — public-scale only, not demo/beta. Design:
       [fcm_design_and_todo.md](fcm_design_and_todo.md).
 
@@ -122,8 +140,11 @@ unless that walk is the ticket ([todo.md](todo.md) Not this version).
   footer is not speech. Keep `context` JSON (`geo` and the optional
   keys). PWA inbound `context` is **geo only**; Cab may still stamp
   `at` / `tz` / battery / net (additive, ignored). `surface` and
-  `input: spoken` (Auto host STT) are read by the crane as the
-  `[surface]` / `[input]` stamps — closed sets, junk is dropped.
+  `input: spoken` (Auto host STT, and the handheld hold bar) are read
+  by the crane as the `[surface]` / `[input]` stamps — closed sets,
+  junk is dropped. Typed compose stays untagged.
+- No audio on the wire. STT is the phone's, TTS is `POST /api/tts`
+  bytes played from memory (`MediaDataSource`), never a file.
 - Additive JSON is fine. A new required field or `kind` needs a Cab
   change or mailbox tolerance for the old APK.
 - Do not start Expo to catch up the PWA.

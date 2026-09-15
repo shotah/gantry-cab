@@ -73,6 +73,13 @@ fun CabSettings(
   followTheme: Boolean = true,
   onBackdropToggle: () -> Unit = {},
   onFollowToggle: () -> Unit = {},
+  voiceOffered: Boolean = false,
+  permits: Permits = Permits(),
+  gpsOn: Boolean = false,
+  onGpsToggle: () -> Unit = {},
+  onMicAsk: () -> Unit = {},
+  onLocAsk: () -> Unit = {},
+  onNotifyAsk: () -> Unit = {},
 ) {
   val scheme = MaterialTheme.colorScheme
   val clipboard = LocalClipboardManager.current
@@ -168,6 +175,30 @@ fun CabSettings(
       },
       singleLine = true,
       visualTransformation = PasswordVisualTransformation(),
+    )
+    // Pendant's Access block: ask here so hold-to-talk is not the first prompt.
+    Text("Access", style = MaterialTheme.typography.labelLarge, color = scheme.onSurfaceVariant)
+    if (voiceOffered) {
+      PermitRow(
+        name = "Microphone",
+        action = if (permits.mic) "On" else "Enable microphone",
+        onClick = if (permits.mic) null else onMicAsk,
+      )
+    }
+    PermitRow(
+      name = "Location",
+      action = when {
+        !permits.location -> "Enable location"
+        gpsOn -> "On"
+        else -> "Off"
+      },
+      pressed = permits.location && gpsOn,
+      onClick = if (permits.location) onGpsToggle else onLocAsk,
+    )
+    PermitRow(
+      name = "Notifications",
+      action = if (permits.notify) "On" else "Enable notifications",
+      onClick = if (permits.notify) null else onNotifyAsk,
     )
     Text("Theme", style = MaterialTheme.typography.labelLarge, color = scheme.onSurfaceVariant)
     Row(
@@ -329,6 +360,47 @@ fun CabSettings(
       ) {
         Text(if (copied) "Copied" else "Copy")
       }
+    }
+  }
+}
+
+/**
+ * One Access line: name left, a chip right when there is something to do,
+ * plain "On" when there is not (pendant `PermitRow`). Location's chip is a
+ * switch once granted — the same send-on-turns pref as the attach GPS chip.
+ */
+@Composable
+private fun PermitRow(
+  name: String,
+  action: String,
+  pressed: Boolean = false,
+  onClick: (() -> Unit)?,
+) {
+  val scheme = MaterialTheme.colorScheme
+  Row(
+    horizontalArrangement = Arrangement.spacedBy(8.dp),
+    verticalAlignment = Alignment.CenterVertically,
+    modifier = Modifier.fillMaxWidth(),
+  ) {
+    Text(
+      name,
+      style = MaterialTheme.typography.bodyMedium,
+      color = scheme.onSurfaceVariant,
+      modifier = Modifier.weight(1f),
+    )
+    if (onClick == null) {
+      Text(action, style = MaterialTheme.typography.labelLarge, color = scheme.primary)
+    } else {
+      FilterChip(
+        selected = pressed,
+        onClick = onClick,
+        label = { Text(action) },
+        modifier = Modifier.semantics {
+          role = Role.Button
+          selected = pressed
+          contentDescription = action
+        },
+      )
     }
   }
 }

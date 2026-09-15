@@ -2,6 +2,11 @@ package com.gantree.cab.ui
 
 import android.graphics.BitmapFactory
 import androidx.activity.compose.BackHandler
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.horizontalScroll
@@ -52,17 +57,25 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalView
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
 import com.gantree.cab.ChatLine
+import com.gantree.cab.R
 import com.gantree.cab.composeKey
 import com.gantree.cab.dev.SAMPLE_IDS
 import com.gantree.cab.mailbox.DEFAULT_PHOTO_SIZE
 import com.gantree.cab.mailbox.SlashCommand
+import com.gantree.cab.mailbox.SpeakPhase
 import com.gantree.cab.mailbox.displaySlug
+import com.gantree.cab.mailbox.liveStatus
+import com.gantree.cab.mailbox.voiceBarShown
 import coil3.compose.AsyncImage
 import kotlinx.coroutines.delay
 
@@ -116,6 +129,16 @@ fun CabScreen(
   followTheme: Boolean = true,
   onBackdropToggle: () -> Unit = {},
   onFollowToggle: () -> Unit = {},
+  voiceOffered: Boolean = false,
+  voiceOn: Boolean = false,
+  speakPhase: SpeakPhase = SpeakPhase.IDLE,
+  permits: Permits = Permits(),
+  onVoiceToggle: () -> Unit = {},
+  onVoice: (String) -> Unit = {},
+  onHoldStart: () -> Unit = {},
+  onMicAsk: () -> Unit = {},
+  onLocAsk: () -> Unit = {},
+  onNotifyAsk: () -> Unit = {},
 ) {
   val scheme = MaterialTheme.colorScheme
   var settingsOpen by remember { mutableStateOf(false) }
@@ -207,11 +230,7 @@ fun CabScreen(
                     .background(if (up) scheme.tertiary else scheme.outline),
                 )
                 Text(
-                  when {
-                    !up -> "Offline"
-                    typing -> "Live · typing…"
-                    else -> "Live"
-                  },
+                  liveStatus(up, typing, speakPhase),
                   style = MaterialTheme.typography.labelSmall,
                   color = if (up) scheme.tertiary else scheme.outline,
                 )
@@ -219,6 +238,9 @@ fun CabScreen(
             }
           },
           actions = {
+            if (voiceOffered) {
+              VoiceToggle(on = voiceOn, speaking = speakPhase == SpeakPhase.PLAYING, onToggle = onVoiceToggle)
+            }
             IconButton(
               onClick = { settingsOpen = true },
               modifier = Modifier.semantics { contentDescription = "settings" },
@@ -232,20 +254,34 @@ fun CabScreen(
     },
     bottomBar = {
       if (!googleDoor && !showSettings) {
-        CabCompose(
-          disabled = false,
-          placeholder = if (up) "Message $title" else "Waiting for mailbox…",
-          gpsOn = gpsOn,
-          catalog = catalog,
-          onSend = onSend,
-          onPhoto = onPhoto,
-          onCamera = onCamera,
-          onPhotoClear = onPhotoClear,
-          photo = photo,
-          onPin = onPin,
-          onGpsToggle = onGpsToggle,
-          onEngage = onEngage,
-        )
+        if (voiceBarShown(voiceOffered, voiceOn)) {
+          // Voice on: the whole row is one hold bar. Slash commands are typed — tap the mic to type.
+          HoldToTalk(
+            disabled = !up,
+            micGranted = permits.mic,
+            speaking = speakPhase,
+            onMicAsk = onMicAsk,
+            onHoldStart = onHoldStart,
+            onText = onVoice,
+            photo = photo,
+            onPhotoClear = onPhotoClear,
+          )
+        } else {
+          CabCompose(
+            disabled = false,
+            placeholder = if (up) "Message $title" else "Waiting for mailbox…",
+            gpsOn = gpsOn,
+            catalog = catalog,
+            onSend = onSend,
+            onPhoto = onPhoto,
+            onCamera = onCamera,
+            onPhotoClear = onPhotoClear,
+            photo = photo,
+            onPin = onPin,
+            onGpsToggle = onGpsToggle,
+            onEngage = onEngage,
+          )
+        }
       }
     },
   ) { padding ->
@@ -278,6 +314,13 @@ fun CabScreen(
           followTheme = followTheme,
           onBackdropToggle = onBackdropToggle,
           onFollowToggle = onFollowToggle,
+          voiceOffered = voiceOffered,
+          permits = permits,
+          gpsOn = gpsOn,
+          onGpsToggle = onGpsToggle,
+          onMicAsk = onMicAsk,
+          onLocAsk = onLocAsk,
+          onNotifyAsk = onNotifyAsk,
         )
       } else if (googleDoor) {
         Column(
@@ -446,6 +489,48 @@ fun CabScreen(
       onClick = onAvatar,
     )
   }
+  }
+}
+
+/**
+ * Header switch between typing (default) and hold-to-talk, left of the cog
+ * (pendant `VoiceToggle`). Only painted when the Worker publishes voice, so a
+ * phone against a Worker with no Chirp key never sees a mic that cannot answer.
+ * Pulses while Kit's reply plays so the eye knows where the sound is from.
+ */
+@Composable
+private fun VoiceToggle(on: Boolean, speaking: Boolean, onToggle: () -> Unit) {
+  val scheme = MaterialTheme.colorScheme
+  val alpha = if (speaking) {
+    val transition = rememberInfiniteTransition(label = "mic")
+    val a by transition.animateFloat(
+      initialValue = 1f,
+      targetValue = 0.35f,
+      animationSpec = infiniteRepeatable(tween(700), RepeatMode.Reverse),
+      label = "micPulse",
+    )
+    a
+  } else {
+    1f
+  }
+  IconButton(
+    onClick = onToggle,
+    modifier = Modifier.semantics {
+      role = Role.Switch
+      selected = on
+      contentDescription = if (on) "Voice on" else "Voice off"
+    },
+  ) {
+    Icon(
+      painterResource(R.drawable.ic_mic),
+      contentDescription = null,
+      tint = when {
+        speaking -> scheme.tertiary
+        on -> scheme.primary
+        else -> scheme.onSurfaceVariant
+      },
+      modifier = Modifier.alpha(alpha),
+    )
   }
 }
 
