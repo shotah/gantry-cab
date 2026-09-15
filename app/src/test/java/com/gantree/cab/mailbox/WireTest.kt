@@ -103,6 +103,30 @@ class WireTest {
   }
 
   @Test
+  fun spokenInputRidesBesideSurface() {
+    val car = encodeFrame(
+      inbound("on my way", "id-spoken", PhoneContext(surface = "android_auto", input = "spoken")),
+    )
+    assertTrue(car.contains("\"surface\":\"android_auto\""))
+    assertTrue(car.contains("\"input\":\"spoken\""))
+    val typed = encodeFrame(inbound("on my way", "id-typed", PhoneContext(surface = "android")))
+    assertTrue(typed.contains("\"surface\":\"android\""))
+    assertFalse(typed.contains("\"input\""))
+    // Closed set of one; junk stays off the wire rather than reaching the crane.
+    assertEquals("spoken", inputOnWire("spoken"))
+    assertNull(inputOnWire("Spoken"))
+    assertNull(inputOnWire("typed"))
+    assertNull(inputOnWire("audio"))
+    assertNull(inputOnWire(""))
+    assertNull(inputOnWire(null))
+    assertFalse(encodeFrame(inbound("x", "id-junk", PhoneContext(surface = "android", input = "audio"))).contains("\"input\""))
+    assertEquals("spoken", inputHint(true))
+    assertNull(inputHint(false))
+    // Old mailboxes and siblings drop the key unread; parseFrame does the same.
+    assertEquals("on my way", parseFrame(car)!!.text)
+  }
+
+  @Test
   fun captionAndPhotoTravelOnOneInbound() {
     val frame = inbound("this hatch?", "id-cap", null, listOf("data:image/jpeg;base64,QQ"))
     val got = parseFrame(encodeFrame(frame))!!

@@ -24,6 +24,8 @@ data class PhoneContext(
   val battery: BatteryHint? = null,
   val net: String? = null,
   val surface: String? = null,
+  /** How the human produced the turn: `spoken` (Auto host STT) or null for typed. */
+  val input: String? = null,
 )
 
 data class WireFrame(
@@ -76,6 +78,7 @@ fun encodeFrame(frame: WireFrame): String {
     }
     netOnWire(ctx.net)?.let { c.put("net", it) }
     surfaceOnWire(ctx.surface)?.let { c.put("surface", it) }
+    inputOnWire(ctx.input)?.let { c.put("input", it) }
     if (c.length() > 0) {
       o.put("context", c)
     }
@@ -201,6 +204,12 @@ fun surfaceOnWire(surface: String?): String? =
   surface.takeIf { it == "pendant" || it == "android" || it == "android_auto" }
 
 fun surfaceHint(carAttached: Boolean): String = if (carAttached) "android_auto" else "android"
+
+/** Closed set of one (pendant docs/frontends.md): `spoken`. Anything else stays off the wire. */
+fun inputOnWire(input: String?): String? = input.takeIf { it == "spoken" }
+
+/** `surface` says which device; `input` says the words came from a mic, so the crane answers in read-aloud prose. */
+fun inputHint(spoken: Boolean): String? = if (spoken) "spoken" else null
 
 fun batteryHint(pct: Int, charging: Boolean): BatteryHint? {
   if (pct !in 0..100) {

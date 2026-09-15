@@ -61,7 +61,7 @@ class CabThreadScreen(carContext: CarContext) : Screen(carContext) {
     override fun onTextReply(replyText: String) {
       val text = replyText.trim()
       if (text.isNotEmpty()) {
-        MailboxService.sendText(carContext, text)
+        MailboxService.sendSpoken(carContext, text)
       }
     }
   }

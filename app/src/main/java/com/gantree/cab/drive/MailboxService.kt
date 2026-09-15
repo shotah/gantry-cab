@@ -28,6 +28,7 @@ import com.gantree.cab.mailbox.batteryHint
 import com.gantree.cab.mailbox.cursorOf
 import com.gantree.cab.mailbox.geoFromFix
 import com.gantree.cab.mailbox.geoHint
+import com.gantree.cab.mailbox.inputHint
 import com.gantree.cab.mailbox.mailboxAuthLostHint
 import com.gantree.cab.mailbox.mailboxConnectError
 import com.gantree.cab.mailbox.mailboxSocketHint
@@ -207,9 +208,9 @@ class MailboxService : LifecycleService() {
     }
   }
 
-  fun send(text: String, photo: String? = null) {
+  fun send(text: String, photo: String? = null, spoken: Boolean = false) {
     Thread {
-      sendBlocking(text, photo)
+      sendBlocking(text, photo, spoken)
     }.start()
   }
 
@@ -219,7 +220,7 @@ class MailboxService : LifecycleService() {
     }.start()
   }
 
-  private fun sendBlocking(text: String, photo: String?) {
+  private fun sendBlocking(text: String, photo: String?, spoken: Boolean) {
     val trimmed = applyEmoji(text, text.length, "send").text.trim()
     if (trimmed.isEmpty() && photo.isNullOrEmpty()) {
       return
@@ -227,7 +228,7 @@ class MailboxService : LifecycleService() {
     val app = application as CabApp
     val gpsOn = app.prefs.gps
     val geo = if (gpsOn) peekGeo() else null
-    val ctx = phoneContext(geo)
+    val ctx = phoneContext(geo, spoken)
     sendGeoHint(gpsOn, geo)?.let { app.mouth.setHint(it) }
     val frame = app.outbound(trimmed, ctx, photo?.let { listOf(it) })
     client?.remember(frame.id ?: return)
@@ -288,7 +289,7 @@ class MailboxService : LifecycleService() {
     }
   }
 
-  private fun phoneContext(geo: Geo?): PhoneContext {
+  private fun phoneContext(geo: Geo?, spoken: Boolean = false): PhoneContext {
     return PhoneContext(
       at = Instant.now().toString(),
       tz = TimeZone.getDefault().id,
@@ -296,6 +297,7 @@ class MailboxService : LifecycleService() {
       battery = peekBattery(),
       net = peekNet(),
       surface = surfaceHint((application as CabApp).carAttached),
+      input = inputHint(spoken),
     )
   }
 
@@ -407,8 +409,13 @@ class MailboxService : LifecycleService() {
       ctx.stopService(Intent(ctx, MailboxService::class.java))
     }
 
-    fun sendText(ctx: Context, text: String) {
-      sendTurn(ctx, text, null)
+    /**
+     * Auto host STT — Reply on the HUN card or the in-dash thread. The words
+     * came from a mic, so the frame carries `input: spoken` and the crane
+     * answers in read-aloud prose. Typed compose goes through [sendTurn].
+     */
+    fun sendSpoken(ctx: Context, text: String) {
+      sendBits(ctx) { it.send(text, null, spoken = true) }
     }
 
     /** Caption and photo on one inbound. Attach itself never calls this. */

@@ -121,7 +121,9 @@ unless that walk is the ticket ([todo.md](todo.md) Not this version).
   runs `stripHarnessContext` so a pasted `[current time]` / `[location`
   footer is not speech. Keep `context` JSON (`geo` and the optional
   keys). PWA inbound `context` is **geo only**; Cab may still stamp
-  `at` / `tz` / `surface` / battery / net (additive, ignored).
+  `at` / `tz` / battery / net (additive, ignored). `surface` and
+  `input: spoken` (Auto host STT) are read by the crane as the
+  `[surface]` / `[input]` stamps — closed sets, junk is dropped.
 - Additive JSON is fine. A new required field or `kind` needs a Cab
   change or mailbox tolerance for the old APK.
 - Do not start Expo to catch up the PWA.

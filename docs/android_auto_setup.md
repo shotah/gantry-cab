@@ -19,8 +19,10 @@ Install first: [sideload_to_android.md](sideload_to_android.md).
   up as a **card over maps or music**, the car chimes, Auto reads it
   ("New message from kit: …") and offers **Reply**. You speak; Auto's
   voice typing turns it into text; Cab sends it to the crane as
-  `inbound` tagged `surface: android_auto`. The crane's answer comes
-  back the same way.
+  `inbound` tagged `surface: android_auto` and `input: spoken`
+  (`MailboxService.sendSpoken`), so the crane answers in short
+  read-aloud prose with no markdown. The crane's answer comes back
+  the same way.
 - The same card sits in the phone's notification shade. Swiping it
   away there is fine; Cab forgets those turns so the car does not
   re-read them later.

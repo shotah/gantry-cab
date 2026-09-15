@@ -17,7 +17,7 @@ class ReplyService : Service() {
           ?.trim()
           .orEmpty()
         if (text.isNotEmpty()) {
-          MailboxService.sendText(this, text)
+          MailboxService.sendSpoken(this, text)
         }
       }
       ACTION_READ -> CabNotifier.dismissKit(this)
