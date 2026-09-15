@@ -23,7 +23,10 @@ jobs:
           distribution: temurin
           java-version: "21"
 
+      # Same as ci.yml: `tools` is gone from Google's repository (setup-android#537).
       - uses: android-actions/setup-android@v4
+        with:
+          packages: platform-tools
 
       - uses: gradle/actions/setup-gradle@v4
 
