@@ -375,6 +375,30 @@ class MouthTest {
   }
 
   @Test
+  fun sweepRestampKeepsTheLiveKeyAndTheDraft() {
+    // Kit's reply took the draft's Compose key; you sent a line; the 2-minute
+    // sweep replays your echo with mailbox order. Nothing on screen remounts.
+    val mouth = Mouth()
+    mouth.ingest(WireFrame(kind = "draft", text = "Hello"))
+    mouth.ingest(WireFrame(kind = "reply", id = "r1", text = "Hello", seq = 1, at = 10L))
+    mouth.add(ChatLine("a1", true, "thanks", "inbound", pending = true, at = 20L))
+    assertFalse(mouth.ingest(WireFrame(kind = "inbound", id = "a1", text = "thanks", seq = 2, at = 15L)))
+    val r1 = mouth.lines.value.first { it.id == "r1" }
+    assertEquals(true, r1.live)
+    assertEquals(LIVE_COMPOSE_KEY, composeKey(r1))
+    val a1 = mouth.lines.value.first { it.id == "a1" }
+    assertEquals(2, a1.seq)
+    assertEquals(15L, a1.at)
+    assertEquals(listOf("r1", "a1"), mouth.lines.value.map { it.id })
+    // A replayed old reply with fresher order does not eat the draft Kit is typing.
+    mouth.ingest(WireFrame(kind = "draft", text = "⏳"))
+    assertFalse(mouth.ingest(WireFrame(kind = "reply", id = "r1", text = "Hello", seq = 1, at = 11L)))
+    assertEquals(listOf("r1", "a1", DRAFT_ID), mouth.lines.value.map { it.id })
+    assertEquals(11L, mouth.lines.value.first { it.id == "r1" }.at)
+    assertEquals(LIVE_COMPOSE_KEY, composeKey(mouth.lines.value.last()))
+  }
+
+  @Test
   fun echoRestampKeepsPendingUntilAck() {
     val mouth = Mouth()
     mouth.add(ChatLine("a1", true, "hi", "inbound", pending = true, at = 50L))

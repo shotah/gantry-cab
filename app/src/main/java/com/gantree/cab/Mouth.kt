@@ -183,7 +183,7 @@ class Mouth(
         val nextSeq = frame.seq ?: existing.seq
         val nextAt = frame.at ?: existing.at
         if (nextSeq != existing.seq || nextAt != existing.at) {
-          commit(existing.copy(seq = nextSeq, at = nextAt))
+          restamp(existing.copy(seq = nextSeq, at = nextAt))
         }
         return false
       }
@@ -259,6 +259,15 @@ class Mouth(
       _lines.value
     }
     _lines.value = capThread(placeInThread(dropLive(base), line), THREAD_MAX)
+  }
+
+  /**
+   * Mailbox order (`seq` / `at`) on a bubble already painted — a sweep replay
+   * or your own echo. Not a turn: the live Compose key stays on the newest
+   * reply and a draft stays put, so nothing on screen remounts.
+   */
+  private fun restamp(line: ChatLine) {
+    _lines.value = capThread(placeInThread(_lines.value, line), THREAD_MAX)
   }
 
   private fun dropLive(lines: List<ChatLine>): List<ChatLine> =

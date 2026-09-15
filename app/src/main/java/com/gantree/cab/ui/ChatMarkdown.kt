@@ -14,6 +14,7 @@ import androidx.compose.ui.text.style.TextDecoration
 import com.mikepenz.markdown.m3.Markdown
 import com.mikepenz.markdown.m3.markdownColor
 import com.mikepenz.markdown.m3.markdownTypography
+import com.mikepenz.markdown.model.rememberMarkdownState
 
 @Composable
 fun ChatMarkdown(text: String, draft: Boolean, modifier: Modifier = Modifier) {
@@ -25,8 +26,13 @@ fun ChatMarkdown(text: String, draft: Boolean, modifier: Modifier = Modifier) {
     fontStyle = if (draft) FontStyle.Italic else FontStyle.Normal,
   )
   val heading = style.copy(fontWeight = FontWeight.SemiBold, color = scheme.onSurface)
+  // Parse on this frame and keep the last paint while new text parses. The
+  // async default mounts every bubble empty, then pops it to size, and blanks
+  // a streaming draft on each frame — in a reverseLayout thread that reads as
+  // the whole list bouncing.
+  val parsed = rememberMarkdownState(text, retainState = true, immediate = true)
   Markdown(
-    content = text,
+    markdownState = parsed,
     colors = markdownColor(text = color),
     typography = markdownTypography(
       h1 = heading.copy(fontSize = style.fontSize * 1.15f),

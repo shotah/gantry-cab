@@ -39,6 +39,13 @@ letting another app read the thread are the failures that matter.
       it share that key so `ChatMarkdown` does not remount. Not on the
       wire; `persistableThread` / hydrate drop it. Pendant
       `docs/frontends.md` Draft→reply remount.
+- [x] **Steady thread paint.** `ChatMarkdown` parses on the frame
+      (`rememberMarkdownState(immediate = true, retainState = true)`);
+      the renderer's async default mounted every bubble empty then popped
+      it to size, and blanked a streaming draft each frame. A sweep
+      restamp (`seq` / `at` on a bubble already painted) is not a turn:
+      `Mouth.restamp` keeps the `kit-live` key and the draft, so nothing
+      remounts on the 2-minute catch-up. `MouthTest`.
 - [ ] **"Drop a pin" launcher shortcut.** Parity P2. Pendant has a PWA shortcut `/?pin=1`. Cab already pushes a conversation shortcut; add a static `shortcuts.xml` that starts `MailboxService.sendPin`.
 - [ ] **Tag slow/IO tests** (MockWebServer, Java2D) with a JUnit `Category` so `make watch` can exclude them.
 
