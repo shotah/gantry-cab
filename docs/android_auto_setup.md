@@ -119,6 +119,14 @@ Open it from Settings → Connected devices → Connection preferences →
   are history, not a new mouth.
 - **Reply**: tap the card → Reply → speak, or answer Auto's "Do you
   want to reply?" Hands off the phone.
+- **Starting from the car.** Open Cab from Auto's app list (Unknown
+  sources on). With nothing said yet the conversation screen shows
+  one card from Kit — *"Nothing said yet. Tap Reply and talk to
+  Kit."* — so Reply is there before the phone has sent anything.
+  Speak; the first real turn replaces the card. Auto's Reply on a
+  conversation card is the only way a template app gets your voice,
+  and the card cannot be empty (`ConversationItem` refuses an empty
+  list, which used to leave the screen blank).
 - **Mark as read** on the card (or tapping it) clears it and Cab's
   history for that card. Next reply starts clean.
 - If the socket drops (tunnel, dead zone), replies you speak are
@@ -143,6 +151,7 @@ Open it from Settings → Connected devices → Connection preferences →
 | Kit answers on the phone but the car never speaks | Cab was open on the phone screen | Lock the phone |
 | Auto re-reads old turns | Older APK (ignores `replay`) on a mailbox that hydrates | Update Cab; this APK paints last 80 on connect but does not chime. Swiping a live card still clears history |
 | Looking for a Cab tile in Auto | Expected | There is none for a sideload. See §0 |
+| Cab opens in Auto to a blank screen | Older APK on an empty thread: `ConversationItem` refused the empty list | Update Cab; the thread screen now starts with Kit's "Tap Reply" card |
 
 ## 7. If you really want the tile
 

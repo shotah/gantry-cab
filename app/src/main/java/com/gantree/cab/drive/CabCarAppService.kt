@@ -94,13 +94,14 @@ class CabThreadScreen(carContext: CarContext) : Screen(carContext) {
     val app = carContext.applicationContext as CabApp
     val slug = app.prefs.slug.ifBlank { "cab" }
     val kit = kitPerson(slug, kitFaceIcon(app.face))
-    val messages = carTurns(app.mouth.lines.value).map { turn ->
+    // Never empty: the starter card carries Reply, so the first turn can be spoken from the car.
+    val messages = carMessages(app.mouth.lines.value, slug, System.currentTimeMillis()).map { turn ->
       val body = CarText.create(turn.text)
       CarMessage.Builder()
         .setSender(if (turn.fromYou) you else kit)
         .setBody(body)
         .setReceivedTimeEpochMillis(turn.at)
-        .setRead(turn.fromYou)
+        .setRead(turn.read)
         .build()
     }
     val conversation = ConversationItem.Builder(

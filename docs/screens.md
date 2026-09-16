@@ -54,7 +54,10 @@ and Settings → Language (English / 日本語 / 中文, voice only).
 ## Android Auto
 
 ListTemplate + `ConversationItem` stand-in (DHU adds Reply / Play).
-Voice is Auto's host STT, not Assistant.
+Voice is Auto's host STT, not Assistant. An empty thread paints Kit's
+starter card ("Nothing said yet. Tap Reply and talk to Kit.") so
+Reply exists before the phone has sent anything; `auto-empty` predates
+that card.
 
 <p align="center">
   <img src="../assets/docs/auto-empty.png" alt="Auto empty list" width="360">

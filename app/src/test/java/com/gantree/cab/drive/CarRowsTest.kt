@@ -71,6 +71,28 @@ class CarRowsTest {
   }
 
   @Test
+  fun emptyThreadGetsKitsStarterCardSoReplyExists() {
+    val turns = carMessages(emptyList(), "kit", 1_000L)
+    assertEquals(listOf(carStarter("kit", 1_000L)), turns)
+    val starter = turns.single()
+    assertEquals(false, starter.fromYou)
+    assertEquals(true, starter.read)
+    assertEquals(1_000L, starter.at)
+    assertEquals("Nothing said yet. Tap Reply and talk to Kit.", starter.text)
+    // Drafts alone are not a thread either.
+    assertEquals(turns.map { it.text }, carMessages(listOf(ChatLine("__draft__", false, "⏳", "draft")), "kit", 1_000L).map { it.text })
+  }
+
+  @Test
+  fun aRealTurnReplacesTheStarter() {
+    val turns = carMessages(listOf(ChatLine("1", true, "hello", "inbound", at = 5L)), "kit", 1_000L)
+    assertEquals(listOf(CarTurn(fromYou = true, text = "hello", at = 5L)), turns)
+    assertEquals(true, turns.single().read)
+    val reply = carMessages(listOf(ChatLine("2", false, "hi", "reply", at = 6L)), "kit", 1_000L).single()
+    assertEquals(false, reply.read)
+  }
+
+  @Test
   fun draftTokensDoNotChangeCarTurns() {
     val base = listOf(ChatLine("1", true, "hello", "inbound", at = 1L))
     val a = carTurns(base + ChatLine("__draft__", false, "Gate", "draft", at = 2L))
