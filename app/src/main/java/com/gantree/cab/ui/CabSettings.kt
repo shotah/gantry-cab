@@ -6,9 +6,15 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExposedDropdownMenuAnchorType
+import androidx.compose.material3.ExposedDropdownMenuBox
+import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.MaterialTheme
@@ -37,14 +43,14 @@ import com.gantree.cab.mailbox.allowlistCopy
 import com.gantree.cab.mailbox.DEFAULT_LANG
 import com.gantree.cab.mailbox.DEFAULT_PHOTO_SIZE
 import com.gantree.cab.mailbox.FONT_IDS
-import com.gantree.cab.mailbox.LANGUAGES
+import com.gantree.cab.mailbox.LANG_IDS
 import com.gantree.cab.mailbox.PHOTO_SIZE_IDS
 import com.gantree.cab.mailbox.THEME_IDS
 import com.gantree.cab.mailbox.chatSp
 import com.gantree.cab.mailbox.displaySlug
 import com.gantree.cab.mailbox.fontLabel
+import com.gantree.cab.mailbox.langLabel
 import com.gantree.cab.mailbox.photoSizeChip
-import com.gantree.cab.mailbox.photoSizeLabel
 import com.gantree.cab.mailbox.themeLabel
 
 @Composable
@@ -206,101 +212,42 @@ fun CabSettings(
     )
     if (voiceOffered) {
       // Pendant Settings → Language. Only the mouth: recognizer locale + `/api/tts` `lang`.
-      Text("Language", style = MaterialTheme.typography.labelLarge, color = scheme.onSurfaceVariant)
-      Row(
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
-        modifier = Modifier
-          .fillMaxWidth()
-          .horizontalScroll(rememberScrollState())
-          .semantics { contentDescription = "Language" },
-      ) {
-        for (l in LANGUAGES) {
-          val on = l.id == langId
-          FilterChip(
-            selected = on,
-            onClick = { onLang(l.id) },
-            label = { Text(l.label) },
-            modifier = Modifier.semantics {
-              role = Role.RadioButton
-              selected = on
-              contentDescription = l.label
-            },
-          )
-        }
-      }
+      SettingsPick(
+        label = "Language",
+        ids = LANG_IDS,
+        selected = langId,
+        itemLabel = ::langLabel,
+        onPick = onLang,
+      )
       Text(
         "Hold to talk listens, and ${displaySlug(slug)} speaks, in this language.",
         style = MaterialTheme.typography.bodySmall,
         color = scheme.onSurfaceVariant,
       )
     }
-    Text("Theme", style = MaterialTheme.typography.labelLarge, color = scheme.onSurfaceVariant)
-    Row(
-      horizontalArrangement = Arrangement.spacedBy(8.dp),
-      modifier = Modifier
-        .fillMaxWidth()
-        .horizontalScroll(rememberScrollState())
-        .semantics { contentDescription = "color theme" },
-    ) {
-      for (id in THEME_IDS) {
-        val on = id == themeId
-        FilterChip(
-          selected = on,
-          onClick = { onTheme(id) },
-          label = { Text(themeLabel(id)) },
-          leadingIcon = { ThemeSwatch(id, modifier = Modifier.padding(start = 4.dp)) },
-          modifier = Modifier.semantics {
-            role = Role.RadioButton
-            selected = on
-            contentDescription = themeLabel(id)
-          },
-        )
-      }
-    }
-    Text("Font size", style = MaterialTheme.typography.labelLarge, color = scheme.onSurfaceVariant)
-    Row(
-      horizontalArrangement = Arrangement.spacedBy(8.dp),
-      modifier = Modifier
-        .fillMaxWidth()
-        .horizontalScroll(rememberScrollState())
-        .semantics { contentDescription = "Font size" },
-    ) {
-      for (id in FONT_IDS) {
-        val on = id == fontId
-        FilterChip(
-          selected = on,
-          onClick = { onFont(id) },
-          label = { Text(fontLabel(id), fontSize = chatSp(id).sp) },
-          modifier = Modifier.semantics {
-            role = Role.RadioButton
-            selected = on
-            contentDescription = fontLabel(id)
-          },
-        )
-      }
-    }
-    Text("Photo size", style = MaterialTheme.typography.labelLarge, color = scheme.onSurfaceVariant)
-    Row(
-      horizontalArrangement = Arrangement.spacedBy(8.dp),
-      modifier = Modifier
-        .fillMaxWidth()
-        .horizontalScroll(rememberScrollState())
-        .semantics { contentDescription = "Photo size" },
-    ) {
-      for (id in PHOTO_SIZE_IDS) {
-        val on = id == photoSizeId
-        FilterChip(
-          selected = on,
-          onClick = { onPhotoSize(id) },
-          label = { Text(photoSizeChip(id)) },
-          modifier = Modifier.semantics {
-            role = Role.RadioButton
-            selected = on
-            contentDescription = photoSizeLabel(id)
-          },
-        )
-      }
-    }
+    SettingsPick(
+      label = "Theme",
+      ids = THEME_IDS,
+      selected = themeId,
+      itemLabel = ::themeLabel,
+      onPick = onTheme,
+      leading = { ThemeSwatch(it, modifier = Modifier.size(16.dp)) },
+    )
+    SettingsPick(
+      label = "Font size",
+      ids = FONT_IDS,
+      selected = fontId,
+      itemLabel = ::fontLabel,
+      onPick = onFont,
+      itemText = { Text(fontLabel(it), fontSize = chatSp(it).sp) },
+    )
+    SettingsPick(
+      label = "Photo size",
+      ids = PHOTO_SIZE_IDS,
+      selected = photoSizeId,
+      itemLabel = ::photoSizeChip,
+      onPick = onPhotoSize,
+    )
     Text(
       "Smaller sends faster and costs fewer tokens to look at.",
       style = MaterialTheme.typography.bodySmall,
@@ -394,6 +341,59 @@ fun CabSettings(
         },
       ) {
         Text(if (copied) "Copied" else "Copy")
+      }
+    }
+  }
+}
+
+/**
+ * One closed-set setting as a dropdown (Theme, Font size, Photo size,
+ * Language): a read-only field showing the pick, the choices in a menu under
+ * it. Same shape as the PWA's `<select>` rows; the drawer stays one column.
+ */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun SettingsPick(
+  label: String,
+  ids: List<String>,
+  selected: String,
+  itemLabel: (String) -> String,
+  onPick: (String) -> Unit,
+  leading: (@Composable (String) -> Unit)? = null,
+  itemText: @Composable (String) -> Unit = { Text(itemLabel(it)) },
+) {
+  var open by remember { mutableStateOf(false) }
+  ExposedDropdownMenuBox(expanded = open, onExpandedChange = { open = it }) {
+    OutlinedTextField(
+      value = itemLabel(selected),
+      onValueChange = {},
+      readOnly = true,
+      singleLine = true,
+      label = { Text(label) },
+      leadingIcon = leading?.let { paint -> { paint(selected) } },
+      trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = open) },
+      modifier = Modifier
+        .fillMaxWidth()
+        .menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable)
+        .semantics { contentDescription = label },
+    )
+    ExposedDropdownMenu(expanded = open, onDismissRequest = { open = false }) {
+      for (id in ids) {
+        val on = id == selected
+        DropdownMenuItem(
+          text = { itemText(id) },
+          leadingIcon = leading?.let { paint -> { paint(id) } },
+          onClick = {
+            onPick(id)
+            open = false
+          },
+          contentPadding = ExposedDropdownMenuDefaults.ItemContentPadding,
+          modifier = Modifier.semantics {
+            role = Role.RadioButton
+            this.selected = on
+            contentDescription = itemLabel(id)
+          },
+        )
       }
     }
   }

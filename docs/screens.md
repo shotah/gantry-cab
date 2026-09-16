@@ -15,7 +15,9 @@ Not shot yet: the header mic (left of the cog, only when the Worker
 publishes `voice`) and the hold-to-talk bar it swaps in for compose,
 the Settings → Access rows (microphone / location / notifications),
 and Settings → Language (English / 日本語 / 中文, voice only).
-`phone-settings` predates Access and Language.
+`phone-settings` predates Access and Language, and still paints Theme /
+Font size / Photo size as chip rows; on the phone they are dropdowns
+(one field each, choices in a menu under it — `CabSettingsTest`).
 
 ---
 
