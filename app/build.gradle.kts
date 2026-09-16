@@ -156,6 +156,9 @@ dependencies {
   testImplementation("com.squareup.okhttp3:mockwebserver:4.12.0")
   testImplementation("org.robolectric:robolectric:4.16.1")
   testImplementation("androidx.test:core:1.7.0")
+  // Compose under Robolectric: HoldToTalkTest presses and lifts on the bar.
+  testImplementation("androidx.compose.ui:ui-test-junit4")
+  debugImplementation("androidx.compose.ui:ui-test-manifest")
   testImplementation("org.kordamp.ikonli:ikonli-swing:12.4.0")
   testImplementation("org.kordamp.ikonli:ikonli-material2-pack:12.4.0")
   testImplementation("org.kordamp.ikonli:ikonli-fontawesome6-pack:12.4.0")

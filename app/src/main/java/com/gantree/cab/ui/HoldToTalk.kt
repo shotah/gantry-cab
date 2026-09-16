@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
@@ -31,7 +32,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
-import androidx.compose.ui.input.pointer.changedToUp
+import androidx.compose.ui.input.pointer.changedToUpIgnoreConsumed
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalHapticFeedback
@@ -141,7 +142,16 @@ fun HoldToTalk(
     1f
   }
   Surface(tonalElevation = 2.dp, color = scheme.surface) {
-    Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 8.dp)) {
+    // Edge-to-edge puts the Scaffold's bottom bar under the gesture strip. A
+    // press held there is the system's (home / assistant), not ours, so the
+    // bar sits above the navigation inset with a little more room than compose.
+    Column(
+      modifier = Modifier
+        .fillMaxWidth()
+        .navigationBarsPadding()
+        .padding(horizontal = 8.dp)
+        .padding(top = 8.dp, bottom = 16.dp),
+    ) {
       if (photo != null) {
         StagedPhoto(photo = photo, onPhotoClear = onPhotoClear)
       }
@@ -176,8 +186,10 @@ fun HoldToTalk(
                 val change = event.changes.firstOrNull { it.id == down.id } ?: break
                 val inside = change.position.x in 0f..size.width.toFloat() &&
                   change.position.y in 0f..size.height.toFloat()
+                // Read the lift before consuming: `changedToUp()` is false on a consumed change.
+                val lifted = change.changedToUpIgnoreConsumed()
                 change.consume()
-                if (change.changedToUp()) {
+                if (lifted) {
                   if (inside) release() else cancel()
                   settled = true
                 } else if (!change.pressed) {
