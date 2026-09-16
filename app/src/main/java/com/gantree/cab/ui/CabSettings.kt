@@ -34,8 +34,10 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.gantree.cab.mailbox.allowlistCopy
+import com.gantree.cab.mailbox.DEFAULT_LANG
 import com.gantree.cab.mailbox.DEFAULT_PHOTO_SIZE
 import com.gantree.cab.mailbox.FONT_IDS
+import com.gantree.cab.mailbox.LANGUAGES
 import com.gantree.cab.mailbox.PHOTO_SIZE_IDS
 import com.gantree.cab.mailbox.THEME_IDS
 import com.gantree.cab.mailbox.chatSp
@@ -80,6 +82,8 @@ fun CabSettings(
   onMicAsk: () -> Unit = {},
   onLocAsk: () -> Unit = {},
   onNotifyAsk: () -> Unit = {},
+  langId: String = DEFAULT_LANG,
+  onLang: (String) -> Unit = {},
 ) {
   val scheme = MaterialTheme.colorScheme
   val clipboard = LocalClipboardManager.current
@@ -200,6 +204,36 @@ fun CabSettings(
       action = if (permits.notify) "On" else "Enable notifications",
       onClick = if (permits.notify) null else onNotifyAsk,
     )
+    if (voiceOffered) {
+      // Pendant Settings → Language. Only the mouth: recognizer locale + `/api/tts` `lang`.
+      Text("Language", style = MaterialTheme.typography.labelLarge, color = scheme.onSurfaceVariant)
+      Row(
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        modifier = Modifier
+          .fillMaxWidth()
+          .horizontalScroll(rememberScrollState())
+          .semantics { contentDescription = "Language" },
+      ) {
+        for (l in LANGUAGES) {
+          val on = l.id == langId
+          FilterChip(
+            selected = on,
+            onClick = { onLang(l.id) },
+            label = { Text(l.label) },
+            modifier = Modifier.semantics {
+              role = Role.RadioButton
+              selected = on
+              contentDescription = l.label
+            },
+          )
+        }
+      }
+      Text(
+        "Hold to talk listens, and ${displaySlug(slug)} speaks, in this language.",
+        style = MaterialTheme.typography.bodySmall,
+        color = scheme.onSurfaceVariant,
+      )
+    }
     Text("Theme", style = MaterialTheme.typography.labelLarge, color = scheme.onSurfaceVariant)
     Row(
       horizontalArrangement = Arrangement.spacedBy(8.dp),

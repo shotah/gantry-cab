@@ -123,7 +123,14 @@ unless that walk is the ticket ([todo.md](todo.md) Not this version).
       (`mailbox/Speakable.kt`); `push` / `replay` / typed turns never
       speak, `error` disarms (`mailbox/Speaker.kt`). Header says
       `Live · voice…` / `· speaking`. Settings → Access: Enable
-      microphone / location / notifications. **Auto is untouched**:
+      microphone / location / notifications. **Settings → Language**
+      (`en` / `ja` / `zh`, default `en`, `CabPrefs.lang` = the same
+      ids as `pendant.lang`; only shown when voice is published):
+      the hold bar listens in its BCP-47 (`EXTRA_LANGUAGE` +
+      `EXTRA_LANGUAGE_PREFERENCE`, `zh` → `zh-CN`) and `/api/tts` gets
+      additive `lang` so the Worker swaps the Chirp locale and keeps
+      the speaker (`mailbox/Lang.kt`; pendant `frontends.md`
+      Language). Not on the mailbox wire. **Auto is untouched**:
       host STT in, Auto reads the card out; `KitVoice` is
       `MainActivity`-only and the recognizer never runs on the
       template.
@@ -145,6 +152,10 @@ unless that walk is the ticket ([todo.md](todo.md) Not this version).
   junk is dropped. Typed compose stays untagged.
 - No audio on the wire. STT is the phone's, TTS is `POST /api/tts`
   bytes played from memory (`MediaDataSource`), never a file.
+- Language is not a `context` key. Send the id (`ja`), never the
+  recognizer tag (`ja-JP`) — the Worker drops what it does not know
+  and speaks its configured voice. Growing the set is one row in
+  `LANGUAGES` here and the same row in pendant `lib/phone/lang.ts`.
 - Additive JSON is fine. A new required field or `kind` needs a Cab
   change or mailbox tolerance for the old APK.
 - Do not start Expo to catch up the PWA.

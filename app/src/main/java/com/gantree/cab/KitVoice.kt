@@ -3,6 +3,7 @@ package com.gantree.cab
 import android.media.AudioAttributes
 import android.media.MediaDataSource
 import android.media.MediaPlayer
+import com.gantree.cab.mailbox.DEFAULT_LANG
 import com.gantree.cab.mailbox.SpeakFail
 import com.gantree.cab.mailbox.SpeakPhase
 import com.gantree.cab.mailbox.TtsApi
@@ -37,6 +38,8 @@ class KitVoice(
   private val origin: () -> String,
   private val bearer: () -> String,
   private val hint: (String) -> Unit,
+  /** Settings → Language id, read at speak time so a pick mid-thread takes on the next reply. */
+  private val lang: () -> String = { DEFAULT_LANG },
   private val scope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate),
 ) {
   private val _phase = MutableStateFlow(SpeakPhase.IDLE)
@@ -85,7 +88,7 @@ class KitVoice(
         return@launch
       }
       _phase.value = SpeakPhase.FETCHING
-      when (val got = withContext(Dispatchers.IO) { tts.synthesize(origin(), bearer(), text) }) {
+      when (val got = withContext(Dispatchers.IO) { tts.synthesize(origin(), bearer(), text, lang()) }) {
         is TtsResult.Err -> fail(got.reason)
         is TtsResult.Ok -> play(got.mp3)
       }

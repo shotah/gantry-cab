@@ -2,11 +2,13 @@ package com.gantree.cab
 
 import android.content.Context
 import com.gantree.cab.mailbox.DEFAULT_FONT
+import com.gantree.cab.mailbox.DEFAULT_LANG
 import com.gantree.cab.mailbox.DEFAULT_PHOTO_SIZE
 import com.gantree.cab.mailbox.DEFAULT_THEME
 import com.gantree.cab.mailbox.knownTheme
 import com.gantree.cab.mailbox.liveBearer
 import com.gantree.cab.mailbox.parseFont
+import com.gantree.cab.mailbox.parseLang
 import com.gantree.cab.mailbox.parsePhotoSize
 import com.gantree.cab.mailbox.parseTheme
 
@@ -73,6 +75,11 @@ class CabPrefs(ctx: Context) {
     get() = p.getString(FOLLOW_THEME, "on") != "off"
     set(value) { p.edit().putString(FOLLOW_THEME, if (value) "on" else "off").apply() }
 
+  /** Settings → Language. Same ids as `localStorage["pendant.lang"]`; junk → `en`. */
+  var lang: String
+    get() = parseLang(p.getString(LANG, DEFAULT_LANG))
+    set(value) { p.edit().putString(LANG, parseLang(value)).apply() }
+
   /** Header mic: hold-to-talk instead of typing. Off unless it says `"on"` — same as `pendant.voice`. */
   var voice: Boolean
     get() = p.getString(VOICE, "off") == "on"
@@ -129,6 +136,7 @@ class CabPrefs(ctx: Context) {
     private const val PHOTO = "photo"
     private const val BACKDROP = "backdrop"
     private const val FOLLOW_THEME = "followTheme"
+    private const val LANG = "lang"
     private const val VOICE = "voice"
     private const val VOICE_OFFERED = "voiceOffered"
     private const val ROOM_THEME = "roomTheme"

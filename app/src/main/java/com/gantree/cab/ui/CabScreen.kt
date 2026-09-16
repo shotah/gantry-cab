@@ -70,6 +70,7 @@ import com.gantree.cab.ChatLine
 import com.gantree.cab.R
 import com.gantree.cab.composeKey
 import com.gantree.cab.dev.SAMPLE_IDS
+import com.gantree.cab.mailbox.DEFAULT_LANG
 import com.gantree.cab.mailbox.DEFAULT_PHOTO_SIZE
 import com.gantree.cab.mailbox.SlashCommand
 import com.gantree.cab.mailbox.SpeakPhase
@@ -139,6 +140,8 @@ fun CabScreen(
   onMicAsk: () -> Unit = {},
   onLocAsk: () -> Unit = {},
   onNotifyAsk: () -> Unit = {},
+  langId: String = DEFAULT_LANG,
+  onLang: (String) -> Unit = {},
 ) {
   val scheme = MaterialTheme.colorScheme
   var settingsOpen by remember { mutableStateOf(false) }
@@ -265,6 +268,7 @@ fun CabScreen(
             onText = onVoice,
             photo = photo,
             onPhotoClear = onPhotoClear,
+            lang = langId,
           )
         } else {
           CabCompose(
@@ -321,6 +325,8 @@ fun CabScreen(
           onMicAsk = onMicAsk,
           onLocAsk = onLocAsk,
           onNotifyAsk = onNotifyAsk,
+          langId = langId,
+          onLang = onLang,
         )
       } else if (googleDoor) {
         Column(

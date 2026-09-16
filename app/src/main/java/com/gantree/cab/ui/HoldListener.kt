@@ -8,8 +8,10 @@ import android.os.Looper
 import android.speech.RecognitionListener
 import android.speech.RecognizerIntent
 import android.speech.SpeechRecognizer
+import com.gantree.cab.mailbox.DEFAULT_LANG
 import com.gantree.cab.mailbox.LISTEN_END_MS
 import com.gantree.cab.mailbox.Utterance
+import com.gantree.cab.mailbox.speechLang
 
 /**
  * One handheld hold on Android's [SpeechRecognizer]. Press → [begin]; release →
@@ -30,19 +32,25 @@ class HoldListener(
   private var rec: SpeechRecognizer? = null
   private var utterance: Utterance? = null
   private var held = false
+  private var language = speechLang(DEFAULT_LANG)
   private val watchdog = Runnable { utterance?.finish() }
 
   val listening: Boolean
     get() = utterance != null
 
-  /** @return false when this phone has no recognizer at all (nothing to hold). */
-  fun begin(): Boolean {
+  /**
+   * @param lang BCP-47 to listen in (Settings → Language). Without it the engine
+   *   guesses from the phone locale and Japanese comes back as noise.
+   * @return false when this phone has no recognizer at all (nothing to hold).
+   */
+  fun begin(lang: String = speechLang(DEFAULT_LANG)): Boolean {
     if (utterance != null) {
       return true
     }
     if (!SpeechRecognizer.isRecognitionAvailable(ctx)) {
       return false
     }
+    language = lang
     val u = Utterance { words ->
       teardown()
       onDone(words)
@@ -116,6 +124,8 @@ class HoldListener(
 
   private fun intent(): Intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH)
     .putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
+    .putExtra(RecognizerIntent.EXTRA_LANGUAGE, language)
+    .putExtra(RecognizerIntent.EXTRA_LANGUAGE_PREFERENCE, language)
     .putExtra(RecognizerIntent.EXTRA_PARTIAL_RESULTS, true)
     .putExtra(RecognizerIntent.EXTRA_MAX_RESULTS, 1)
     .putExtra(RecognizerIntent.EXTRA_CALLING_PACKAGE, ctx.packageName)

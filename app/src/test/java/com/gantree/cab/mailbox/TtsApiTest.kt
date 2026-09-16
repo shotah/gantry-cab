@@ -51,7 +51,20 @@ class TtsApiTest {
     assertEquals("Bearer jwe", req.getHeader("Authorization"))
     assertNull(req.getHeader("Cookie"))
     assertTrue(req.getHeader("Content-Type").orEmpty().startsWith("application/json"))
-    assertEquals("On my way.", JSONObject(req.body.readUtf8()).getString("text"))
+    val sent = JSONObject(req.body.readUtf8())
+    assertEquals("On my way.", sent.getString("text"))
+    assertEquals("en", sent.getString("lang"))
+  }
+
+  @Test
+  fun languageRidesOnTheBodyAsTheSettingsId() {
+    server.enqueue(MockResponse().setBody(Buffer().write(byteArrayOf(1))))
+    api.synthesize(server.url("/").toString(), "jwe", "今夜は雨です。", lang = "ja")
+    assertEquals("ja", JSONObject(server.takeRequest().body.readUtf8()).getString("lang"))
+    // Never the recognizer tag, never junk: the Worker would drop it and speak the default anyway.
+    server.enqueue(MockResponse().setBody(Buffer().write(byteArrayOf(1))))
+    api.synthesize(server.url("/").toString(), "jwe", "hi", lang = "zh-CN")
+    assertEquals("en", JSONObject(server.takeRequest().body.readUtf8()).getString("lang"))
   }
 
   @Test

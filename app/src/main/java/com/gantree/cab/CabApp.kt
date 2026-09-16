@@ -61,7 +61,7 @@ class CabApp : Application() {
     prefs = CabPrefs(this)
     avatar = AvatarApi(cache = BlobCache(File(cacheDir, "blobs")))
     thread = ThreadCache(File(cacheDir, "thread.json"))
-    voice = KitVoice(TtsApi(), { prefs.origin }, { prefs.bearer }, mouth::setHint)
+    voice = KitVoice(TtsApi(), { prefs.origin }, { prefs.bearer }, mouth::setHint, { prefs.lang })
     // Paint what we knew last time before any socket or GET answers.
     mouth.setRoomTheme(prefs.roomTheme(prefs.slug))
     openThread()

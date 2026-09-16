@@ -20,6 +20,7 @@ import com.gantree.cab.mailbox.jpegFromUri
 import com.gantree.cab.mailbox.googleSignInHint
 import com.gantree.cab.mailbox.mailboxSignedInHint
 import com.gantree.cab.mailbox.normalizeMailboxOrigin
+import com.gantree.cab.mailbox.parseLang
 import com.gantree.cab.mailbox.parseSlug
 import com.gantree.cab.mailbox.fetchedRoomTheme
 import com.gantree.cab.mailbox.paintedTheme
@@ -65,6 +66,7 @@ class CabViewModel(private val app: CabApp) : ViewModel() {
   private val _stagedPhoto = MutableStateFlow<String?>(null)
   private val _voice = MutableStateFlow(app.prefs.voice)
   private val _voiceOffered = MutableStateFlow(app.prefs.voiceOffered)
+  private val _lang = MutableStateFlow(app.prefs.lang)
   val origin = _origin.asStateFlow()
   val slug = _slug.asStateFlow()
   val spike = _spike.asStateFlow()
@@ -86,6 +88,8 @@ class CabViewModel(private val app: CabApp) : ViewModel() {
   val voice = _voice.asStateFlow()
   /** `/api/auth/config` `voice`. Off → no mic, no bar, whatever the pref says. */
   val voiceOffered = _voiceOffered.asStateFlow()
+  /** Settings → Language: what the hold bar hears and what Kit's voice speaks. Mirrors `pendant.lang`. */
+  val lang = _lang.asStateFlow()
   val speakPhase = app.voice.phase.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), SpeakPhase.IDLE)
   val up = app.mouth.up.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), false)
   val hint = app.mouth.hint.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), "")
@@ -254,6 +258,12 @@ class CabViewModel(private val app: CabApp) : ViewModel() {
   /** Hold pressed: quiet Kit so the mic does not hear the reply. */
   fun hushVoice() {
     app.voice.hush()
+  }
+
+  fun setLang(v: String) {
+    val id = parseLang(v)
+    _lang.value = id
+    app.prefs.lang = id
   }
 
   fun showSample(id: String) {

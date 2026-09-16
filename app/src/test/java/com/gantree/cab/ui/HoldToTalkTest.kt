@@ -15,6 +15,7 @@ import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performTouchInput
 import androidx.test.core.app.ApplicationProvider
+import com.gantree.cab.mailbox.DEFAULT_LANG
 import com.gantree.cab.mailbox.HoldState
 import com.gantree.cab.mailbox.LISTEN_END_MS
 import com.gantree.cab.mailbox.SpeakPhase
@@ -57,7 +58,7 @@ class HoldToTalkTest {
     ShadowSpeechRecognizer.reset()
   }
 
-  private fun bar(micGranted: Boolean = true, disabled: Boolean = false) {
+  private fun bar(micGranted: Boolean = true, disabled: Boolean = false, lang: String = DEFAULT_LANG) {
     compose.setContent {
       HoldToTalk(
         disabled = disabled,
@@ -66,6 +67,7 @@ class HoldToTalkTest {
         onMicAsk = { micAsks++ },
         onHoldStart = { holds++ },
         onText = { sent += it },
+        lang = lang,
       )
     }
   }
@@ -91,6 +93,7 @@ class HoldToTalkTest {
     compose.onNodeWithText(holdLabel(HoldState.LISTENING)).assertIsDisplayed()
     val intent = recognizer().lastRecognizerIntent
     assertTrue(intent.getBooleanExtra(RecognizerIntent.EXTRA_PARTIAL_RESULTS, false))
+    assertEquals("en-US", intent.getStringExtra(RecognizerIntent.EXTRA_LANGUAGE))
     recognizer().triggerOnPartialResults(words("hello"))
 
     compose.onNodeWithContentDescription("Hold to talk").performTouchInput { up() }
@@ -156,6 +159,17 @@ class HoldToTalkTest {
     idle()
 
     assertEquals(listOf("first part second part"), sent)
+  }
+
+  @Test
+  fun settingsLanguageIsWhatTheRecognizerListensIn() {
+    bar(lang = "ja")
+    compose.onNodeWithContentDescription("Hold to talk").performTouchInput { down(center) }
+    idle()
+
+    val intent = recognizer().lastRecognizerIntent
+    assertEquals("ja-JP", intent.getStringExtra(RecognizerIntent.EXTRA_LANGUAGE))
+    assertEquals("ja-JP", intent.getStringExtra(RecognizerIntent.EXTRA_LANGUAGE_PREFERENCE))
   }
 
   @Test

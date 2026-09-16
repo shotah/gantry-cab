@@ -93,6 +93,7 @@ class MainActivity : ComponentActivity() {
       val voiceOn by vm.voice.collectAsStateWithLifecycle()
       val voiceOffered by vm.voiceOffered.collectAsStateWithLifecycle()
       val speakPhase by vm.speakPhase.collectAsStateWithLifecycle()
+      val lang by vm.lang.collectAsStateWithLifecycle()
       val granted by permits
       CabTheme(themeId = painted, fontId = font) {
         CabScreen(
@@ -175,6 +176,8 @@ class MainActivity : ComponentActivity() {
             requestLoc()
           },
           onNotifyAsk = ::requestNotify,
+          langId = lang,
+          onLang = vm::setLang,
         )
       }
     }

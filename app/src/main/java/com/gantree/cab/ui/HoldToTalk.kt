@@ -42,10 +42,12 @@ import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
+import com.gantree.cab.mailbox.DEFAULT_LANG
 import com.gantree.cab.mailbox.HoldState
 import com.gantree.cab.mailbox.SpeakPhase
 import com.gantree.cab.mailbox.holdLabel
 import com.gantree.cab.mailbox.speakBarLabel
+import com.gantree.cab.mailbox.speechLang
 
 /**
  * Push-to-talk. Voice mode swaps the whole compose row for this one wide bar
@@ -63,6 +65,8 @@ fun HoldToTalk(
   onText: (String) -> Unit,
   photo: String? = null,
   onPhotoClear: () -> Unit = {},
+  /** Settings → Language id; the recognizer listens in its BCP-47. */
+  lang: String = DEFAULT_LANG,
 ) {
   val scheme = MaterialTheme.colorScheme
   val context = LocalContext.current
@@ -71,6 +75,7 @@ fun HoldToTalk(
   val text by rememberUpdatedState(onText)
   val askMic by rememberUpdatedState(onMicAsk)
   val holdStart by rememberUpdatedState(onHoldStart)
+  val tongue by rememberUpdatedState(speechLang(lang))
   val listener = remember(context) {
     HoldListener(
       context,
@@ -105,7 +110,7 @@ fun HoldToTalk(
     }
     holdStart()
     haptics.performHapticFeedback(HapticFeedbackType.LongPress)
-    if (!listener.begin()) {
+    if (!listener.begin(tongue)) {
       state = HoldState.BLOCKED
       return
     }

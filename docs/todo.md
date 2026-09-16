@@ -50,9 +50,12 @@ letting another app read the thread are the failures that matter.
       `voice`) swaps compose for a hold-to-talk bar; release sends
       `inbound` + `input: spoken`; the next live `reply` is read via
       `POST /api/tts`. Access block in Settings asks mic / location /
-      notifications. Auto untouched. Detail:
-      [pendant_handoff.md](pendant_handoff.md) Pocket voice.
-      `SpeakableTest` / `SpeechTest` / `SpeakerTest` / `TtsApiTest`.
+      notifications. Settings → Language (`en` / `ja` / `zh`) sets the
+      recognizer locale and rides on `/api/tts` as `lang`. Auto
+      untouched. Detail: [pendant_handoff.md](pendant_handoff.md)
+      Pocket voice. `SpeakableTest` / `SpeechTest` / `SpeakerTest` /
+      `TtsApiTest` / `LangTest` / `HoldToTalkTest` (Robolectric +
+      Compose touch).
 - [ ] **"Drop a pin" launcher shortcut.** Parity P2. Pendant has a PWA shortcut `/?pin=1`. Cab already pushes a conversation shortcut; add a static `shortcuts.xml` that starts `MailboxService.sendPin`.
 - [ ] **Tag slow/IO tests** (MockWebServer, Java2D) with a JUnit `Category` so `make watch` can exclude them.
 
@@ -66,7 +69,7 @@ letting another app read the thread are the failures that matter.
 
 ## Large
 
-- [ ] **`:mailbox` JVM module.** Everything the 70 % bar covers is Android-free (`Wire`, `Text`, `MailboxUrl`, `MailboxConnect`, `Emoji`, `Slash`, `Photo`, `Jpeg`, `Look`, `GeoHint`, `Avatar`, `GoogleHint`, `Speakable`, `Speech`, `Speaker`, `Mouth`/`ChatLine`; OkHttp: `AuthApi`, `AvatarApi`, `TtsApi`, `MailboxClient`). `include(":mailbox")` with `org.jetbrains.kotlin.jvm` (match AGP's Kotlin, currently 2.4.20). `./gradlew :mailbox:test` then skips AGP — ~2 s cold for the code you touch most. `org.json`: `compileOnly` + `testImplementation`, platform class wins on device (or `kotlinx.serialization`). Point `scripts/jacoco-pct.sh` at `mailbox/build/reports/jacoco/test/jacocoTestReport.xml`; add `MailboxClient` to the gated list. `:app` stays thin (Activity, services, Compose, ViewModel, prefs).
+- [ ] **`:mailbox` JVM module.** Everything the 70 % bar covers is Android-free (`Wire`, `Text`, `MailboxUrl`, `MailboxConnect`, `Emoji`, `Slash`, `Photo`, `Jpeg`, `Look`, `GeoHint`, `Avatar`, `GoogleHint`, `Speakable`, `Speech`, `Speaker`, `Lang`, `Mouth`/`ChatLine`; OkHttp: `AuthApi`, `AvatarApi`, `TtsApi`, `MailboxClient`). `include(":mailbox")` with `org.jetbrains.kotlin.jvm` (match AGP's Kotlin, currently 2.4.20). `./gradlew :mailbox:test` then skips AGP — ~2 s cold for the code you touch most. `org.json`: `compileOnly` + `testImplementation`, platform class wins on device (or `kotlinx.serialization`). Point `scripts/jacoco-pct.sh` at `mailbox/build/reports/jacoco/test/jacocoTestReport.xml`; add `MailboxClient` to the gated list. `:app` stays thin (Activity, services, Compose, ViewModel, prefs).
 - [ ] **Test the Android side.** `MailboxService`, `CabViewModel`, `CabPrefs`, `CabCarAppService` have no tests. `CabNotifier` + `ReplyService` are covered by `CabNotifierAutoContractTest` (Robolectric, SDK 34: the Android Auto notification contract and the spoken-reply → socket path — keep that one, it is the car). For the rest prefer extracting decisions into `:mailbox` (`retryDelay`, `shouldReconnect`, outbox flush order) over more Robolectric. Unlocks after the module split.
 - [ ] **Replace hand-painted screenshots.** `DocsShot.kt` is 500 lines of Java2D that must track every Compose change. Use Compose Preview Screenshot Testing (`com.android.compose.screenshot`) or Roborazzi against `@Preview`s in `ShotScenes.kt`. `Type.kt` (bundled Noto Sans) is what LayoutLib needed. `make shot` becomes a Gradle `updateScreenshots` task, not `CAB_WRITE_SHOTS=1`. After the UI settles.
 
