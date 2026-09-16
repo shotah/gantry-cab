@@ -50,7 +50,7 @@ letting another app read the thread are the failures that matter.
       `voice`) swaps compose for a hold-to-talk bar; release sends
       `inbound` + `input: spoken`; the next live `reply` is read via
       `POST /api/tts`. Access block in Settings asks mic / location /
-      notifications. Settings → Language (`en` / `ja` / `zh`) sets the
+      notifications. Settings → Language (`en` / `ja` / `zh` / `vi`) sets the
       recognizer locale and rides on `/api/tts` as `lang`. Auto
       untouched. Detail: [pendant_handoff.md](pendant_handoff.md)
       Pocket voice. `SpeakableTest` / `SpeechTest` / `SpeakerTest` /

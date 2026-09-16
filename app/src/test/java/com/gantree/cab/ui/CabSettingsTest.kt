@@ -94,9 +94,11 @@ class CabSettingsTest {
     compose.onNodeWithContentDescription("Extra large").performClick()
     open("Language")
     compose.onNodeWithContentDescription("日本語 · Japanese").performClick()
+    open("Language")
+    compose.onNodeWithContentDescription("Tiếng Việt · Vietnamese").performClick()
     open("Photo size")
     compose.onNodeWithContentDescription("Small · 640 px").performClick()
-    assertEquals(listOf("font" to "xl", "lang" to "ja", "photo" to "small"), picked)
+    assertEquals(listOf("font" to "xl", "lang" to "ja", "lang" to "vi", "photo" to "small"), picked)
   }
 
   @Test

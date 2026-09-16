@@ -18,7 +18,7 @@ fun ttsUrl(origin: String): String = httpOrigin(origin) + "/api/tts"
 /**
  * `POST /api/tts { text, lang }` → MP3 bytes. The same Worker route the PWA
  * plays through; the phone sends its Bearer session instead of the cookie.
- * `lang` is the Settings → Language id (`en` / `ja` / `zh`); the Worker keeps
+ * `lang` is the Settings → Language id (`en` / `ja` / `zh` / `vi`); the Worker keeps
  * the speaker and swaps the Chirp locale, and drops an id it does not know.
  * 404 until the Worker has a Chirp key (or `VOICE=off`), 401 when the session
  * is gone, 429 too many, 502 when Google refused. Nothing is stored and the

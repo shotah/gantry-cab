@@ -15,6 +15,7 @@ val LANGUAGES = listOf(
   Language("en", "English", "en-US"),
   Language("ja", "日本語 · Japanese", "ja-JP"),
   Language("zh", "中文 · Mandarin", "zh-CN"),
+  Language("vi", "Tiếng Việt · Vietnamese", "vi-VN"),
 )
 val LANG_IDS = LANGUAGES.map { it.id }
 const val DEFAULT_LANG = "en"

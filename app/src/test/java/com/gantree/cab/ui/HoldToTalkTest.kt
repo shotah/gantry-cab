@@ -173,6 +173,15 @@ class HoldToTalkTest {
   }
 
   @Test
+  fun vietnameseListensInViVn() {
+    bar(lang = "vi")
+    compose.onNodeWithContentDescription("Hold to talk").performTouchInput { down(center) }
+    idle()
+
+    assertEquals("vi-VN", recognizer().lastRecognizerIntent.getStringExtra(RecognizerIntent.EXTRA_LANGUAGE))
+  }
+
+  @Test
   fun noMicAsksInsteadOfListening() {
     bar(micGranted = false)
     compose.onNodeWithContentDescription("Hold to talk").performTouchInput { down(center) }

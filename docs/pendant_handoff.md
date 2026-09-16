@@ -124,10 +124,10 @@ unless that walk is the ticket ([todo.md](todo.md) Not this version).
       speak, `error` disarms (`mailbox/Speaker.kt`). Header says
       `Live · voice…` / `· speaking`. Settings → Access: Enable
       microphone / location / notifications. **Settings → Language**
-      (`en` / `ja` / `zh`, default `en`, `CabPrefs.lang` = the same
-      ids as `pendant.lang`; only shown when voice is published):
+      (`en` / `ja` / `zh` / `vi`, default `en`, `CabPrefs.lang` = the
+      same ids as `pendant.lang`; only shown when voice is published):
       the hold bar listens in its BCP-47 (`EXTRA_LANGUAGE` +
-      `EXTRA_LANGUAGE_PREFERENCE`, `zh` → `zh-CN`) and `/api/tts` gets
+      `EXTRA_LANGUAGE_PREFERENCE`, `zh` → `zh-CN`, `vi` → `vi-VN`) and `/api/tts` gets
       additive `lang` so the Worker swaps the Chirp locale and keeps
       the speaker (`mailbox/Lang.kt`; pendant `frontends.md`
       Language). Not on the mailbox wire. **Auto is untouched**:
