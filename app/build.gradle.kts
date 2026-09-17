@@ -138,7 +138,7 @@ dependencies {
   implementation("androidx.lifecycle:lifecycle-viewmodel-ktx:2.11.0")
   implementation("androidx.lifecycle:lifecycle-service:2.11.0")
   implementation("androidx.core:core-ktx:1.19.0")
-  implementation("com.squareup.okhttp3:okhttp:4.12.0")
+  implementation("com.squareup.okhttp3:okhttp:5.5.0")
   implementation("androidx.car.app:app:1.7.0")
   implementation("androidx.car.app:app-projected:1.7.0")
   implementation("androidx.credentials:credentials:1.6.0")
@@ -153,7 +153,7 @@ dependencies {
   implementation("io.coil-kt.coil3:coil-network-okhttp:3.6.2")
   testImplementation("junit:junit:4.13.2")
   testImplementation("org.json:json:20260814")
-  testImplementation("com.squareup.okhttp3:mockwebserver:4.12.0")
+  testImplementation("com.squareup.okhttp3:mockwebserver:5.5.0")
   testImplementation("org.robolectric:robolectric:4.17")
   testImplementation("androidx.test:core:1.7.0")
   // Compose under Robolectric: HoldToTalkTest presses and lifts on the bar.
