@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -23,10 +24,12 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.input.pointer.changedToUp
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.zIndex
 import coil3.compose.AsyncImage
 import com.gantree.cab.ChatLine
 import com.gantree.cab.mailbox.REACTION_PALETTE
@@ -44,54 +47,71 @@ internal fun ChatTurn(
 ) {
   val scheme = MaterialTheme.colorScheme
   val mine = line.fromYou
+  val chip = line.reaction
+  val showChip = chip != null && !picking
   Column(
     modifier = Modifier.fillMaxWidth(),
     horizontalAlignment = if (mine) Alignment.End else Alignment.Start,
   ) {
-    Surface(
-      color = if (mine) scheme.primaryContainer else scheme.surfaceContainerHighest,
-      contentColor = if (mine) scheme.onPrimaryContainer else scheme.onSurface,
-      shape = if (mine) {
-        RoundedCornerShape(20.dp, 20.dp, 4.dp, 20.dp)
-      } else {
-        RoundedCornerShape(20.dp, 20.dp, 20.dp, 4.dp)
-      },
-      tonalElevation = 1.dp,
+    Box(
       modifier = Modifier
         .fillMaxWidth(0.82f)
-        .then(if (reactable) Modifier.reactHold(onOpenPicker) else Modifier),
+        .padding(bottom = if (showChip) 12.dp else 0.dp),
     ) {
-      Column(
-        modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
-        verticalArrangement = Arrangement.spacedBy(6.dp),
+      Surface(
+        color = if (mine) scheme.primaryContainer else scheme.surfaceContainerHighest,
+        contentColor = if (mine) scheme.onPrimaryContainer else scheme.onSurface,
+        shape = if (mine) {
+          RoundedCornerShape(20.dp, 20.dp, 4.dp, 20.dp)
+        } else {
+          RoundedCornerShape(20.dp, 20.dp, 20.dp, 4.dp)
+        },
+        tonalElevation = 1.dp,
+        modifier = Modifier
+          .fillMaxWidth()
+          .testTag("chat-bubble")
+          .then(if (reactable) Modifier.reactHold(onOpenPicker) else Modifier),
       ) {
-        if (line.kind == "push") {
-          Text("Ping", style = MaterialTheme.typography.labelSmall, color = scheme.onSurfaceVariant)
-        }
-        line.photo?.let { ChatPhoto(it) }
-        if (line.text.isNotBlank()) {
-          ChatMarkdown(text = line.text, draft = line.kind == "draft")
-        }
-        if (mine && line.pending) {
-          Text("sending", style = MaterialTheme.typography.labelSmall, color = scheme.onSurfaceVariant)
-        }
-        if (mine && line.failed != null) {
-          Text(
-            line.failed,
-            style = MaterialTheme.typography.labelSmall,
-            color = scheme.error,
-            modifier = Modifier.semantics { contentDescription = "not sent" },
-          )
+        Column(
+          modifier = Modifier.padding(
+            start = 14.dp,
+            top = 10.dp,
+            end = 14.dp,
+            bottom = if (showChip) 16.dp else 10.dp,
+          ),
+          verticalArrangement = Arrangement.spacedBy(6.dp),
+        ) {
+          if (line.kind == "push") {
+            Text("Ping", style = MaterialTheme.typography.labelSmall, color = scheme.onSurfaceVariant)
+          }
+          line.photo?.let { ChatPhoto(it) }
+          if (line.text.isNotBlank()) {
+            ChatMarkdown(text = line.text, draft = line.kind == "draft")
+          }
+          if (mine && line.pending) {
+            Text("sending", style = MaterialTheme.typography.labelSmall, color = scheme.onSurfaceVariant)
+          }
+          if (mine && line.failed != null) {
+            Text(
+              line.failed,
+              style = MaterialTheme.typography.labelSmall,
+              color = scheme.error,
+              modifier = Modifier.semantics { contentDescription = "not sent" },
+            )
+          }
         }
       }
-    }
-    val chip = line.reaction
-    if (chip != null && !picking) {
-      ReactionChip(
-        emoji = chip,
-        fromYou = mine,
-        onClick = if (reactable) onOpenPicker else null,
-      )
+      if (chip != null && !picking) {
+        ReactionChip(
+          emoji = chip,
+          fromYou = mine,
+          onClick = if (reactable) onOpenPicker else null,
+          modifier = Modifier
+            .align(if (mine) Alignment.BottomEnd else Alignment.BottomStart)
+            .offset(x = if (mine) (-8).dp else 8.dp, y = 10.dp)
+            .zIndex(1f),
+        )
+      }
     }
     if (picking) {
       ReactionPicker(current = line.reaction, onPick = onPick)
@@ -100,7 +120,12 @@ internal fun ChatTurn(
 }
 
 @Composable
-private fun ReactionChip(emoji: String, fromYou: Boolean, onClick: (() -> Unit)?) {
+private fun ReactionChip(
+  emoji: String,
+  fromYou: Boolean,
+  onClick: (() -> Unit)?,
+  modifier: Modifier = Modifier,
+) {
   val scheme = MaterialTheme.colorScheme
   val kitReacted = fromYou
   Surface(
@@ -108,8 +133,8 @@ private fun ReactionChip(emoji: String, fromYou: Boolean, onClick: (() -> Unit)?
     color = if (kitReacted) scheme.surfaceContainerHighest else scheme.primaryContainer,
     contentColor = if (kitReacted) scheme.onSurface else scheme.onPrimaryContainer,
     border = BorderStroke(1.dp, if (kitReacted) scheme.outline else scheme.primary),
-    modifier = Modifier
-      .padding(top = 4.dp)
+    shadowElevation = 2.dp,
+    modifier = modifier
       .semantics { contentDescription = "reaction $emoji" }
       .then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier),
   ) {
