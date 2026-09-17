@@ -20,7 +20,7 @@ class ReplyService : Service() {
           MailboxService.sendSpoken(this, text)
         }
       }
-      ACTION_READ -> CabNotifier.dismissKit(this)
+      ACTION_READ -> MailboxService.markRead(this)
     }
     stopSelf(startId)
     return START_NOT_STICKY

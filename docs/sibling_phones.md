@@ -30,6 +30,25 @@ store. The bytes were on the DO the whole time.
 After the Worker fans inbound to `sub:<userId>`, the sweep is
 Doze insurance, not how browser turns arrive. Do not rip it out.
 
+## Cross-mouth cards (seen)
+
+Pendant shipped this on 2026-09-17
+([frontends.md → Seen](https://github.com/shotah/gantry-pendant/blob/main/docs/frontends.md)).
+Cab matches that mouth contract. No lockstep APK: an old build drops
+the `seen` key and keeps its card.
+
+| Signal | Cab |
+| --- | --- |
+| Live sibling `inbound` (typed on the PWA) | `MailboxService` dismisses the Kit HUN. The inbound already paints as you. |
+| `ack` with `seen: true` | Same dismiss. `Mouth.ingest` still acks by id (no-op when there is none). A plain `ack` is delivery and does nothing new. |
+| Phone or car thread on screen | Connect `ack since` carries `seen: true`. A sweep or a background FGS redial does not. Opening the thread also sends a bare `{ kind: "ack", seen: true }` so a socket that was already up tells the PWA. |
+| Live `reply` / `push` while looking | `{ kind: "ack", id, seen: true }` |
+| Mark as read / swipe | Bare `seen` ack if the socket is up; local dismiss either way |
+
+**Honest limit, the other way.** A hidden PWA tab has no socket.
+Cab cannot close that tray from the phone; opening the PWA does.
+Silent Web Push is out.
+
 ## What Cab does not do
 
 - Do not flash Offline or clear the thread to "sync".
@@ -54,3 +73,7 @@ sockets up, deployed origin:
    it restamps an id it sent. No new required field.
 4. Cab sweep still runs. After the fan it is mostly "socket looks up
    but is frozen"; it is not how sibling turns arrive.
+5. Type in the PWA — Cab's Kit card goes away without opening Cab.
+   Open Cab without typing — the PWA tray goes away if that tab is
+   still visible. A closed PWA tab keeps its Web Push cards until it
+   is opened.

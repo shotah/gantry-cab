@@ -373,6 +373,17 @@ class MouthTest {
   }
 
   @Test
+  fun aSeenAckIsNotATurnAndBareSeenLeavesPendingAlone() {
+    val mouth = Mouth()
+    mouth.add(ChatLine("a1", true, "hi", "inbound", pending = true))
+    assertFalse(mouth.ingest(WireFrame(kind = "ack", seen = true)))
+    assertTrue(mouth.lines.value.single().pending)
+    assertEquals(1, mouth.lines.value.size)
+    assertFalse(mouth.ingest(WireFrame(kind = "ack", id = "a1", seen = true)))
+    assertFalse(mouth.lines.value.single().pending)
+  }
+
+  @Test
   fun catchUpPaintsBySeqAndKeepsADraftLast() {
     val mouth = Mouth()
     mouth.ingest(WireFrame(kind = "reply", id = "b", text = "second", seq = 2, at = 20L))

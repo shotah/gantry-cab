@@ -190,6 +190,7 @@ class MainActivity : ComponentActivity() {
     // The thread is on screen: the shown turns are read. Same as Auto's mark-as-read
     // and a swipe — otherwise the card stacks until the next Kit reply re-posts the backlog.
     CabNotifier.dismissKit(this)
+    MailboxService.sendSeenAck()
     // What the browser sent while this was in the background comes over on a connect flush.
     MailboxService.sweep()
   }

@@ -22,6 +22,8 @@ class MailboxClient(
     .connectTimeout(15, TimeUnit.SECONDS)
     .readTimeout(0, TimeUnit.SECONDS)
     .build(),
+  /** Phone or car thread on screen. A sweep must not look like reading. */
+  private val watching: () -> Boolean = { false },
 ) {
   /** One dial. Callbacks from a line that is no longer [line] are noise. */
   private class Line
@@ -137,7 +139,11 @@ class MailboxClient(
         openedAt = System.currentTimeMillis()
         up.set(true)
         val since = synchronized(seen) { sinceLocked() }
-        since?.let { webSocket.send(encodeFrame(ackSince(it))) }
+        val looking = replacing == null && watching()
+        when {
+          since != null -> webSocket.send(encodeFrame(ackSince(since, seen = looking)))
+          looking -> webSocket.send(encodeFrame(ackSeen()))
+        }
         onState(true)
       }
 

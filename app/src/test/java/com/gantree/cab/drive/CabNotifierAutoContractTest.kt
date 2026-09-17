@@ -172,6 +172,15 @@ class CabNotifierAutoContractTest {
   }
 
   @Test
+  fun markAsReadDismissesWhenTheSocketIsDown() {
+    post("one")
+    val read = action(post("two"), NotificationCompat.Action.SEMANTIC_ACTION_MARK_AS_READ)
+    val fired = Intent(shadowOf(read.actionIntent).savedIntent)
+    Robolectric.buildService(ReplyService::class.java, fired).create().startCommand(0, 1)
+    assertNull(shadowOf(nm).getNotification(CabNotifier.MESSAGE_ID))
+  }
+
+  @Test
   fun spokenReplyFromAutoWakesTheMailboxSocket() {
     val reply = action(post("where are you"), NotificationCompat.Action.SEMANTIC_ACTION_REPLY)
     val fired = Intent(shadowOf(reply.actionIntent).savedIntent)

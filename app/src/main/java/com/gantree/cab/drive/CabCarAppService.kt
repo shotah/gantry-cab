@@ -55,7 +55,7 @@ class CabThreadScreen(carContext: CarContext) : Screen(carContext) {
   private val you = Person.Builder().setName("You").setKey("you").build()
   private val conversationCallback = object : ConversationCallback {
     override fun onMarkAsRead() {
-      CabNotifier.dismissKit(carContext)
+      MailboxService.markRead(carContext)
     }
 
     override fun onTextReply(replyText: String) {
@@ -73,6 +73,8 @@ class CabThreadScreen(carContext: CarContext) : Screen(carContext) {
         when (event) {
           Lifecycle.Event.ON_START -> {
             app.carThreadVisible = true
+            CabNotifier.dismissKit(carContext)
+            MailboxService.sendSeenAck()
             MailboxService.sweep()
           }
           Lifecycle.Event.ON_STOP, Lifecycle.Event.ON_DESTROY -> app.carThreadVisible = false

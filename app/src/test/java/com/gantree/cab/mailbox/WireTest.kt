@@ -203,6 +203,42 @@ class WireTest {
     val got = parseFrame(encodeFrame(ackSince("abc")))
     assertEquals("ack", got?.kind)
     assertEquals("abc", got?.since)
+    assertNull(got?.seen)
+    assertFalse(encodeFrame(ackSince("abc")).contains("seen"))
+  }
+
+  @Test
+  fun seenIsTrueOnlyOnTheWire() {
+    val since = parseFrame(encodeFrame(ackSince("42", seen = true)))!!
+    assertEquals("ack", since.kind)
+    assertEquals("42", since.since)
+    assertEquals(true, since.seen)
+    assertTrue(encodeFrame(since).contains("\"seen\":true"))
+    val perId = parseFrame(encodeFrame(ackSeen("r7")))!!
+    assertEquals("r7", perId.id)
+    assertEquals(true, perId.seen)
+    val bare = parseFrame(encodeFrame(ackSeen()))!!
+    assertNull(bare.id)
+    assertNull(bare.since)
+    assertEquals(true, bare.seen)
+    assertEquals(true, parseFrame("""{"kind":"ack","seen":true,"user_id":"1182"}""")!!.seen)
+    assertNull(parseFrame("""{"kind":"ack","seen":false}""")!!.seen)
+    assertNull(parseFrame("""{"kind":"ack","seen":"true"}""")!!.seen)
+    assertNull(parseFrame("""{"kind":"ack"}""")!!.seen)
+    assertNull(parseSeen(false))
+    assertNull(parseSeen(1))
+    assertEquals(true, parseSeen(true))
+  }
+
+  @Test
+  fun siblingInboundAndSeenAckDismissTheKitCard() {
+    assertTrue(dismissKitOnFrame("inbound", replay = false, fresh = true, seen = null))
+    assertFalse(dismissKitOnFrame("inbound", replay = true, fresh = true, seen = null))
+    assertFalse(dismissKitOnFrame("inbound", replay = false, fresh = false, seen = null))
+    assertTrue(dismissKitOnFrame("ack", replay = false, fresh = false, seen = true))
+    assertFalse(dismissKitOnFrame("ack", replay = false, fresh = false, seen = null))
+    assertFalse(dismissKitOnFrame("reply", replay = false, fresh = true, seen = null))
+    assertFalse(dismissKitOnFrame("push", replay = false, fresh = true, seen = true))
   }
 
   @Test

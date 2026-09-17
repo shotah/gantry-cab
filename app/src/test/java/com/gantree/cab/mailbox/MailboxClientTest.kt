@@ -74,6 +74,7 @@ class MailboxClientTest {
       assertTrue(up.await(5, TimeUnit.SECONDS))
       assertTrue(ack.await(5, TimeUnit.SECONDS))
       assertTrue(acks.any { it.contains("\"since\":\"old\"") })
+      assertTrue(acks.none { it.contains("\"seen\"") })
       val ws = peer.get()
       ws.send("""{"kind":"reply","id":"a","text":"hi"}""")
       ws.send("""{"kind":"reply","id":"a","text":"again"}""")
@@ -390,6 +391,50 @@ class MailboxClientTest {
       assertTrue(up.await(5, TimeUnit.SECONDS))
       assertTrue(ack.await(5, TimeUnit.SECONDS))
       assertTrue(acks.any { it.contains("\"since\":\"2\"") })
+    } finally {
+      client.stop()
+    }
+  }
+
+  @Test
+  fun connectWhileWatchingMarksAckSeenAndASweepDoesNot() {
+    val acks = CopyOnWriteArrayList<String>()
+    val firstAck = CountDownLatch(1)
+    val secondAck = CountDownLatch(1)
+    val firstOpen = CountDownLatch(1)
+    val listener = object : WebSocketListener() {
+      override fun onOpen(webSocket: WebSocket, response: Response) {
+        firstOpen.countDown()
+      }
+
+      override fun onMessage(webSocket: WebSocket, text: String) {
+        acks.add(text)
+        if (acks.size == 1) firstAck.countDown()
+        if (acks.size >= 2) secondAck.countDown()
+      }
+
+      override fun onClosing(webSocket: WebSocket, code: Int, reason: String) {
+        webSocket.close(code, reason)
+      }
+    }
+    server.enqueue(MockResponse().withWebSocketUpgrade(listener))
+    server.enqueue(MockResponse().withWebSocketUpgrade(listener))
+    val client = MailboxClient(
+      onFrame = {},
+      onState = {},
+      watching = { true },
+    )
+    client.remember("old", 3)
+    client.start(server.url("/").toString(), "kit", "tok")
+    try {
+      assertTrue(firstOpen.await(5, TimeUnit.SECONDS))
+      assertTrue(firstAck.await(5, TimeUnit.SECONDS))
+      assertTrue(acks[0].contains("\"since\":\"3\""))
+      assertTrue(acks[0].contains("\"seen\":true"))
+      assertTrue(client.sweep(System.currentTimeMillis() + SWEEP_MIN_GAP_MS))
+      assertTrue(secondAck.await(5, TimeUnit.SECONDS))
+      assertTrue(acks.last().contains("\"since\":\"3\""))
+      assertFalse(acks.last().contains("\"seen\""))
     } finally {
       client.stop()
     }

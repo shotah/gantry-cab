@@ -4,10 +4,9 @@ Written in the Cab checkout (`gantry-cab`) on 2026-09-17 for the
 mailbox (`gantry-pendant`) and crane (`ai-gantry`) checkouts. Copy
 into `gantry-pendant/docs/`. Cab's own half is at the bottom.
 
-**Open** (everything else below is `[x]`): pendant — blank-draft
-clear when a draft is held, drop the held draft when the crane goes
-away, protocol pong under load (Walk 5). Cab — the Walk on a
-sideload.
+**Open** (everything else below is `[x]`): pendant Worker — protocol
+pong under load (Walk 5). Cab — the Walk on a sideload. PWA — Walk 3
+and 5 on the deployed origin.
 
 **Symptom on the phone.** Ask Kit something. The typing chip shows,
 the streaming draft paints, then the draft **vanishes**. Nothing for
@@ -87,28 +86,29 @@ already knows. Done in `worker/mailbox.ts`; contract in pendant
       queue, then one plain `draft` (no `replay`, no `seq`). Dropped
       on that human's `reply` / `error`. If the room hibernates
       mid-stream the phone waits for `reply` as before.
-- [x] **Blank-draft semantics: (b).** The Worker drops a `draft` with
-      missing / whitespace `text` before fan-out and it does not
-      touch the held draft. The PWA already read blank as "clear"
-      (`PhoneShell` `onmessage`, `draft` branch drops the
-      `__draft__` bubble when `text.trim()` is empty), same as Cab;
-      that path no longer fires from the wire.
-- [ ] **Push-back: a blank `draft` while a draft is held is a clear;
-      forward it.** The crane section says its only blank `draft` is
-      `Discard` (cancel / empty turn / error) — every blank is
-      intentional. Dropping them all leaves the phones with no
-      "clear" on the wire: after a cancel or an empty turn the
-      bubble sits until the next unrelated `reply` (Cab's 60 s
-      stale TTL is the only cleanup). Same guard, one condition:
-      blank + a held draft for that `sub` → fan it and drop the held
-      text; blank + nothing held → drop it (the noise case).
-- [ ] **Push-back: drop the held draft when the crane goes away.**
-      If the crane socket closes mid-answer, or no `typing` for that
-      `sub` arrives for ~60 s, forget the held draft. Otherwise every
-      phone connect flush (Cab sweeps every 2 min on screen) hands
-      back a ghost, Cab expires it 60 s later, the next flush hands
-      it back again. DO hibernation already clears it; this is the
-      awake case.
+- [x] **Blank-draft semantics: a blank is the clear, only while a
+      draft is held.** Taken from the push-back below. Blank + a held
+      draft for that `sub` → fanned as `text: ""` and the held text
+      forgotten; blank + nothing held → dropped (the noise case). The
+      PWA already reads blank as "clear" (`PhoneShell` `onmessage`,
+      `draft` branch drops the `__draft__` bubble when `text.trim()`
+      is empty), same as Cab `applyDraft`; it fires exactly when the
+      crane `Discard`s.
+- [x] **Push-back: a blank `draft` while a draft is held is a clear;
+      forward it.** Done as above. Pinned:
+      `forwards a blank draft as the clear while a draft is held, then
+      forgets it` (first blank fanned, second blank dropped, next
+      connect gets no draft).
+- [x] **Push-back: drop the held draft when the crane goes away.**
+      Both halves. `webSocketClose` / `webSocketError` on a **crane**
+      socket forget every held draft when no other crane socket is
+      open (a fresh-dial socket closing while the main one is up does
+      not count; a phone socket closing never does). And a held draft
+      expires after `HELD_DRAFT_TTL_MS` 60 s with no new words and no
+      `typing` for that `sub` — `typing` bumps it, matching Cab's
+      `DRAFT_TTL_MS` life rule. Expiry is lazy at the connect flush
+      (the only reader), so no alarm and no storage. `HeldDrafts` in
+      `lib/mailbox/draft.ts`.
 - [x] **Never fan a `reply` with no text and no images.** Refused as
       `error bad frame` back to the crane with the frame `id`;
       nothing fanned, stored, queued, or pushed. Photo-only `reply`
@@ -127,8 +127,9 @@ already knows. Done in `worker/mailbox.ts`; contract in pendant
       the Walk (5), not by reading docs. The text `ping` / `pong` the
       mailbox already does is separate and fine.
 - [x] **`frontends.md`.** Draft section: cumulative full text, blank
-      dropped, empty reply refused, connect flush may end with one
-      `draft`, fan-out guard, `typing` rate.
+      is the clear while held (dropped otherwise), empty reply
+      refused, connect flush may end with one `draft` (forgotten on
+      crane gone / 60 s quiet), fan-out guard, `typing` rate.
 
 ### Tests (`test/worker/mailbox.test.ts`)
 
@@ -140,13 +141,54 @@ listed after `close()` and throw on `send()` like workerd).
   with no answer in progress and an anonymous socket get no draft.
 - `reply` / `error` for that `sub` clears the held draft; the next
   connect gets none.
-- Blank `draft` dropped; does not clear the held one.
+- Blank `draft` with nothing held: dropped. Blank while held: fanned
+  as `text: ""`, held text forgotten, a second blank dropped.
+- Last crane socket close or error forgets every held draft; a
+  fresh-dial crane socket closing beside the main one keeps them; a
+  phone socket closing keeps them.
+- Held draft expires 60 s after the last words or `typing` (fake
+  timers); `typing` at 50 s keeps it alive at 100 s.
 - Empty `reply` refused as `bad frame`; storage untouched; photo-only
   passes.
 - Two phone sockets, same `sub`; first half-open (or throwing while
   OPEN); a following `typing`, `draft`, `reply` reach the second.
   Same for a room notice and for the crane queue decision.
 - 40 `typing` + 40 `draft` then `reply`: no `rate`; 31 replies: `rate`.
+
+---
+
+## Pendant (`gantry-pendant`) — PWA
+
+The PWA half of the same mouth. Done 2026-09-17 in
+`app/components/chat/PhoneShell.tsx` (`ws.onclose`, `onmessage`
+`typing` / `draft` / `reply` branches), together, as Cab did —
+keeping the draft without an expiry would leave a ghost on a dead
+crane. Belt and braces with the Worker's held draft.
+
+- [x] **Blank `draft` removes the bubble.** `text.trim()` empty →
+      the `__draft__` bubble is filtered out and the TTL disarms.
+      Fires exactly when the crane `Discard`s (the Worker forwards a
+      blank only while a draft is held).
+- [x] **Draft survives a socket gap.** `ws.onclose` no longer filters
+      the `__draft__` bubble (it still drops the chip and sets
+      `down`). `reply` replaces it, the connect-flush `draft`
+      refreshes it in place (same `li`, no remount), a blank clears
+      it, the TTL expires it. The unmount cleanup clears the timer.
+      Pinned: `keeps the draft through a socket gap; the connect
+      flush repaints the same bubble`.
+- [x] **Draft TTL.** `DRAFT_TTL_MS` 60 s in `lib/mailbox/draft.ts`
+      (`HELD_DRAFT_TTL_MS` is the same constant on purpose). A
+      `draftTimer` ref is armed on a `draft` whose text differs from
+      the last one, re-armed on `typing` while a draft is up, and
+      disarmed on `reply` or a blank; when it fires the bubble comes
+      down. An identical re-sent draft (the Worker's flush) is not
+      life. Runs through a socket gap — that is how a dead crane's
+      bubble still clears. Mouth-local; nothing on the wire. Pinned:
+      `drops a draft after DRAFT_TTL_MS quiet; typing and new words
+      are life, a re-sent copy is not` (fake timers: alive at 100 s
+      with `typing` at 50 s; new words re-arm; re-send at 59.999 s
+      does not; gone at 60 s), and `forgets the draft text on reply
+      so the same words paint again next turn`.
 
 ---
 

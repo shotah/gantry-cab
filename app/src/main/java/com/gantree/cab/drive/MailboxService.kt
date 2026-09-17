@@ -24,9 +24,11 @@ import com.gantree.cab.mailbox.Geo
 import com.gantree.cab.mailbox.MailboxClient
 import com.gantree.cab.mailbox.PhoneContext
 import com.gantree.cab.mailbox.WireFrame
+import com.gantree.cab.mailbox.ackSeen
 import com.gantree.cab.mailbox.applyEmoji
 import com.gantree.cab.mailbox.batteryHint
 import com.gantree.cab.mailbox.cursorOf
+import com.gantree.cab.mailbox.dismissKitOnFrame
 import com.gantree.cab.mailbox.geoFromFix
 import com.gantree.cab.mailbox.geoHint
 import com.gantree.cab.mailbox.inputHint
@@ -92,6 +94,16 @@ class MailboxService : LifecycleService() {
     if (watchingThread(app.phoneResumed, app.carThreadVisible)) {
       client?.sweep()
     }
+  }
+
+  /** Local card down, and a bare `seen` ack so the PWA / Helm drop theirs. */
+  fun markRead() {
+    CabNotifier.dismissKit(this)
+    sendSeenAck()
+  }
+
+  fun sendSeenAck() {
+    client?.send(ackSeen())
   }
 
   override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
@@ -171,6 +183,9 @@ class MailboxService : LifecycleService() {
         if (frame.kind == "theme") {
           app.prefs.putRoomTheme(slug, app.mouth.roomTheme.value)
         }
+        if (dismissKitOnFrame(frame.kind, frame.replay, fresh, frame.seen)) {
+          CabNotifier.dismissKit(this)
+        }
         if (fresh && frame.spoken()) {
           val kind = frame.kind
           val body = notifyBody(frame.text, !frame.images.isNullOrEmpty())
@@ -178,6 +193,9 @@ class MailboxService : LifecycleService() {
             CabNotifier.kitMessage(this, slug, body, app.face)
           } else if (shouldBuzz(app.phoneResumed, app.carAttached, kind)) {
             CabNotifier.buzzPush(this)
+          }
+          if (watchingThread(app.phoneResumed, app.carThreadVisible) && frame.id != null) {
+            client?.send(ackSeen(frame.id))
           }
         }
       },
@@ -195,6 +213,7 @@ class MailboxService : LifecycleService() {
         app.prefs.signOut()
         giveUp(mailboxAuthLostHint())
       },
+      watching = { watchingThread(app.phoneResumed, app.carThreadVisible) },
     )
     client = mailbox
     target = next
@@ -442,6 +461,24 @@ class MailboxService : LifecycleService() {
     /** The thread just came onto a screen. Nothing to do when no socket is up. */
     fun sweep() {
       instance?.sweep()
+    }
+
+    /**
+     * This mouth is looking. Dismiss the local card and, if the socket is up,
+     * tell siblings (`ack seen`). Service redial / sweep do not call this.
+     */
+    fun markRead(ctx: Context) {
+      val svc = instance
+      if (svc != null) {
+        svc.markRead()
+        return
+      }
+      CabNotifier.dismissKit(ctx)
+    }
+
+    /** Thread came on screen; socket may already be up from the FGS. */
+    fun sendSeenAck() {
+      instance?.sendSeenAck()
     }
 
     private fun sendBits(ctx: Context, fn: (MailboxService) -> Unit) {

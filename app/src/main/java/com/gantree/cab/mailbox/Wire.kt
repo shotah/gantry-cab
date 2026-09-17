@@ -43,6 +43,11 @@ data class WireFrame(
   val rev: Int? = null,
   /** Theme notice only. Empty = cleared. */
   val theme: String? = null,
+  /**
+   * Phone `ack` only. JSON `true` means this human is looking at the thread
+   * on the sending mouth. Missing / false is delivery, not reading.
+   */
+  val seen: Boolean? = null,
 )
 
 const val TEXT_BYTES_MAX = 8_000
@@ -83,6 +88,9 @@ fun encodeFrame(frame: WireFrame): String {
       o.put("context", c)
     }
   }
+  if (frame.seen == true) {
+    o.put("seen", true)
+  }
   return o.toString()
 }
 
@@ -112,6 +120,7 @@ fun parseFrame(raw: String): WireFrame? {
       commands = if (kind == "cmds") parseCommands(o.optJSONArray("commands")) else null,
       rev = backdropRev(kind, o.opt("rev")),
       theme = roomThemeNotice(kind, o.has("theme"), o.isNull("theme"), o.optString("theme")),
+      seen = parseSeen(o.opt("seen")),
     )
   } catch (_: Exception) {
     null
@@ -132,7 +141,21 @@ fun inbound(text: String, id: String, context: PhoneContext?, images: List<Strin
 fun pinFrame(context: PhoneContext): WireFrame =
   WireFrame(kind = "pin", context = context)
 
-fun ackSince(since: String): WireFrame = WireFrame(kind = "ack", since = since)
+fun ackSince(since: String, seen: Boolean = false): WireFrame =
+  WireFrame(kind = "ack", since = since, seen = seen.takeIf { it })
+
+/** Read on this mouth. Bare (no cursor) or per live `reply` / `push` `id`. */
+fun ackSeen(id: String? = null): WireFrame = WireFrame(kind = "ack", id = id, seen = true)
+
+/** JSON `true` only. `false`, missing, and junk are delivery, not reading. */
+fun parseSeen(raw: Any?): Boolean? = if (raw == true) true else null
+
+/**
+ * Sibling inbound (replied on another mouth) or a `seen` ack (read there).
+ * A hydrate `replay` inbound is not "just typed"; a plain ack is not reading.
+ */
+fun dismissKitOnFrame(kind: String?, replay: Boolean, fresh: Boolean, seen: Boolean?): Boolean =
+  (fresh && kind == "inbound" && !replay) || (kind == "ack" && seen == true)
 
 /** Mailbox sequence; 1-based. Ignore junk so an old client cannot poison a frame. */
 fun orderSeq(raw: Any?): Int? {
