@@ -239,18 +239,76 @@ class MouthTest {
   }
 
   @Test
-  fun socketDownDropsDraftAndTyping() {
-    var t = 1_000L
+  fun socketDownKeepsTheDraftAndDropsTyping() {
+    val t = 1_000L
     val mouth = Mouth { t }
     mouth.setUp(true)
     mouth.ingest(WireFrame(kind = "draft", text = "⏳…"))
     mouth.ingest(WireFrame(kind = "typing"))
-    assertEquals(1, mouth.lines.value.size)
     assertEquals(t + TYPING_TTL_MS, mouth.typingUntil.value)
     mouth.setUp(false)
-    assertTrue(mouth.lines.value.isEmpty())
+    assertEquals(listOf(DRAFT_ID), mouth.lines.value.map { it.id })
     assertEquals(0L, mouth.typingUntil.value)
     assertFalse(mouth.up.value)
+    // Reconnect: the replayed reply finishes the draft on the same live key.
+    mouth.setUp(true)
+    assertTrue(mouth.ingest(WireFrame(kind = "reply", id = "r1", text = "done", seq = 5, replay = true)))
+    val reply = mouth.lines.value.single()
+    assertEquals("r1", reply.id)
+    assertEquals(true, reply.live)
+  }
+
+  @Test
+  fun terminalStopDropsTheDraft() {
+    val mouth = Mouth()
+    mouth.ingest(WireFrame(kind = "draft", text = "⏳…"))
+    mouth.dropDraft()
+    assertTrue(mouth.lines.value.isEmpty())
+    assertFalse(mouth.expireDraft())
+  }
+
+  @Test
+  fun draftExpiresWhenTheCraneGoesQuiet() {
+    var t = 1_000L
+    val mouth = Mouth { t }
+    mouth.ingest(WireFrame(kind = "draft", text = "Gate"))
+    t += DRAFT_TTL_MS - 1
+    assertFalse(mouth.expireDraft())
+    assertEquals(1, mouth.lines.value.size)
+    t += 1
+    assertTrue(mouth.expireDraft())
+    assertTrue(mouth.lines.value.isEmpty())
+  }
+
+  @Test
+  fun typingAndNewWordsKeepADraftAlive() {
+    var t = 1_000L
+    val mouth = Mouth { t }
+    mouth.ingest(WireFrame(kind = "draft", text = "Gate"))
+    // A long tool call: no new words, but the crane keeps saying typing.
+    t += DRAFT_TTL_MS - 5_000
+    mouth.ingest(WireFrame(kind = "typing"))
+    t += DRAFT_TTL_MS - 5_000
+    assertFalse(mouth.expireDraft())
+    // New words restart the clock too.
+    mouth.ingest(WireFrame(kind = "draft", text = "Gate's on"))
+    t += DRAFT_TTL_MS - 1
+    assertFalse(mouth.expireDraft())
+    t += 1
+    assertTrue(mouth.expireDraft())
+  }
+
+  @Test
+  fun aReSentIdenticalDraftIsNotLife() {
+    var t = 1_000L
+    val mouth = Mouth { t }
+    mouth.ingest(WireFrame(kind = "draft", text = "Gate"))
+    // Connect flush hands back the held draft, word for word.
+    t += DRAFT_TTL_MS / 2
+    mouth.ingest(WireFrame(kind = "draft", text = "Gate"))
+    t += DRAFT_TTL_MS / 2
+    assertTrue(mouth.expireDraft())
+    assertTrue(mouth.lines.value.isEmpty())
   }
 
   @Test

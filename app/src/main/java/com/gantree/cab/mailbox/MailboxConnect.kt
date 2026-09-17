@@ -91,6 +91,9 @@ const val SWEEP_MIN_GAP_MS = 10_000L
 /** While a thread is on some screen, sweep the mailbox this often. */
 const val SWEEP_EVERY_MS = 2 * 60_000L
 
+/** Normal closure. What a sweep sends on the socket it retires, so the mailbox drops it at once. */
+const val SWEEP_RETIRE_CODE = 1000
+
 /**
  * A quiet sweep is worth its handshake only while someone is looking at the
  * thread. The mailbox does not push what another mouth of yours sent; a

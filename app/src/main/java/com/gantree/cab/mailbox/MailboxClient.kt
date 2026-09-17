@@ -130,7 +130,10 @@ class MailboxClient(
           return
         }
         attempt.set(0)
-        socket.getAndSet(webSocket)?.takeIf { it !== webSocket }?.cancel()
+        // A sweep retires the first socket with a close frame, not a TCP abort. An
+        // aborted socket sits half-open in the mailbox's list until the edge notices,
+        // and a fan loop that hit it first used to starve the live one.
+        socket.getAndSet(webSocket)?.takeIf { it !== webSocket }?.close(SWEEP_RETIRE_CODE, "sweep")
         openedAt = System.currentTimeMillis()
         up.set(true)
         val since = synchronized(seen) { sinceLocked() }
@@ -139,6 +142,10 @@ class MailboxClient(
       }
 
       override fun onMessage(webSocket: WebSocket, text: String) {
+        // A retiring socket still reads until the peer answers its close frame.
+        if (!mine()) {
+          return
+        }
         if (text == "ping") {
           webSocket.send("pong")
           return

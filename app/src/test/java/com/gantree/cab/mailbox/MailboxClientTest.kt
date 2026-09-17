@@ -14,6 +14,7 @@ import org.junit.Test
 import java.util.concurrent.CopyOnWriteArrayList
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.atomic.AtomicReference
 
@@ -233,6 +234,8 @@ class MailboxClientTest {
     val secondAck = CountDownLatch(1)
     val firstGone = CountDownLatch(1)
     val secondHeardSend = CountDownLatch(1)
+    val firstCloseCode = AtomicInteger(0)
+    val firstFailed = AtomicBoolean(false)
     val listener = object : WebSocketListener() {
       override fun onOpen(webSocket: WebSocket, response: Response) {
         peers.add(webSocket)
@@ -247,12 +250,25 @@ class MailboxClientTest {
         }
       }
 
+      // The mailbox answers a close frame with its own; that is what lets it drop the socket at once.
+      // Anything it still fans to the retiring socket first must not reach the thread.
+      override fun onClosing(webSocket: WebSocket, code: Int, reason: String) {
+        if (webSocket === peers.firstOrNull()) {
+          firstCloseCode.set(code)
+          webSocket.send("""{"kind":"reply","id":"stale","text":"ghost"}""")
+        }
+        webSocket.close(code, reason)
+      }
+
       override fun onClosed(webSocket: WebSocket, code: Int, reason: String) {
         if (webSocket === peers.firstOrNull()) firstGone.countDown()
       }
 
       override fun onFailure(webSocket: WebSocket, t: Throwable, response: Response?) {
-        if (webSocket === peers.firstOrNull()) firstGone.countDown()
+        if (webSocket === peers.firstOrNull()) {
+          firstFailed.set(true)
+          firstGone.countDown()
+        }
       }
     }
     server.enqueue(MockResponse().withWebSocketUpgrade(listener))
@@ -279,10 +295,14 @@ class MailboxClientTest {
       assertTrue(secondAck.await(5, TimeUnit.SECONDS))
       assertTrue(heard.last { it.first === peers[1] }.second.contains("\"since\":\"3\""))
       assertTrue(firstGone.await(5, TimeUnit.SECONDS))
+      // Retired with a close frame, not a TCP abort — no half-open socket left in the mailbox's list.
+      assertEquals(SWEEP_RETIRE_CODE, firstCloseCode.get())
+      assertFalse(firstFailed.get())
       // The mailbox flushes what the phone missed onto the new socket; it folds in like any frame.
       peers[1].send("""{"kind":"inbound","id":"b","text":"from the browser","seq":4,"replay":true}""")
       assertTrue(gotTwo.await(5, TimeUnit.SECONDS))
       assertEquals(listOf("hi", "from the browser"), frames.map { it.text })
+      assertTrue(frames.none { it.id == "stale" })
       assertTrue(client.send(inbound("after", "c", null)))
       assertTrue(secondHeardSend.await(5, TimeUnit.SECONDS))
       assertEquals(listOf(true, true), states)

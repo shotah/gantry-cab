@@ -23,6 +23,16 @@ const val LIVE_COMPOSE_KEY = "kit-live"
 /** Phone TTL after the last typing frame. Crane refresh is ~4s. */
 const val TYPING_TTL_MS = 6_000L
 
+/**
+ * A draft with no text change and no `typing` for this long is a ghost: the
+ * crane went away mid-answer. A long tool call is not a ghost — the crane
+ * refreshes `typing` every ~4 s through it.
+ */
+const val DRAFT_TTL_MS = 60_000L
+
+/** How often [com.gantree.cab.drive.MailboxService] asks [Mouth.expireDraft]. */
+const val DRAFT_TICK_MS = 15_000L
+
 fun composeKey(line: ChatLine): String = if (line.live) LIVE_COMPOSE_KEY else line.id
 
 fun clearsTyping(kind: String?): Boolean =
@@ -55,6 +65,8 @@ class Mouth(
   private val _roomTheme = MutableStateFlow("")
   private val _faceHint = MutableStateFlow("")
   private val _typingUntil = MutableStateFlow(0L)
+  /** Last draft text change or `typing`; what [expireDraft] measures from. */
+  private var draftLifeAt = 0L
   val lines: StateFlow<List<ChatLine>> = _lines
   val up: StateFlow<Boolean> = _up
   val hint: StateFlow<String> = _hint
@@ -65,10 +77,14 @@ class Mouth(
   val faceHint: StateFlow<String> = _faceHint
   val typingUntil: StateFlow<Long> = _typingUntil
 
+  /**
+   * A socket gap keeps the draft: the reconnect replay delivers its `reply`,
+   * the mailbox re-sends a held draft on connect, and [expireDraft] catches a
+   * crane that never came back. A terminal stop calls [dropDraft] itself.
+   */
   fun setUp(value: Boolean) {
     _up.value = value
     if (!value) {
-      dropDraft()
       _typingUntil.value = 0L
     }
   }
@@ -158,7 +174,9 @@ class Mouth(
       return false
     }
     if (frame.kind == "typing") {
-      _typingUntil.value = now() + TYPING_TTL_MS
+      val t = now()
+      _typingUntil.value = t + TYPING_TTL_MS
+      draftLifeAt = t
       return false
     }
     if (frame.kind == "draft") {
@@ -236,6 +254,31 @@ class Mouth(
     return true
   }
 
+  /**
+   * Drop a draft the crane walked away from: [DRAFT_TTL_MS] with no text
+   * change and no `typing`. The mailbox re-sending the same held draft on a
+   * connect flush is not life; new words or a typing refresh are.
+   * @return true when a draft was dropped.
+   */
+  fun expireDraft(nowMs: Long = now()): Boolean {
+    if (_lines.value.none { it.id == DRAFT_ID }) {
+      return false
+    }
+    if (nowMs - draftLifeAt < DRAFT_TTL_MS) {
+      return false
+    }
+    dropDraft()
+    return true
+  }
+
+  /** Nothing will finish this draft: auth lost, timeout, sign-out. */
+  fun dropDraft() {
+    val rest = _lines.value.filter { it.id != DRAFT_ID }
+    if (rest.size != _lines.value.size) {
+      _lines.value = rest
+    }
+  }
+
   private fun applyDraft(text: String) {
     val rest = dropLive(_lines.value.filter { it.id != DRAFT_ID })
     if (text.trim().isEmpty()) {
@@ -243,6 +286,9 @@ class Mouth(
       return
     }
     val prev = _lines.value.find { it.id == DRAFT_ID }
+    if (prev == null || prev.text != text) {
+      draftLifeAt = now()
+    }
     _lines.value = capThread(
       placeInThread(
         rest,
@@ -272,11 +318,4 @@ class Mouth(
 
   private fun dropLive(lines: List<ChatLine>): List<ChatLine> =
     lines.map { if (it.live) it.copy(live = false) else it }
-
-  private fun dropDraft() {
-    val rest = _lines.value.filter { it.id != DRAFT_ID }
-    if (rest.size != _lines.value.size) {
-      _lines.value = rest
-    }
-  }
 }

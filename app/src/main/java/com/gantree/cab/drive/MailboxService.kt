@@ -15,6 +15,7 @@ import androidx.core.content.ContextCompat
 import androidx.lifecycle.LifecycleService
 import androidx.lifecycle.lifecycleScope
 import com.gantree.cab.CabApp
+import com.gantree.cab.DRAFT_TICK_MS
 import com.gantree.cab.mailbox.BatteryHint
 import com.gantree.cab.mailbox.GEO_CACHE_MS
 import com.gantree.cab.mailbox.GEO_LAST_KNOWN_MS
@@ -74,6 +75,12 @@ class MailboxService : LifecycleService() {
         sweep()
       }
     }
+    lifecycleScope.launch {
+      while (true) {
+        delay(DRAFT_TICK_MS)
+        (application as CabApp).mouth.expireDraft()
+      }
+    }
   }
 
   /**
@@ -121,6 +128,8 @@ class MailboxService : LifecycleService() {
     client = null
     target = null
     app.mouth.setUp(false)
+    // Terminal: no reconnect will finish this draft.
+    app.mouth.dropDraft()
     app.mouth.setHint(hint)
     stopSelf()
   }
