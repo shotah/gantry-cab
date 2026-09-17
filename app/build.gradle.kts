@@ -123,7 +123,7 @@ android {
 }
 
 dependencies {
-  val composeBom = platform("androidx.compose:compose-bom:2026.08.00")
+  val composeBom = platform("androidx.compose:compose-bom:2026.09.00")
   implementation(composeBom)
   implementation("androidx.fragment:fragment-ktx:1.9.0")
   implementation("androidx.compose.ui:ui")
