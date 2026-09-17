@@ -113,6 +113,7 @@ private fun encodeLine(line: ChatLine): JSONObject {
   o.putOpt("photo", line.photo)
   o.putOpt("seq", line.seq)
   o.putOpt("failed", line.failed)
+  o.putOpt("reaction", line.reaction)
   return o
 }
 
@@ -134,6 +135,7 @@ private fun decodeLine(o: JSONObject): ChatLine? {
     at = o.optLong("at"),
     seq = if (o.isNull("seq")) null else o.optInt("seq").takeIf { it > 0 },
     failed = o.optString("failed").ifEmpty { null },
+    reaction = o.optString("reaction").ifEmpty { null },
   )
 }
 

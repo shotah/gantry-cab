@@ -41,6 +41,7 @@ import com.gantree.cab.mailbox.notifyBody
 import com.gantree.cab.mailbox.parseSlug
 import com.gantree.cab.mailbox.sessionExpired
 import com.gantree.cab.mailbox.pinFrame
+import com.gantree.cab.mailbox.reactFrame
 import com.gantree.cab.mailbox.sendGeoHint
 import com.gantree.cab.mailbox.surfaceHint
 import com.gantree.cab.mailbox.watchingThread
@@ -105,6 +106,8 @@ class MailboxService : LifecycleService() {
   fun sendSeenAck() {
     client?.send(ackSeen())
   }
+
+  fun sendNow(frame: WireFrame): Boolean = client?.send(frame) == true
 
   override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
     super.onStartCommand(intent, flags, startId)
@@ -457,6 +460,10 @@ class MailboxService : LifecycleService() {
     fun sendPin(ctx: Context) {
       sendBits(ctx) { it.pin() }
     }
+
+    /** Phone `react`. No queue — socket down means the picker does nothing. */
+    fun sendReact(id: String, text: String): Boolean =
+      instance?.sendNow(reactFrame(id, text)) == true
 
     /** The thread just came onto a screen. Nothing to do when no socket is up. */
     fun sweep() {

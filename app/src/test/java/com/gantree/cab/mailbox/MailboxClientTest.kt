@@ -36,6 +36,7 @@ class MailboxClientTest {
   fun sendWithoutASocketFails() {
     val client = MailboxClient(onFrame = {}, onState = {})
     assertFalse(client.send(inbound("hi", "1", null)))
+    assertFalse(client.send(reactFrame("r1", "👍")))
     client.stop()
   }
 
@@ -220,6 +221,44 @@ class MailboxClientTest {
       peer.get().close(1000, "bye")
       assertTrue(reconnectAck.await(10, TimeUnit.SECONDS))
       assertTrue(sinces.single().contains("\"since\":\"a\""))
+    } finally {
+      client.stop()
+    }
+  }
+
+  @Test
+  fun aReactDoesNotMoveTheSinceCursor() {
+    val sinces = CopyOnWriteArrayList<String>()
+    val reconnectAck = CountDownLatch(1)
+    val opened = CountDownLatch(1)
+    val peer = AtomicReference<WebSocket>()
+    val listener = object : WebSocketListener() {
+      override fun onOpen(webSocket: WebSocket, response: Response) {
+        if (peer.compareAndSet(null, webSocket)) opened.countDown()
+      }
+
+      override fun onMessage(webSocket: WebSocket, text: String) {
+        if (text.contains("\"since\"")) {
+          sinces.add(text)
+          reconnectAck.countDown()
+        }
+      }
+    }
+    server.enqueue(MockResponse().withWebSocketUpgrade(listener))
+    server.enqueue(MockResponse().withWebSocketUpgrade(listener))
+    val gotTwo = CountDownLatch(2)
+    val client = MailboxClient(onFrame = { gotTwo.countDown() }, onState = {})
+    client.start(server.url("/").toString(), "kit", "tok")
+    try {
+      assertTrue(opened.await(5, TimeUnit.SECONDS))
+      peer.get().send("""{"kind":"reply","id":"a","text":"hi"}""")
+      // A drained crane-queue row may carry seq/at; phones still must not resume from it.
+      peer.get().send("""{"kind":"react","id":"a","text":"👍","seq":99,"at":1}""")
+      assertTrue(gotTwo.await(5, TimeUnit.SECONDS))
+      peer.get().close(1000, "bye")
+      assertTrue(reconnectAck.await(10, TimeUnit.SECONDS))
+      assertTrue(sinces.single().contains("\"since\":\"a\""))
+      assertTrue(sinces.none { it.contains("\"since\":\"99\"") })
     } finally {
       client.stop()
     }

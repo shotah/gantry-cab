@@ -61,6 +61,7 @@ class ThreadTest {
     assertEquals(false, movesCursor("face"))
     assertEquals(false, movesCursor("backdrop"))
     assertEquals(false, movesCursor("theme"))
+    assertEquals(false, movesCursor("react"))
   }
 
   @Test

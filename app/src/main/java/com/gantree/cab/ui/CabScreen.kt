@@ -17,7 +17,6 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
@@ -28,7 +27,6 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.outlined.Settings
@@ -39,7 +37,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
@@ -70,14 +67,15 @@ import com.gantree.cab.ChatLine
 import com.gantree.cab.R
 import com.gantree.cab.composeKey
 import com.gantree.cab.dev.SAMPLE_IDS
+import com.gantree.cab.mailbox.canReact
 import com.gantree.cab.mailbox.DEFAULT_LANG
 import com.gantree.cab.mailbox.DEFAULT_PHOTO_SIZE
 import com.gantree.cab.mailbox.SlashCommand
 import com.gantree.cab.mailbox.SpeakPhase
 import com.gantree.cab.mailbox.displaySlug
 import com.gantree.cab.mailbox.liveStatus
+import com.gantree.cab.mailbox.toggleReaction
 import com.gantree.cab.mailbox.voiceBarShown
-import coil3.compose.AsyncImage
 import kotlinx.coroutines.delay
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -98,6 +96,7 @@ fun CabScreen(
   onGoogle: () -> Unit,
   onSignOut: () -> Unit,
   onSend: (String) -> Unit,
+  onReact: (String, String) -> Unit = { _, _ -> },
   authHint: String = "",
   signingIn: Boolean = false,
   dev: Boolean = false,
@@ -175,6 +174,7 @@ fun CabScreen(
     typing = false
   }
   var followNewest by remember { mutableStateOf(true) }
+  var pickingId by remember { mutableStateOf<String?>(null) }
   LaunchedEffect(list) {
     snapshotFlow { list.isScrollInProgress }.collect { scrolling ->
       if (!scrolling) {
@@ -430,47 +430,16 @@ fun CabScreen(
               contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp),
             ) {
               items(threadNewestFirst(lines), key = { composeKey(it) }) { line ->
-                val mine = line.fromYou
-                Row(
-                  modifier = Modifier.fillMaxWidth(),
-                  horizontalArrangement = if (mine) Arrangement.End else Arrangement.Start,
-                ) {
-                  Surface(
-                    color = if (mine) scheme.primaryContainer else scheme.surfaceContainerHighest,
-                    contentColor = if (mine) scheme.onPrimaryContainer else scheme.onSurface,
-                    shape = if (mine) {
-                      RoundedCornerShape(20.dp, 20.dp, 4.dp, 20.dp)
-                    } else {
-                      RoundedCornerShape(20.dp, 20.dp, 20.dp, 4.dp)
-                    },
-                    tonalElevation = 1.dp,
-                    modifier = Modifier.fillMaxWidth(0.82f),
-                  ) {
-                    Column(
-                      modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
-                      verticalArrangement = Arrangement.spacedBy(6.dp),
-                    ) {
-                      if (line.kind == "push") {
-                        Text("Ping", style = MaterialTheme.typography.labelSmall, color = scheme.onSurfaceVariant)
-                      }
-                      line.photo?.let { ChatPhoto(it) }
-                      if (line.text.isNotBlank()) {
-                        ChatMarkdown(text = line.text, draft = line.kind == "draft")
-                      }
-                      if (mine && line.pending) {
-                        Text("sending", style = MaterialTheme.typography.labelSmall, color = scheme.onSurfaceVariant)
-                      }
-                      if (mine && line.failed != null) {
-                        Text(
-                          line.failed,
-                          style = MaterialTheme.typography.labelSmall,
-                          color = scheme.error,
-                          modifier = Modifier.semantics { contentDescription = "not sent" },
-                        )
-                      }
-                    }
-                  }
-                }
+                ChatTurn(
+                  line = line,
+                  reactable = up && canReact(line.fromYou, line.kind, line.id),
+                  picking = pickingId == line.id,
+                  onOpenPicker = { pickingId = line.id },
+                  onPick = { emoji ->
+                    onReact(line.id, toggleReaction(line.reaction, emoji))
+                    pickingId = null
+                  },
+                )
               }
             }
           }
@@ -554,15 +523,5 @@ private fun ChatBackdrop(bytes: ByteArray?) {
     contentDescription = null,
     contentScale = ContentScale.Crop,
     modifier = Modifier.fillMaxSize().alpha(0.6f),
-  )
-}
-
-@Composable
-private fun ChatPhoto(url: String) {
-  AsyncImage(
-    model = url,
-    contentDescription = null,
-    contentScale = ContentScale.Crop,
-    modifier = Modifier.fillMaxWidth().heightIn(max = 192.dp).clip(RoundedCornerShape(12.dp)),
   )
 }

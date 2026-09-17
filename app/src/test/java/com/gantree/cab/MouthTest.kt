@@ -77,6 +77,36 @@ class MouthTest {
   }
 
   @Test
+  fun reactIsNotABubbleAndLandsOnTheNamedId() {
+    val mouth = Mouth()
+    assertFalse(mouth.ingest(WireFrame(kind = "react", id = "r1", text = "👍")))
+    assertTrue(mouth.lines.value.isEmpty())
+    mouth.ingest(WireFrame(kind = "inbound", id = "a1", text = "hatch"))
+    mouth.ingest(WireFrame(kind = "typing"))
+    mouth.ingest(WireFrame(kind = "draft", text = "⏳"))
+    val typing = mouth.typingUntil.value
+    assertFalse(mouth.ingest(WireFrame(kind = "react", id = "a1", text = "👍")))
+    assertEquals(listOf("a1", DRAFT_ID), mouth.lines.value.map { it.id })
+    assertEquals("👍", mouth.lines.value.first().reaction)
+    assertEquals(typing, mouth.typingUntil.value)
+    assertFalse(mouth.ingest(WireFrame(kind = "react", id = "a1", text = "  ")))
+    assertEquals(null, mouth.lines.value.first().reaction)
+    assertEquals(DRAFT_ID, mouth.lines.value.last().id)
+    assertFalse(mouth.ingest(WireFrame(kind = "react", id = "missing", text = "🔥")))
+    assertEquals(2, mouth.lines.value.size)
+    mouth.ingest(WireFrame(kind = "reply", id = "r1", text = "latched"))
+    assertFalse(mouth.ingest(WireFrame(kind = "react", id = "r1", text = "❤️", replay = true)))
+    assertEquals("❤️", mouth.lines.value.first { it.id == "r1" }.reaction)
+    // A drained crane-queue row may carry seq/at; this mouth ignores them.
+    assertFalse(mouth.ingest(WireFrame(kind = "react", id = "r1", text = "👍", seq = 99, at = 1L)))
+    val r1 = mouth.lines.value.first { it.id == "r1" }
+    assertEquals("👍", r1.reaction)
+    assertEquals(null, r1.seq)
+    assertFalse(mouth.ingest(WireFrame(kind = "react", id = "r1", text = "👍\u0000")))
+    assertEquals("👍", mouth.lines.value.first { it.id == "r1" }.reaction)
+  }
+
+  @Test
   fun mailboxErrorIsAHintNotABubble() {
     val mouth = Mouth()
     mouth.ingest(WireFrame(kind = "error", text = "bad frame"))

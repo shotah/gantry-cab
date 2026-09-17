@@ -352,6 +352,17 @@ class CabViewModel(private val app: CabApp) : ViewModel() {
   }
 
   /**
+   * Long-press a Kit bubble. Empty [emoji] clears. Socket down → nothing
+   * (no optimistic chip hydrate would contradict).
+   */
+  fun react(id: String, emoji: String) {
+    if (!MailboxService.sendReact(id, emoji)) {
+      return
+    }
+    app.mouth.applyReaction(id, emoji)
+  }
+
+  /**
    * Hold-to-talk release. The words go out as `inbound` + `input: spoken`
    * (nothing lands in compose), a photo staged before the hold rides along,
    * and the next live reply is read aloud. Pendant `sendText(..., { spoken })`.

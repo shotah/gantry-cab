@@ -57,10 +57,12 @@ fun advanceCursor(current: ThreadCursor, id: String? = null, seq: Int? = null): 
 
 /**
  * Only queued turns advance `since`. An `ack` echoes our own id; an `error`
- * names the frame the mailbox refused — neither is a place to resume from.
+ * names the frame the mailbox refused; a `react` may carry a drained crane
+ * queue's `seq` / `at` — none of those are a place to resume from.
  */
 fun movesCursor(kind: String?): Boolean =
-  kind != "ack" && kind != "error" && kind != "face" && kind != "backdrop" && kind != "theme"
+  kind != "ack" && kind != "error" && kind != "face" && kind != "backdrop" && kind != "theme" &&
+    kind != "react"
 
 /**
  * Highest mailbox `seq` on a thread already on the device, for the first

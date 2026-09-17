@@ -117,6 +117,7 @@ class MainActivity : ComponentActivity() {
           authHint = authHint,
           signingIn = signingIn,
           onSend = { text -> vm.sendDraft(this, text) },
+          onReact = vm::react,
           dev = BuildConfig.DEV,
           onSample = vm::showSample,
           themeId = painted,

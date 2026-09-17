@@ -10,6 +10,7 @@ import com.gantree.cab.mailbox.describeSendError
 import com.gantree.cab.mailbox.faceRev
 import com.gantree.cab.mailbox.isDraftBubble
 import com.gantree.cab.mailbox.knownTheme
+import com.gantree.cab.mailbox.parseReactionText
 import com.gantree.cab.mailbox.placeInThread
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -51,6 +52,8 @@ data class ChatLine(
   val failed: String? = null,
   /** This-session Compose key; never persist (pendant `live`). */
   val live: Boolean = false,
+  /** Emoji set on this bubble — Kit's on yours, yours on Kit's. */
+  val reaction: String? = null,
 ) : ThreadOrder
 
 class Mouth(
@@ -187,6 +190,12 @@ class Mouth(
       frame.id?.let { ack(it) }
       return false
     }
+    if (frame.kind == "react") {
+      val id = frame.id ?: return false
+      val text = parseReactionText(frame.text) ?: return false
+      applyReaction(id, text)
+      return false
+    }
     if (frame.kind == "allow" || frame.kind == "pin") {
       return false
     }
@@ -233,6 +242,24 @@ class Mouth(
     _lines.value = _lines.value.map { line ->
       if (line.id == id && line.pending) line.copy(pending = false) else line
     }
+  }
+
+  /**
+   * Land an emoji on the bubble named by [id]. Empty [text] clears. No
+   * matching bubble → drop. Not a turn: typing and the draft stay.
+   * @return true when a chip changed.
+   */
+  fun applyReaction(id: String, text: String): Boolean {
+    val chip = text.ifEmpty { null }
+    val lines = _lines.value
+    val at = lines.indexOfFirst { it.id == id }
+    if (at < 0 || lines[at].reaction == chip) {
+      return false
+    }
+    _lines.value = lines.mapIndexed { i, line ->
+      if (i == at) line.copy(reaction = chip) else line
+    }
+    return true
   }
 
   /**

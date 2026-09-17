@@ -23,7 +23,7 @@ class NotifyGateTest {
 
   @Test
   fun silentKindsNeverPost() {
-    for (kind in listOf("draft", "typing", "ack", "error", "inbound", null)) {
+    for (kind in listOf("draft", "typing", "ack", "error", "inbound", "react", null)) {
       assertFalse(shouldPost(resumed = false, carAttached = true, kind = kind))
     }
   }

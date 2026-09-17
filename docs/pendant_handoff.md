@@ -98,6 +98,17 @@ accepts a missing row so an old APK can sign in.
       shipped (`siblingPhoneTag` → `sub:<userId>` except the sender).
       Cab already paints `inbound` as you and skips HUN. Keep
       `MailboxClient.sweep`. Walk: [sibling_phones.md](sibling_phones.md).
+- [x] **Reactions (Cab half).** `kind: react` is not a turn:
+      `Mouth.ingest` lands the emoji on the named bubble (empty
+      text clears) and never paints a stray `👍` bubble. Long-press
+      a Kit `reply` / `push` (450 ms, 10 px cancel) opens the same
+      palette as the PWA; tap the chip to reopen; picking the set
+      emoji clears. Socket down does nothing. Auto is read-only.
+      `ReactTest` / `MouthTest` / `ChatTurnTest`. Contract: pendant
+      `docs/frontends.md` Reactions. A phone `react` while the crane
+      is down is queued on the Worker (`q:crane:<bubble id>`, latest
+      wins) — not on this APK. Cab still sends only while the socket
+      is up and ignores `seq` / `at` on a `react`.
 
 ---
 

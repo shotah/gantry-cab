@@ -18,7 +18,7 @@ class ThreadCacheTest {
   private fun thread() = listOf(
     ChatLine("a0", true, "still sending", "inbound", pending = true, at = 5L),
     ChatLine("a1", true, "hatch?", "inbound", at = 10L, seq = 1),
-    ChatLine("k1", false, "latched", "reply", at = 20L, seq = 2),
+    ChatLine("k1", false, "latched", "reply", at = 20L, seq = 2, reaction = "👍"),
     ChatLine("p1", false, "", "push", photo = "data:image/jpeg;base64,aa", at = 30L, seq = 3),
     ChatLine("a2", true, "nope", "inbound", at = 40L, failed = "Not sent — too big for the room."),
     ChatLine(DRAFT_ID, false, "Gate's on…", "draft", at = 50L),
@@ -37,6 +37,7 @@ class ThreadCacheTest {
     assertEquals(1, back[0].seq)
     assertNull(back[3].seq)
     assertEquals("Not sent — too big for the room.", back[3].failed)
+    assertEquals("👍", back[1].reaction)
     assertFalse(back.any { it.pending })
     assertFalse(File(tmp.root, "recall/thread.json.tmp").exists())
   }
