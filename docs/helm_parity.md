@@ -14,49 +14,11 @@ same as pendant's table: wire first, then UI.
 
 ## Wire (must not paint wrong or drop a turn)
 
-- [ ] **`aims` (goals board).** New `kind`, crane only, no `text`.
-      Helm `Mouth.ingest` must return before the bubble path; add it
-      to the ignored-kind list and to `movesCursor`'s exclusions.
-      Parse per frontends.md Aims board with the caps 5 / 14 / 13 / 3,
-      drop a bad row not the board, drop a half-formed `block` /
-      `effect` / week whole. Cab: `mailbox/Aims.kt`, `Mouth.aims`.
-- [ ] **`react` ignore-then-paint.** frontends.md still lists Helm's
-      four boxes open. Cab: `mailbox/React.kt`, `Mouth.applyReaction`,
-      `ui/ChatTurn.kt` hold → palette.
-- [ ] **`seen` on ack.** `WireFrame.seen` (parse `true` only), the two
-      dismiss `if`s, the two send points (connect with thread on
-      screen; per live `reply` / `push` painted). Cab:
-      `MailboxService.onFrame`, `ackSeen`, `dismissKitOnFrame`.
 - [ ] **`act` (device actions).** Not shipped anywhere yet. When
       pendant lands routing: `device` / `kind=helm` / `caps` / `label`
       on the upgrade, `act` parse, AlarmKit executor, `needs_permission`
       when the AlarmKit prompt was not accepted. Full contract:
       [device_actions.md](device_actions.md).
-
-## UI (same words, same order)
-
-- [ ] **Goals board.** Header target whenever the board has rows,
-      hidden when empty. **Badge = changes, not aims**: keep area → row
-      of the board last opened (UserDefaults `helm` / `aimsSeen`),
-      badge only aims that are new / changed / gone, mark seen on open
-      and while open, a never-seen board counts whole. A quiet board is
-      a bare target. Sheet: one card per aim — `area` + signed
-      `rating30`, sentence, day grid (sign hue, magnitude weight,
-      eventless outline, score under each cell), stamp line exactly
-      `30d +1.4 · 7d +6 · streak 2 · asked`, week strip when `weeks`
-      is there, trend line when present (`slope +0.3/wk · block 4/10
-      (40%) · weight r -0.42 (n 9)`), then the `links` lines
-      (`training → next-day weight r +0.38 (n 12)`). Buttons are
-      turns: `/aims <area>`, `/aims`, `/aims rubric`; the sheet closes.
-      **CarPlay: nothing.** Cab: `ui/GoalsBoard.kt`, `GoalsBoardTest`.
-- [ ] **Reactions UI.** Context menu on a Kit bubble is the iOS shape;
-      CarPlay read-only.
-- [ ] **Pocket voice.** Header mic when `/api/auth/config` says
-      `voice`; hold bar; `SFSpeechRecognizer` in the Language locale;
-      `POST /api/tts` with `lang`. Cab: `ui/HoldToTalk.kt`, `KitVoice`,
-      `mailbox/Speech.kt` / `Speaker.kt` / `Lang.kt`.
-- [ ] **Settings → Language.** Same four ids, same labels, UserDefaults
-      `helm` / `lang`. Only shown when voice is published.
 
 ## Already matched (per frontends.md)
 
@@ -66,6 +28,15 @@ draft / typing rules, photo caps + ladder + `SendError`, face /
 backdrop / theme notices and the 82 / 80×40 / −2/−4 header hang,
 `surface` `ios` / `carplay`, Google sign-in with server nonce,
 4401 drops the JWE.
+
+`aims` (caps 5 / 14 / 13 / 3, not a turn, header badge is changes
+since `helm` / `aimsSeen`, sheet copy, CarPlay shows nothing),
+`react` ignore-then-paint (context menu on a Kit bubble, CarPlay
+read-only), `seen` on ack (connect with the thread up, and each live
+`reply` / `push`; a sibling inbound or a seen ack drops the local
+card), pocket voice (header mic when config says `voice`, hold bar,
+`SFSpeechRecognizer`, `POST /api/tts` with `lang`), Settings →
+Language (the same four ids, only when voice is published).
 
 ## Not Helm's to do
 
