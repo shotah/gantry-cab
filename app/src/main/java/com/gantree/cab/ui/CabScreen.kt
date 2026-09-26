@@ -67,6 +67,7 @@ import com.gantree.cab.ChatLine
 import com.gantree.cab.R
 import com.gantree.cab.composeKey
 import com.gantree.cab.dev.SAMPLE_IDS
+import com.gantree.cab.mailbox.AimsBoard
 import com.gantree.cab.mailbox.canReact
 import com.gantree.cab.mailbox.DEFAULT_LANG
 import com.gantree.cab.mailbox.DEFAULT_PHOTO_SIZE
@@ -141,9 +142,11 @@ fun CabScreen(
   onNotifyAsk: () -> Unit = {},
   langId: String = DEFAULT_LANG,
   onLang: (String) -> Unit = {},
+  aims: AimsBoard = AimsBoard(),
 ) {
   val scheme = MaterialTheme.colorScheme
   var settingsOpen by remember { mutableStateOf(false) }
+  var goalsOpen by remember { mutableStateOf(false) }
   val list = rememberLazyListState()
   val title = displaySlug(slug)
   val view = LocalView.current
@@ -241,6 +244,7 @@ fun CabScreen(
             }
           },
           actions = {
+            GoalsButton(count = aims.aims.size, onOpen = { goalsOpen = true })
             if (voiceOffered) {
               VoiceToggle(on = voiceOn, speaking = speakPhase == SpeakPhase.PLAYING, onToggle = onVoiceToggle)
             }
@@ -447,6 +451,9 @@ fun CabScreen(
         }
       }
     }
+  }
+  if (goalsOpen && !aims.isEmpty) {
+    GoalsSheet(board = aims, onAsk = onSend, onDismiss = { goalsOpen = false })
   }
   if (!showSettings) {
     KitAvatar(

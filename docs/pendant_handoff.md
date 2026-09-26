@@ -109,6 +109,22 @@ accepts a missing row so an old APK can sign in.
       is down is queued on the Worker (`q:crane:<bubble id>`, latest
       wins) — not on this APK. Cab still sends only while the socket
       is up and ignores `seq` / `at` on a `react`.
+- [x] **Goals board (Cab half).** `kind: aims` is not a turn:
+      `Mouth.ingest` replaces `Mouth.aims` (empty array clears, no
+      array keeps the last board) and never paints a bubble;
+      `movesCursor` skips it. `mailbox/Aims.kt` parses the pendant
+      shape with the same caps (5 aims, 14 days, 13 weeks, 3 links),
+      drops a bad row not the board, drops a half-formed `block` /
+      `effect` / week whole, and builds the `[aims]` stamp line, the
+      trend line, and the `/aims` footer line word for word. Header
+      target with `goals (n)` only when the board has rows
+      (`ui/GoalsBoard.kt`); the sheet is one card per aim (signed
+      `rating30`, sentence, day grid, stamp, week strip, trend), then
+      the links. Every button is a visible turn through the normal
+      send: `/aims <area>`, `/aims`, `/aims rubric`. **Auto: nothing.**
+      `AimsTest` / `MouthTest` / `GoalsBoardTest`. Contract: pendant
+      `docs/frontends.md` Aims board. Waiting on the crane to send
+      the frame (ai-gantry `docs/aims-progress.md`).
 
 ---
 

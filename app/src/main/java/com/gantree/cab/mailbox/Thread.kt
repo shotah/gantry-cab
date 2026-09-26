@@ -62,7 +62,7 @@ fun advanceCursor(current: ThreadCursor, id: String? = null, seq: Int? = null): 
  */
 fun movesCursor(kind: String?): Boolean =
   kind != "ack" && kind != "error" && kind != "face" && kind != "backdrop" && kind != "theme" &&
-    kind != "react"
+    kind != "react" && kind != "aims"
 
 /**
  * Highest mailbox `seq` on a thread already on the device, for the first

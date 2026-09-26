@@ -55,6 +55,33 @@ class MouthTest {
   }
 
   @Test
+  fun aimsReplaceTheBoardClearOnEmptyAndNeverPaintABubble() {
+    val mouth = Mouth()
+    val one = """{"area":"training","sentence":"gym","rating30":1.4,"sum7":6,"streak":2,"note":"asked","days":[]}"""
+    assertFalse(mouth.ingest(parseFrame("""{"kind":"aims","aims":[$one]}""")!!))
+    assertEquals(listOf("training"), mouth.aims.value.aims.map { it.area })
+    assertTrue(mouth.lines.value.isEmpty())
+    // Junk keeps the last board; an empty array is the clear.
+    assertFalse(mouth.ingest(parseFrame("""{"kind":"aims"}""")!!))
+    assertEquals(1, mouth.aims.value.aims.size)
+    assertFalse(mouth.ingest(parseFrame("""{"kind":"aims","aims":[]}""")!!))
+    assertTrue(mouth.aims.value.isEmpty)
+    assertTrue(mouth.lines.value.isEmpty())
+    // A future text field must not surprise an old thread either.
+    assertFalse(mouth.ingest(parseFrame("""{"kind":"aims","aims":[],"text":"board"}""")!!))
+    assertTrue(mouth.lines.value.isEmpty())
+  }
+
+  @Test
+  fun replaceDropsTheBoardWithTheRoom() {
+    val mouth = Mouth()
+    val one = """{"area":"training","sentence":"gym","rating30":1.4,"sum7":6,"streak":2,"note":"asked","days":[]}"""
+    mouth.ingest(parseFrame("""{"kind":"aims","aims":[$one]}""")!!)
+    mouth.replace(emptyList(), up = false, hint = "")
+    assertTrue(mouth.aims.value.isEmpty)
+  }
+
+  @Test
   fun cmdsReplaceTheCatalog() {
     val mouth = Mouth()
     val cmds = listOf(SlashCommand("new", "reset this session"))

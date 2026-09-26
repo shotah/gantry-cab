@@ -95,6 +95,8 @@ class CabViewModel(private val app: CabApp) : ViewModel() {
   val hint = app.mouth.hint.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), "")
   val lines = app.mouth.lines.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
   val catalog = app.mouth.catalog.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+  /** Goals board from the crane's last `aims`. Empty → no header button. */
+  val aims = app.mouth.aims.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), app.mouth.aims.value)
   val avatarRev = app.mouth.avatarRev.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), 0)
   val painted = combine(_followTheme, app.mouth.roomTheme, _theme) { follow, room, mine ->
     paintedTheme(follow, room, mine)
