@@ -271,8 +271,72 @@ fun trendLine(aim: Aim): String {
 fun linkLine(link: AimLink): String =
   "${link.a} → next-day ${link.b} r ${signed(link.r, 2)} (n ${link.n})"
 
-/** Header chip text; the button is hidden when the board is empty. */
-fun goalsLabel(count: Int): String = "goals ($count)"
+/**
+ * Header chip text. The number is a call to action, not the board size:
+ * only aims that differ from the board last opened. Nothing changed → bare.
+ */
+fun goalsLabel(changed: Int): String = if (changed > 0) "goals ($changed)" else "goals"
+
+/**
+ * One row as the human last saw it, area → canonical JSON. Stored on the
+ * device (`aimsSeen`, same idea as `pendant.aimsSeen`) so a replay of the
+ * same board on reconnect badges nothing.
+ */
+fun seenAims(board: AimsBoard): Map<String, String> =
+  board.aims.associate { it.area to aimRow(it) }
+
+/** New, changed, or gone since the last open. A never-seen board counts whole. */
+fun changedAims(board: AimsBoard, seen: Map<String, String>): Int {
+  val now = seenAims(board)
+  val differ = now.count { (area, row) -> seen[area] != row }
+  val gone = seen.keys.count { it !in now }
+  return differ + gone
+}
+
+fun encodeSeenAims(seen: Map<String, String>): String {
+  val o = JSONObject()
+  for ((area, row) in seen) {
+    o.put(area, row)
+  }
+  return o.toString()
+}
+
+/** Junk → empty (never-seen). Only string rows under area-shaped keys survive. */
+fun parseSeenAims(raw: String?): Map<String, String> {
+  if (raw.isNullOrBlank()) {
+    return emptyMap()
+  }
+  return try {
+    val o = JSONObject(raw)
+    buildMap {
+      for (key in o.keys()) {
+        val row = o.opt(key)
+        if (AREA_RE.matches(key) && row is String) {
+          put(key, row)
+        }
+      }
+    }
+  } catch (_: Exception) {
+    emptyMap()
+  }
+}
+
+/** Stable text for "did this row change": what the card paints, in field order. */
+internal fun aimRow(aim: Aim): String {
+  val o = JSONObject()
+  o.put("sentence", aim.sentence)
+  o.put("rating30", aim.rating30)
+  o.put("sum7", aim.sum7)
+  o.put("streak", aim.streak)
+  o.put("note", aim.note)
+  o.put("note_at", aim.noteAt ?: "")
+  o.put("days", JSONArray(aim.days.map { "${it.day}:${it.score}:${it.events.size}" }))
+  o.put("weeks", JSONArray(aim.weeks.map { "${it.start}:${it.mean}:${it.up}:${it.against}" }))
+  o.put("slope", aim.slope ?: JSONObject.NULL)
+  o.put("block", aim.block?.let { "${it.days}:${it.up}:${it.against}:${it.mean}:${it.pct}" } ?: "")
+  o.put("effect", aim.effect?.let { "${it.metric}:${it.r}:${it.n}" } ?: "")
+  return o.toString()
+}
 
 /** Every ask is a visible turn. */
 fun askAim(area: String): String = "/aims $area"

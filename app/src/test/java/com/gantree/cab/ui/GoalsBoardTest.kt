@@ -38,17 +38,21 @@ class GoalsBoardTest {
     ),
   )!!
 
+  /** Hidden with no board; a quiet board is a bare target; the number is changes, not aims. */
   @Test
-  fun buttonHiddenWhenTheBoardIsEmptyAndCountsWhenNot() {
+  fun buttonHiddenWhenEmptyBareWhenSeenAndBadgedOnlyForChanges() {
     var opened = 0
     compose.setContent {
       CabTheme(themeId = DEFAULT_THEME, fontId = DEFAULT_FONT) {
-        GoalsButton(count = 0, onOpen = { opened++ })
-        GoalsButton(count = 2, onOpen = { opened++ })
+        GoalsButton(shown = false, changed = 3, onOpen = { opened++ })
+        GoalsButton(shown = true, changed = 0, onOpen = { opened++ })
+        GoalsButton(shown = true, changed = 2, onOpen = { opened++ })
       }
     }
-    compose.onNodeWithContentDescription("goals (0)").assertDoesNotExist()
+    compose.onNodeWithContentDescription("goals (3)").assertDoesNotExist()
+    compose.onNodeWithContentDescription("goals").assertIsDisplayed()
     compose.onNodeWithContentDescription("goals (2)").assertIsDisplayed().performClick()
+    compose.onNodeWithText("2").assertIsDisplayed()
     assertEquals(1, opened)
   }
 

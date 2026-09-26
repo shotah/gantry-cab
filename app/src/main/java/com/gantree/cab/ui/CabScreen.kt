@@ -143,10 +143,18 @@ fun CabScreen(
   langId: String = DEFAULT_LANG,
   onLang: (String) -> Unit = {},
   aims: AimsBoard = AimsBoard(),
+  aimsBadge: Int = 0,
+  onAimsSeen: () -> Unit = {},
 ) {
   val scheme = MaterialTheme.colorScheme
   var settingsOpen by remember { mutableStateOf(false) }
   var goalsOpen by remember { mutableStateOf(false) }
+  // Open marks the board seen; so does a board that lands while the sheet is up.
+  LaunchedEffect(goalsOpen, aims) {
+    if (goalsOpen) {
+      onAimsSeen()
+    }
+  }
   val list = rememberLazyListState()
   val title = displaySlug(slug)
   val view = LocalView.current
@@ -244,7 +252,7 @@ fun CabScreen(
             }
           },
           actions = {
-            GoalsButton(count = aims.aims.size, onOpen = { goalsOpen = true })
+            GoalsButton(shown = !aims.isEmpty, changed = aimsBadge, onOpen = { goalsOpen = true })
             if (voiceOffered) {
               VoiceToggle(on = voiceOn, speaking = speakPhase == SpeakPhase.PLAYING, onToggle = onVoiceToggle)
             }

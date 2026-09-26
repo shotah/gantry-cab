@@ -95,6 +95,7 @@ class MainActivity : ComponentActivity() {
       val speakPhase by vm.speakPhase.collectAsStateWithLifecycle()
       val lang by vm.lang.collectAsStateWithLifecycle()
       val aims by vm.aims.collectAsStateWithLifecycle()
+      val aimsBadge by vm.aimsBadge.collectAsStateWithLifecycle()
       val granted by permits
       CabTheme(themeId = painted, fontId = font) {
         CabScreen(
@@ -181,6 +182,8 @@ class MainActivity : ComponentActivity() {
           langId = lang,
           onLang = vm::setLang,
           aims = aims,
+          aimsBadge = aimsBadge,
+          onAimsSeen = vm::markAimsSeen,
         )
       }
     }

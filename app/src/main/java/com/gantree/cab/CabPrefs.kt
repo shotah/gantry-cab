@@ -103,6 +103,14 @@ class CabPrefs(ctx: Context) {
     write("$ROOM_THEME.$slug", knownTheme(id).orEmpty())
   }
 
+  /**
+   * Goals board as it was when the drawer was last open, area → row JSON,
+   * so the header badge counts changes, not aims. Mirrors `pendant.aimsSeen`.
+   */
+  var aimsSeen: String
+    get() = p.getString(AIMS_SEEN, "") ?: ""
+    set(value) { write(AIMS_SEEN, value) }
+
   val bearer: String
     get() = liveBearer(session, sessionExp, heldSpike, System.currentTimeMillis() / 1000L)
 
@@ -140,5 +148,6 @@ class CabPrefs(ctx: Context) {
     private const val VOICE = "voice"
     private const val VOICE_OFFERED = "voiceOffered"
     private const val ROOM_THEME = "roomTheme"
+    private const val AIMS_SEEN = "aimsSeen"
   }
 }

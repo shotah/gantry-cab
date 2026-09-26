@@ -35,8 +35,12 @@ same as pendant's table: wire first, then UI.
 
 ## UI (same words, same order)
 
-- [ ] **Goals board.** Header target with `goals (n)`, hidden when the
-      board is empty. Sheet: one card per aim — `area` + signed
+- [ ] **Goals board.** Header target whenever the board has rows,
+      hidden when empty. **Badge = changes, not aims**: keep area → row
+      of the board last opened (UserDefaults `helm` / `aimsSeen`),
+      badge only aims that are new / changed / gone, mark seen on open
+      and while open, a never-seen board counts whole. A quiet board is
+      a bare target. Sheet: one card per aim — `area` + signed
       `rating30`, sentence, day grid (sign hue, magnitude weight,
       eventless outline, score under each cell), stamp line exactly
       `30d +1.4 · 7d +6 · streak 2 · asked`, week strip when `weeks`

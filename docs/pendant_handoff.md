@@ -117,8 +117,12 @@ accepts a missing row so an old APK can sign in.
       drops a bad row not the board, drops a half-formed `block` /
       `effect` / week whole, and builds the `[aims]` stamp line, the
       trend line, and the `/aims` footer line word for word. Header
-      target with `goals (n)` only when the board has rows
-      (`ui/GoalsBoard.kt`); the sheet is one card per aim (signed
+      target whenever the board has rows (`ui/GoalsBoard.kt`); **the
+      badge is changes, not aims** — `changedAims` against the board
+      last opened (`CabPrefs.aimsSeen`, area → row JSON, mirrors
+      `pendant.aimsSeen`), marked seen on open and while open, so a
+      reconnect replay of the same board badges nothing and a quiet
+      board is a bare target. The sheet is one card per aim (signed
       `rating30`, sentence, day grid, stamp, week strip, trend), then
       the links. Every button is a visible turn through the normal
       send: `/aims <area>`, `/aims`, `/aims rubric`. **Auto: nothing.**

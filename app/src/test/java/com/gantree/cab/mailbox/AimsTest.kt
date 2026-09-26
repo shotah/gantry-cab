@@ -178,9 +178,47 @@ class AimsTest {
     assertEquals("-2", signed(-2))
     assertEquals("0", signed(0))
     assertEquals("goals (2)", goalsLabel(2))
+    assertEquals("goals", goalsLabel(0))
     assertEquals("/aims training", askAim("training"))
     assertEquals("/aims", ASK_AIMS_REPORT)
     assertEquals("/aims rubric", ASK_AIMS_RUBRIC)
+  }
+
+  /** Pendant "The badge is a call to action, not the board size." */
+  @Test
+  fun badgeCountsChangesSinceTheLastOpenNotAims() {
+    val board = parseAims(JSONObject(BOARD))!!
+    // Never seen: the whole board counts.
+    assertEquals(2, changedAims(board, emptyMap()))
+    // Opened: nothing to tap for.
+    val seen = seenAims(board)
+    assertEquals(0, changedAims(board, seen))
+    // Same board replayed on reconnect: still nothing.
+    assertEquals(0, changedAims(parseAims(JSONObject(BOARD))!!, seen))
+    // One row moved (streak 2 → 3): one.
+    val moved = parseAims(JSONObject(BOARD.replace("\"streak\": 2", "\"streak\": 3")))!!
+    assertEquals(1, changedAims(moved, seen))
+    // An aim gone counts; an aim new counts.
+    val onlyWeight = AimsBoard(aims = board.aims.filter { it.area == "weight" })
+    assertEquals(1, changedAims(onlyWeight, seen))
+    val plusOne = AimsBoard(aims = board.aims + board.aims[1].copy(area = "sleep"))
+    assertEquals(1, changedAims(plusOne, seen))
+    // Board cleared while two were seen: two gone (the button is hidden anyway).
+    assertEquals(2, changedAims(AimsBoard(), seen))
+  }
+
+  @Test
+  fun seenBoardRoundTripsAndJunkIsNeverSeen() {
+    val board = parseAims(JSONObject(BOARD))!!
+    val seen = seenAims(board)
+    assertEquals(setOf("training", "weight"), seen.keys)
+    assertEquals(seen, parseSeenAims(encodeSeenAims(seen)))
+    assertTrue(parseSeenAims(null).isEmpty())
+    assertTrue(parseSeenAims("").isEmpty())
+    assertTrue(parseSeenAims("not json").isEmpty())
+    assertTrue(parseSeenAims("[1,2]").isEmpty())
+    // Only string rows under area-shaped keys survive.
+    assertEquals(mapOf("ok" to "{}"), parseSeenAims("""{"ok":"{}","Bad Key":"{}","n":3}"""))
   }
 
   @Test

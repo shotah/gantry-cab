@@ -14,6 +14,8 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.Badge
+import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -47,20 +49,27 @@ import com.gantree.cab.mailbox.trendLine
 import kotlin.math.abs
 
 /**
- * Header target with the aim count (pendant `GoalsButton`). Only painted when
- * the board has rows, so a room with no ledger never grows a dead button.
+ * Header target (pendant `GoalsButton`). Painted whenever the board has rows;
+ * the number is only aims that changed since the drawer was last open, so a
+ * quiet board is a plain target and not something to keep tapping.
  */
 @Composable
-fun GoalsButton(count: Int, onOpen: () -> Unit) {
-  if (count <= 0) {
+fun GoalsButton(shown: Boolean, changed: Int, onOpen: () -> Unit) {
+  if (!shown) {
     return
   }
-  val label = goalsLabel(count)
+  val label = goalsLabel(changed)
   IconButton(
     onClick = onOpen,
     modifier = Modifier.semantics { contentDescription = label },
   ) {
-    Icon(painterResource(R.drawable.ic_target), contentDescription = null)
+    if (changed > 0) {
+      BadgedBox(badge = { Badge { Text(changed.toString()) } }) {
+        Icon(painterResource(R.drawable.ic_target), contentDescription = null)
+      }
+    } else {
+      Icon(painterResource(R.drawable.ic_target), contentDescription = null)
+    }
   }
 }
 

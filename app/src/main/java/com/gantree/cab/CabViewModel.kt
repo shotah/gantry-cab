@@ -10,6 +10,10 @@ import com.gantree.cab.dev.sampleScene
 import com.gantree.cab.drive.MailboxService
 import com.gantree.cab.mailbox.AuthException
 import com.gantree.cab.mailbox.AvatarUpload
+import com.gantree.cab.mailbox.changedAims
+import com.gantree.cab.mailbox.encodeSeenAims
+import com.gantree.cab.mailbox.parseSeenAims
+import com.gantree.cab.mailbox.seenAims
 import com.gantree.cab.mailbox.AVATAR_EDGE
 import com.gantree.cab.mailbox.AVATAR_MAX_BYTES
 import com.gantree.cab.mailbox.PHOTO_JPEG_BYTES_MAX
@@ -97,6 +101,20 @@ class CabViewModel(private val app: CabApp) : ViewModel() {
   val catalog = app.mouth.catalog.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
   /** Goals board from the crane's last `aims`. Empty → no header button. */
   val aims = app.mouth.aims.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), app.mouth.aims.value)
+  private val _aimsSeen = MutableStateFlow(parseSeenAims(app.prefs.aimsSeen))
+  /** Header badge: aims that differ from the board last opened, not the board size. */
+  val aimsBadge = combine(app.mouth.aims, _aimsSeen) { board, seen -> changedAims(board, seen) }
+    .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), changedAims(app.mouth.aims.value, _aimsSeen.value))
+
+  /** Drawer opened, or a board landed while it was open: this is the board the human has seen. */
+  fun markAimsSeen() {
+    val seen = seenAims(app.mouth.aims.value)
+    if (seen == _aimsSeen.value) {
+      return
+    }
+    _aimsSeen.value = seen
+    app.prefs.aimsSeen = encodeSeenAims(seen)
+  }
   val avatarRev = app.mouth.avatarRev.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), 0)
   val painted = combine(_followTheme, app.mouth.roomTheme, _theme) { follow, room, mine ->
     paintedTheme(follow, room, mine)
