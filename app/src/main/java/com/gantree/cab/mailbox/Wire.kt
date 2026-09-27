@@ -50,6 +50,8 @@ data class WireFrame(
   val seen: Boolean? = null,
   /** `aims` notice only. Whole board; an empty board is a real clear. */
   val aims: AimsBoard? = null,
+  /** `todo` notice only. Whole list, oldest first; empty is a real clear. */
+  val todo: List<TodoRow>? = null,
 )
 
 const val TEXT_BYTES_MAX = 8_000
@@ -124,6 +126,7 @@ fun parseFrame(raw: String): WireFrame? {
       theme = roomThemeNotice(kind, o.has("theme"), o.isNull("theme"), o.optString("theme")),
       seen = parseSeen(o.opt("seen")),
       aims = if (kind == "aims") parseAims(o) else null,
+      todo = if (kind == "todo") parseTodo(o) else null,
     )
   } catch (_: Exception) {
     null

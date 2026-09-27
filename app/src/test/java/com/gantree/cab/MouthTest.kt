@@ -82,6 +82,24 @@ class MouthTest {
   }
 
   @Test
+  fun todoReplacesTheListKeepsOrderAndNeverPaintsABubble() {
+    val mouth = Mouth()
+    val rows = """
+      {"id":412,"slug":"dentist","text":"call to book a cleaning","at":"2026-09-23"},
+      {"id":418,"slug":"passport","text":"renew, by Oct 15","at":"2026-09-26"}
+    """
+    assertFalse(mouth.ingest(parseFrame("""{"kind":"todo","todo":[$rows]}""")!!))
+    assertEquals(listOf("dentist", "passport"), mouth.todo.value.map { it.slug })
+    assertTrue(mouth.lines.value.isEmpty())
+    assertFalse(mouth.ingest(parseFrame("""{"kind":"todo"}""")!!))
+    assertEquals(2, mouth.todo.value.size)
+    assertFalse(mouth.ingest(parseFrame("""{"kind":"todo","todo":[]}""")!!))
+    assertTrue(mouth.todo.value.isEmpty())
+    assertFalse(mouth.ingest(parseFrame("""{"kind":"todo","todo":[],"text":"list"}""")!!))
+    assertTrue(mouth.lines.value.isEmpty())
+  }
+
+  @Test
   fun cmdsReplaceTheCatalog() {
     val mouth = Mouth()
     val cmds = listOf(SlashCommand("new", "reset this session"))

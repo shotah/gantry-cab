@@ -11,9 +11,13 @@ import com.gantree.cab.drive.MailboxService
 import com.gantree.cab.mailbox.AuthException
 import com.gantree.cab.mailbox.AvatarUpload
 import com.gantree.cab.mailbox.changedAims
+import com.gantree.cab.mailbox.changedTodo
 import com.gantree.cab.mailbox.encodeSeenAims
+import com.gantree.cab.mailbox.encodeSeenTodo
 import com.gantree.cab.mailbox.parseSeenAims
+import com.gantree.cab.mailbox.parseSeenTodo
 import com.gantree.cab.mailbox.seenAims
+import com.gantree.cab.mailbox.seenTodo
 import com.gantree.cab.mailbox.AVATAR_EDGE
 import com.gantree.cab.mailbox.AVATAR_MAX_BYTES
 import com.gantree.cab.mailbox.PHOTO_JPEG_BYTES_MAX
@@ -114,6 +118,22 @@ class CabViewModel(private val app: CabApp) : ViewModel() {
     }
     _aimsSeen.value = seen
     app.prefs.aimsSeen = encodeSeenAims(seen)
+  }
+  /** Tasks list from the crane's last `todo`. Empty → no header button. */
+  val todo = app.mouth.todo.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), app.mouth.todo.value)
+  private val _todoSeen = MutableStateFlow(parseSeenTodo(app.prefs.todoSeen))
+  /** Header badge: tasks that differ from the list last opened, keyed by slug. */
+  val todoBadge = combine(app.mouth.todo, _todoSeen) { rows, seen -> changedTodo(rows, seen) }
+    .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), changedTodo(app.mouth.todo.value, _todoSeen.value))
+
+  /** Drawer opened, or a list that lands while it is open: this is the list the human has seen. */
+  fun markTodoSeen() {
+    val seen = seenTodo(app.mouth.todo.value)
+    if (seen == _todoSeen.value) {
+      return
+    }
+    _todoSeen.value = seen
+    app.prefs.todoSeen = encodeSeenTodo(seen)
   }
   val avatarRev = app.mouth.avatarRev.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), 0)
   val painted = combine(_followTheme, app.mouth.roomTheme, _theme) { follow, room, mine ->

@@ -286,23 +286,32 @@ fun seenAims(board: AimsBoard): Map<String, String> =
   board.aims.associate { it.area to aimRow(it) }
 
 /** New, changed, or gone since the last open. A never-seen board counts whole. */
-fun changedAims(board: AimsBoard, seen: Map<String, String>): Int {
-  val now = seenAims(board)
-  val differ = now.count { (area, row) -> seen[area] != row }
+fun changedAims(board: AimsBoard, seen: Map<String, String>): Int = changedRows(seenAims(board), seen)
+
+fun encodeSeenAims(seen: Map<String, String>): String = encodeSeenRows(seen)
+
+/** Junk → empty (never-seen). Only string rows under area-shaped keys survive. */
+fun parseSeenAims(raw: String?): Map<String, String> = parseSeenRows(raw) { AREA_RE.matches(it) }
+
+/**
+ * Shared by every board (pendant `lib/phone/boardSeen.ts`): key → row as
+ * last seen. The count is a call to action, not the board size.
+ */
+fun changedRows(now: Map<String, String>, seen: Map<String, String>): Int {
+  val differ = now.count { (key, row) -> seen[key] != row }
   val gone = seen.keys.count { it !in now }
   return differ + gone
 }
 
-fun encodeSeenAims(seen: Map<String, String>): String {
+fun encodeSeenRows(seen: Map<String, String>): String {
   val o = JSONObject()
-  for ((area, row) in seen) {
-    o.put(area, row)
+  for ((key, row) in seen) {
+    o.put(key, row)
   }
   return o.toString()
 }
 
-/** Junk → empty (never-seen). Only string rows under area-shaped keys survive. */
-fun parseSeenAims(raw: String?): Map<String, String> {
+fun parseSeenRows(raw: String?, keyOk: (String) -> Boolean): Map<String, String> {
   if (raw.isNullOrBlank()) {
     return emptyMap()
   }
@@ -311,7 +320,7 @@ fun parseSeenAims(raw: String?): Map<String, String> {
     buildMap {
       for (key in o.keys()) {
         val row = o.opt(key)
-        if (AREA_RE.matches(key) && row is String) {
+        if (keyOk(key) && row is String) {
           put(key, row)
         }
       }

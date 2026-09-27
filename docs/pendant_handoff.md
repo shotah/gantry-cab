@@ -129,6 +129,24 @@ accepts a missing row so an old APK can sign in.
       `AimsTest` / `MouthTest` / `GoalsBoardTest`. Contract: pendant
       `docs/frontends.md` Aims board. Waiting on the crane to send
       the frame (ai-gantry `docs/aims-progress.md`).
+- [x] **Tasks board (Cab half).** `kind: todo` is not a turn:
+      `Mouth.ingest` replaces `Mouth.todo` (empty array clears, no
+      array keeps the last list, order kept) and never paints a
+      bubble; `movesCursor` skips it. `mailbox/Todo.kt` parses the
+      pendant shape (positive `id`, slug `[a-z0-9][a-z0-9_-]*`, text
+      collapsed and capped at 240 runes, `at` a date), cap 100, drops
+      a bad row or a repeated id/slug not the list. Header check-square
+      whenever the list has rows (`ui/TasksBoard.kt`); **the badge is
+      changes, not tasks**, keyed by slug (`CabPrefs.todoSeen`,
+      mirrors `pendant.todoSeen`), marked seen on open and while open.
+      Sheet: checkbox, words, `#id · slug · age` (age after the first
+      day). Tick sends `/todo done <id>`, stays open, strikes the row,
+      and will not send twice; the next frame settles every tick. Add
+      sends `add to my list: <words>` and "Full list" sends `/todo`;
+      both close the sheet. Past 10 open, the pocket-list footer.
+      **Auto: nothing.** `TodoTest` / `MouthTest` / `TasksBoardTest`.
+      Contract: pendant `docs/frontends.md` Tasks board. Waiting on
+      the crane to send the frame (ai-gantry `docs/tasks.md`).
 
 ---
 

@@ -111,6 +111,15 @@ class CabPrefs(ctx: Context) {
     get() = p.getString(AIMS_SEEN, "") ?: ""
     set(value) { write(AIMS_SEEN, value) }
 
+  /**
+   * Tasks list as it was when the drawer was last open, slug → row JSON.
+   * A rewrite changes the id, not the task, so the badge keys on slug.
+   * Mirrors `pendant.todoSeen`.
+   */
+  var todoSeen: String
+    get() = p.getString(TODO_SEEN, "") ?: ""
+    set(value) { write(TODO_SEEN, value) }
+
   val bearer: String
     get() = liveBearer(session, sessionExp, heldSpike, System.currentTimeMillis() / 1000L)
 
@@ -149,5 +158,6 @@ class CabPrefs(ctx: Context) {
     private const val VOICE_OFFERED = "voiceOffered"
     private const val ROOM_THEME = "roomTheme"
     private const val AIMS_SEEN = "aimsSeen"
+    private const val TODO_SEEN = "todoSeen"
   }
 }

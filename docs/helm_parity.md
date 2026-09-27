@@ -14,6 +14,18 @@ same as pendant's table: wire first, then UI.
 
 ## Wire (must not paint wrong or drop a turn)
 
+- [ ] **`todo` (tasks board).** New `kind`, crane only, no `text`.
+      `Mouth.ingest` returns before the bubble path; `movesCursor`
+      excludes it. Parse per frontends.md Tasks board: positive `id`,
+      slug, text ≤ 240, date `at`, cap 100, drop a bad row not the
+      list, keep oldest-first. Header check-square when the list has
+      rows. Badge is changes keyed by **slug** (a rewrite changes the
+      id), UserDefaults `helm` / `todoSeen`, marked seen on open and
+      while open. Checkbox → `/todo done <id>`, sheet stays open, row
+      struck through, no second send; next frame settles the ticks.
+      Add → `add to my list: <words>` and "Full list" → `/todo`, both
+      close. Pocket-list footer past 10. **CarPlay: nothing.** Cab:
+      `mailbox/Todo.kt`, `ui/TasksBoard.kt`.
 - [ ] **`act` (device actions).** Not shipped anywhere yet. When
       pendant lands routing: `device` / `kind=helm` / `caps` / `label`
       on the upgrade, `act` parse, AlarmKit executor, `needs_permission`

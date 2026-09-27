@@ -68,6 +68,7 @@ import com.gantree.cab.R
 import com.gantree.cab.composeKey
 import com.gantree.cab.dev.SAMPLE_IDS
 import com.gantree.cab.mailbox.AimsBoard
+import com.gantree.cab.mailbox.TodoRow
 import com.gantree.cab.mailbox.canReact
 import com.gantree.cab.mailbox.DEFAULT_LANG
 import com.gantree.cab.mailbox.DEFAULT_PHOTO_SIZE
@@ -145,14 +146,23 @@ fun CabScreen(
   aims: AimsBoard = AimsBoard(),
   aimsBadge: Int = 0,
   onAimsSeen: () -> Unit = {},
+  todo: List<TodoRow> = emptyList(),
+  todoBadge: Int = 0,
+  onTodoSeen: () -> Unit = {},
 ) {
   val scheme = MaterialTheme.colorScheme
   var settingsOpen by remember { mutableStateOf(false) }
   var goalsOpen by remember { mutableStateOf(false) }
+  var tasksOpen by remember { mutableStateOf(false) }
   // Open marks the board seen; so does a board that lands while the sheet is up.
   LaunchedEffect(goalsOpen, aims) {
     if (goalsOpen) {
       onAimsSeen()
+    }
+  }
+  LaunchedEffect(tasksOpen, todo) {
+    if (tasksOpen) {
+      onTodoSeen()
     }
   }
   val list = rememberLazyListState()
@@ -252,6 +262,7 @@ fun CabScreen(
             }
           },
           actions = {
+            TasksButton(shown = todo.isNotEmpty(), changed = todoBadge, onOpen = { tasksOpen = true })
             GoalsButton(shown = !aims.isEmpty, changed = aimsBadge, onOpen = { goalsOpen = true })
             if (voiceOffered) {
               VoiceToggle(on = voiceOn, speaking = speakPhase == SpeakPhase.PLAYING, onToggle = onVoiceToggle)
@@ -459,6 +470,15 @@ fun CabScreen(
         }
       }
     }
+  }
+  if (tasksOpen && todo.isNotEmpty()) {
+    // A tick is a turn that leaves the sheet up; add and "Full list" close it.
+    TasksSheet(
+      rows = todo,
+      onTick = onSend,
+      onAsk = onSend,
+      onDismiss = { tasksOpen = false },
+    )
   }
   if (goalsOpen && !aims.isEmpty) {
     GoalsSheet(board = aims, onAsk = onSend, onDismiss = { goalsOpen = false })
