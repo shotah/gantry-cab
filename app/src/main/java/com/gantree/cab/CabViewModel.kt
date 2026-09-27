@@ -10,6 +10,14 @@ import com.gantree.cab.dev.sampleScene
 import com.gantree.cab.drive.MailboxService
 import com.gantree.cab.mailbox.AuthException
 import com.gantree.cab.mailbox.AvatarUpload
+import com.gantree.cab.mailbox.changedAims
+import com.gantree.cab.mailbox.changedTodo
+import com.gantree.cab.mailbox.encodeSeenAims
+import com.gantree.cab.mailbox.encodeSeenTodo
+import com.gantree.cab.mailbox.parseSeenAims
+import com.gantree.cab.mailbox.parseSeenTodo
+import com.gantree.cab.mailbox.seenAims
+import com.gantree.cab.mailbox.seenTodo
 import com.gantree.cab.mailbox.AVATAR_EDGE
 import com.gantree.cab.mailbox.AVATAR_MAX_BYTES
 import com.gantree.cab.mailbox.PHOTO_JPEG_BYTES_MAX
@@ -95,6 +103,38 @@ class CabViewModel(private val app: CabApp) : ViewModel() {
   val hint = app.mouth.hint.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), "")
   val lines = app.mouth.lines.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
   val catalog = app.mouth.catalog.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+  /** Goals board from the crane's last `aims`. Empty → no header button. */
+  val aims = app.mouth.aims.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), app.mouth.aims.value)
+  private val _aimsSeen = MutableStateFlow(parseSeenAims(app.prefs.aimsSeen))
+  /** Header badge: aims that differ from the board last opened, not the board size. */
+  val aimsBadge = combine(app.mouth.aims, _aimsSeen) { board, seen -> changedAims(board, seen) }
+    .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), changedAims(app.mouth.aims.value, _aimsSeen.value))
+
+  /** Drawer opened, or a board landed while it was open: this is the board the human has seen. */
+  fun markAimsSeen() {
+    val seen = seenAims(app.mouth.aims.value)
+    if (seen == _aimsSeen.value) {
+      return
+    }
+    _aimsSeen.value = seen
+    app.prefs.aimsSeen = encodeSeenAims(seen)
+  }
+  /** Tasks list from the crane's last `todo`. Empty → no header button. */
+  val todo = app.mouth.todo.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), app.mouth.todo.value)
+  private val _todoSeen = MutableStateFlow(parseSeenTodo(app.prefs.todoSeen))
+  /** Header badge: tasks that differ from the list last opened, keyed by slug. */
+  val todoBadge = combine(app.mouth.todo, _todoSeen) { rows, seen -> changedTodo(rows, seen) }
+    .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), changedTodo(app.mouth.todo.value, _todoSeen.value))
+
+  /** Drawer opened, or a list that lands while it is open: this is the list the human has seen. */
+  fun markTodoSeen() {
+    val seen = seenTodo(app.mouth.todo.value)
+    if (seen == _todoSeen.value) {
+      return
+    }
+    _todoSeen.value = seen
+    app.prefs.todoSeen = encodeSeenTodo(seen)
+  }
   val avatarRev = app.mouth.avatarRev.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), 0)
   val painted = combine(_followTheme, app.mouth.roomTheme, _theme) { follow, room, mine ->
     paintedTheme(follow, room, mine)

@@ -109,6 +109,44 @@ accepts a missing row so an old APK can sign in.
       is down is queued on the Worker (`q:crane:<bubble id>`, latest
       wins) — not on this APK. Cab still sends only while the socket
       is up and ignores `seq` / `at` on a `react`.
+- [x] **Goals board (Cab half).** `kind: aims` is not a turn:
+      `Mouth.ingest` replaces `Mouth.aims` (empty array clears, no
+      array keeps the last board) and never paints a bubble;
+      `movesCursor` skips it. `mailbox/Aims.kt` parses the pendant
+      shape with the same caps (5 aims, 14 days, 13 weeks, 3 links),
+      drops a bad row not the board, drops a half-formed `block` /
+      `effect` / week whole, and builds the `[aims]` stamp line, the
+      trend line, and the `/aims` footer line word for word. Header
+      target whenever the board has rows (`ui/GoalsBoard.kt`); **the
+      badge is changes, not aims** — `changedAims` against the board
+      last opened (`CabPrefs.aimsSeen`, area → row JSON, mirrors
+      `pendant.aimsSeen`), marked seen on open and while open, so a
+      reconnect replay of the same board badges nothing and a quiet
+      board is a bare target. The sheet is one card per aim (signed
+      `rating30`, sentence, day grid, stamp, week strip, trend), then
+      the links. Every button is a visible turn through the normal
+      send: `/aims <area>`, `/aims`, `/aims rubric`. **Auto: nothing.**
+      `AimsTest` / `MouthTest` / `GoalsBoardTest`. Contract: pendant
+      `docs/frontends.md` Aims board. Waiting on the crane to send
+      the frame (ai-gantry `docs/aims-progress.md`).
+- [x] **Tasks board (Cab half).** `kind: todo` is not a turn:
+      `Mouth.ingest` replaces `Mouth.todo` (empty array clears, no
+      array keeps the last list, order kept) and never paints a
+      bubble; `movesCursor` skips it. `mailbox/Todo.kt` parses the
+      pendant shape (positive `id`, slug `[a-z0-9][a-z0-9_-]*`, text
+      collapsed and capped at 240 runes, `at` a date), cap 100, drops
+      a bad row or a repeated id/slug not the list. Header check-square
+      whenever the list has rows (`ui/TasksBoard.kt`); **the badge is
+      changes, not tasks**, keyed by slug (`CabPrefs.todoSeen`,
+      mirrors `pendant.todoSeen`), marked seen on open and while open.
+      Sheet: checkbox, words, `#id · slug · age` (age after the first
+      day). Tick sends `/todo done <id>`, stays open, strikes the row,
+      and will not send twice; the next frame settles every tick. Add
+      sends `add to my list: <words>` and "Full list" sends `/todo`;
+      both close the sheet. Past 10 open, the pocket-list footer.
+      **Auto: nothing.** `TodoTest` / `MouthTest` / `TasksBoardTest`.
+      Contract: pendant `docs/frontends.md` Tasks board. Waiting on
+      the crane to send the frame (ai-gantry `docs/tasks.md`).
 
 ---
 

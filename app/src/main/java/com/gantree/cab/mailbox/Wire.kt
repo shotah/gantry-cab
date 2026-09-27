@@ -48,6 +48,10 @@ data class WireFrame(
    * on the sending mouth. Missing / false is delivery, not reading.
    */
   val seen: Boolean? = null,
+  /** `aims` notice only. Whole board; an empty board is a real clear. */
+  val aims: AimsBoard? = null,
+  /** `todo` notice only. Whole list, oldest first; empty is a real clear. */
+  val todo: List<TodoRow>? = null,
 )
 
 const val TEXT_BYTES_MAX = 8_000
@@ -121,6 +125,8 @@ fun parseFrame(raw: String): WireFrame? {
       rev = backdropRev(kind, o.opt("rev")),
       theme = roomThemeNotice(kind, o.has("theme"), o.isNull("theme"), o.optString("theme")),
       seen = parseSeen(o.opt("seen")),
+      aims = if (kind == "aims") parseAims(o) else null,
+      todo = if (kind == "todo") parseTodo(o) else null,
     )
   } catch (_: Exception) {
     null
