@@ -143,7 +143,7 @@ dependencies {
   implementation("androidx.car.app:app-projected:1.7.0")
   implementation("androidx.credentials:credentials:1.6.0")
   implementation("androidx.credentials:credentials-play-services-auth:1.6.0")
-  implementation("com.google.android.libraries.identity.googleid:googleid:1.2.0")
+  implementation("com.google.android.libraries.identity.googleid:googleid:1.2.1")
   implementation("com.google.android.gms:play-services-location:21.4.0")
   implementation("com.mikepenz:multiplatform-markdown-renderer:0.45.0")
   implementation("com.mikepenz:multiplatform-markdown-renderer-m3:0.45.0")
