@@ -1,8 +1,10 @@
 package com.gantree.cab
 
+import com.gantree.cab.mailbox.AimsBoard
 import com.gantree.cab.mailbox.SlashCommand
 import com.gantree.cab.mailbox.THREAD_MAX
 import com.gantree.cab.mailbox.ThreadOrder
+import com.gantree.cab.mailbox.TodoRow
 import com.gantree.cab.mailbox.WireFrame
 import com.gantree.cab.mailbox.capThread
 import com.gantree.cab.mailbox.compareThread
@@ -68,9 +70,15 @@ class Mouth(
   private val _roomTheme = MutableStateFlow("")
   private val _faceHint = MutableStateFlow("")
   private val _typingUntil = MutableStateFlow(0L)
+  private val _aims = MutableStateFlow(AimsBoard())
+  private val _todo = MutableStateFlow<List<TodoRow>>(emptyList())
   /** Last draft text change or `typing`; what [expireDraft] measures from. */
   private var draftLifeAt = 0L
   val lines: StateFlow<List<ChatLine>> = _lines
+  /** Goals board the crane last pushed. Empty hides the screen. */
+  val aims: StateFlow<AimsBoard> = _aims
+  /** Tasks list the crane last pushed, oldest first. Empty hides the screen. */
+  val todo: StateFlow<List<TodoRow>> = _todo
   val up: StateFlow<Boolean> = _up
   val hint: StateFlow<String> = _hint
   val catalog: StateFlow<List<SlashCommand>> = _catalog
@@ -124,6 +132,8 @@ class Mouth(
     _typingUntil.value = 0L
     _backdropRev.value = 0
     _roomTheme.value = ""
+    _aims.value = AimsBoard()
+    _todo.value = emptyList()
   }
 
   /** Another room (or human) is coming up; its transcript replays on connect. */
@@ -166,6 +176,16 @@ class Mouth(
     }
     if (frame.kind == "cmds") {
       _catalog.value = frame.commands.orEmpty()
+      return false
+    }
+    if (frame.kind == "aims") {
+      // Whole board each time; junk (no array) keeps the last one. Never a bubble.
+      frame.aims?.let { _aims.value = it }
+      return false
+    }
+    if (frame.kind == "todo") {
+      // Same rule as aims. Never reorder — oldest first is the crane's.
+      frame.todo?.let { _todo.value = it }
       return false
     }
     if (frame.kind == "error") {
