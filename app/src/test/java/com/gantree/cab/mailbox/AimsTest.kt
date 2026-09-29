@@ -121,7 +121,29 @@ class AimsTest {
         ]}""",
       ),
     )!!
-    assertEquals(listOf("ok"), board.aims.map { it.area })
+    assertEquals(listOf("hot", "note", "nodays", "ok"), board.aims.map { it.area })
+    assertEquals(3.0, board.aims[0].rating30, 0.0)
+    assertEquals("yelled", board.aims[1].note)
+    assertTrue(board.aims[2].days.isEmpty())
+  }
+
+  /** Crane omitempty: an aim with no day grid yet has no `days` key. That row stays. */
+  @Test
+  fun missingDaysKeepsTheAimSoTheBoardIsNotJustTheLastOne() {
+    val board = parseAims(
+      JSONObject(
+        """{"aims":[
+          {"area":"sleep","sentence":"in bed by 11","rating30":0,"sum7":0,"streak":0,"note":""},
+          {"area":"Training","sentence":"gym 3 mornings","sum7":1},
+          {"area":"weight","sentence":"under 190","rating30":-0.5,"sum7":-2,"streak":0,"note":"quiet",
+           "days":[{"day":"2026-09-26","score":1,"events":[7]}]}
+        ]}""",
+      ),
+    )!!
+    assertEquals(listOf("sleep", "training", "weight"), board.aims.map { it.area })
+    assertEquals(0.0, board.aims[1].rating30, 0.0)
+    assertTrue(board.aims[0].days.isEmpty())
+    assertEquals(1, board.aims[2].days.size)
   }
 
   @Test

@@ -45,8 +45,8 @@ class AuthApi(
   }
 
   /**
-   * Server-issued native nonce when the Worker has `GET /api/auth/nonce`.
-   * Missing route, junk body, or empty value → null so the phone can mint.
+   * Server-issued native nonce. `POST /api/auth/token` is 401 for any other
+   * value, so a failed GET is null and sign-in stops. Do not mint one here.
    */
   fun nonce(origin: String): String? {
     return try {

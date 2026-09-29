@@ -62,20 +62,19 @@ These landed on the Worker. Old Cab APKs stay valid.
 
 ---
 
-## Lockstep — Cab is ready; do not require stored nonces yet
+## Lockstep — stored nonces are required
 
-Pendant owns the Worker half. `GET /api/auth/nonce` exists. POST still
-accepts a missing row so an old APK can sign in.
+Pendant requires the nonce from `GET /api/auth/nonce`. `POST
+/api/auth/token` is 401 for any other value, including one this app
+used to mint when that GET failed.
 
-- [x] **Server-issued native nonce (Cab half).** `AuthApi.nonce()` GETs
-      `/api/auth/nonce`. 404 / junk / empty → `mintNonce()` (same
-      `SecureRandom` as before). That value goes to Google Sign-In and
-      `POST /api/auth/token`. Files: `mailbox/AuthApi.kt`,
-      `ui/Google.kt`, `CabViewModel`. Tests: `AuthApiTest`.
-      **Pendant now issues the route** (5 min, consume-once). POST
-      still accepts a missing row so an old APK can sign in. Replay
-      of a consumed server nonce is 401. **Do not require stored
-      nonces until this APK is the sideload.**
+- [x] **No local nonce (Cab half).** `AuthApi.nonce()` GETs
+      `/api/auth/nonce`. 404 / junk / empty → null. `CabViewModel.signIn`
+      stops there and does not open Google. `mintNonce` is gone;
+      `requestGoogleId` takes the server value only. Files:
+      `mailbox/AuthApi.kt`, `ui/Google.kt`, `CabViewModel`. Tests:
+      `AuthApiTest` (null on 404 / empty). An APK that still mints
+      locally cannot sign in against this Worker.
 - [x] **4401 / handshake 401 drops the JWE (Cab half).** Close `4401`
       (yanked `sub`, expired session on the next frame, later an `iat`
       floor) and HTTP 401 on upgrade stop retry, call
@@ -209,6 +208,6 @@ unless that walk is the ticket ([todo.md](todo.md) Not this version).
   change or mailbox tolerance for the old APK.
 - Do not start Expo to catch up the PWA.
 - Do not add a `CookieJar` that stores `pendant_session`.
-- `GET /api/auth/nonce` is issued. POST still accepts a locally minted
-  nonce (`missing` row). After pendant **requires** stored nonces, an
-  old APK that only mints locally cannot sign in.
+- `GET /api/auth/nonce` is required. POST is 401 for a nonce that
+  was not stored. Cab does not mint one. An old APK that still
+  mints locally cannot sign in.

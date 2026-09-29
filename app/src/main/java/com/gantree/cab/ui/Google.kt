@@ -1,24 +1,17 @@
 package com.gantree.cab.ui
 
 import android.app.Activity
-import android.util.Base64
 import androidx.credentials.CustomCredential
 import androidx.credentials.CredentialManager
 import androidx.credentials.GetCredentialRequest
 import androidx.credentials.exceptions.NoCredentialException
 import com.google.android.libraries.identity.googleid.GetSignInWithGoogleOption
 import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
-import java.security.SecureRandom
 
 data class GoogleId(val idToken: String, val nonce: String)
 
-fun mintNonce(): String {
-  val nonceBytes = ByteArray(24)
-  SecureRandom().nextBytes(nonceBytes)
-  return Base64.encodeToString(nonceBytes, Base64.URL_SAFE or Base64.NO_WRAP or Base64.NO_PADDING)
-}
-
-suspend fun requestGoogleId(activity: Activity, webClientId: String, nonce: String = mintNonce()): GoogleId {
+/** [nonce] is the value from `GET /api/auth/nonce`. A locally minted one is rejected. */
+suspend fun requestGoogleId(activity: Activity, webClientId: String, nonce: String): GoogleId {
   val option = GetSignInWithGoogleOption.Builder(webClientId)
     .setNonce(nonce)
     .build()

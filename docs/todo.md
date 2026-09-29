@@ -6,11 +6,11 @@ low**. A `v*` tag must always attach an installable APK — never fail the
 release job for a missing Play keystore, R8, pinning, or Tink.
 
 Mailbox checkout handoff (2026-09-12 Worker pass + docs pass: CSRF,
-config `version`, native nonce issued-not-required, sibling fan-out,
-hydrate): [pendant_handoff.md](pendant_handoff.md). Cab half of nonce
-+ 4401 is in tree; remaining boxes are a tagged APK and walking
-sibling inbound on the deployed origin. Do not wait for a pendant
-agent to edit Kotlin.
+config `version`, sibling fan-out, hydrate):
+[pendant_handoff.md](pendant_handoff.md). Stored nonces are required:
+Cab posts only `GET /api/auth/nonce` and stops sign-in when that GET
+fails. 4401 is in tree. Remaining boxes are a tagged APK and walking
+sibling inbound on the deployed origin.
 
 Threat model: a phone that holds a **credential for the crane's room**
 (Google session JWE or `MAILBOX_SECRET`) and a socket that **speaks for
@@ -77,8 +77,8 @@ letting another app read the thread are the failures that matter.
 
 - **`fragment-ktx`:** unused import-wise, but lint `InvalidFragmentVersionForActivityResult` requires Fragment ≥ 1.3.0 for `registerForActivityResult`. Leave it.
 - **`EXTRA_SAMPLE`:** only when `BuildConfig.DEV`. Release ignores it. Keep the gate.
-- **Google Sign-In:** prefers `GET /api/auth/nonce`, else `SecureRandom`
-  (`mintNonce`). Web client id is public; Android client id is not in
+- **Google Sign-In:** nonce comes only from `GET /api/auth/nonce`.
+  A failed GET stops sign-in; Cab does not mint one. Web client id is public; Android client id is not in
   the APK. `aud` check is on the Worker — keep `PENDANT_ALLOWED_USERS`
   tight. Close `4401` / handshake 401 drops the stored JWE; 403 does not.
 - **`MAILBOX_SECRET`:** a phone that has it *is* the operator. Lab-only. Rotate on device loss; prefer Google sessions off the emulator.

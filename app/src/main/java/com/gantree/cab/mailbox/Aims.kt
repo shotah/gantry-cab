@@ -14,11 +14,12 @@ const val AIMS_MAX = 5
 const val AIM_DAYS_MAX = 14
 const val AIM_WEEKS_MAX = 13
 const val AIM_LINKS_MAX = 3
-const val AIM_SENTENCE_MAX = 200
+const val AIM_SENTENCE_MAX = 240
+const val AIM_NOTE_MAX = 32
 
-private val AREA_RE = Regex("^[a-z0-9_-]{1,48}$")
+/** After lowercasing. Same as pendant `AREA_RE`. */
+private val AREA_RE = Regex("^[a-z0-9][a-z0-9_-]{0,31}$")
 private val DAY_RE = Regex("^\\d{4}-\\d{2}-\\d{2}$")
-private val NOTES = setOf("nudged", "asked", "offered", "praised", "quiet", "")
 
 data class AimDay(val day: String, val score: Int, val events: List<Long>)
 
@@ -57,12 +58,16 @@ data class AimsBoard(
 /** Whole frame → board. Missing `aims` array is junk (null); `[]` is a real clear. */
 fun parseAims(o: JSONObject): AimsBoard? {
   val arr = o.optJSONArray("aims") ?: return null
+  val seen = HashSet<String>()
   val aims = buildList {
     for (i in 0 until arr.length()) {
       if (size >= AIMS_MAX) {
         break
       }
       val aim = parseAim(arr.optJSONObject(i) ?: continue) ?: continue
+      if (!seen.add(aim.area)) {
+        continue
+      }
       add(aim)
     }
   }
@@ -71,25 +76,26 @@ fun parseAims(o: JSONObject): AimsBoard? {
 }
 
 internal fun parseAim(o: JSONObject): Aim? {
-  val area = o.optString("area").trim()
+  val area = o.optString("area").trim().lowercase()
   if (!AREA_RE.matches(area)) {
     return null
   }
-  val sentence = o.optString("sentence").trim().take(AIM_SENTENCE_MAX)
+  val sentenceRaw = o.optString("sentence")
+  if (sentenceRaw.length > AIM_SENTENCE_MAX) {
+    return null
+  }
+  val sentence = sentenceRaw.trim()
   if (sentence.isEmpty()) {
     return null
   }
-  val rating30 = finite(o.opt("rating30")) ?: return null
-  if (rating30 < -3.0 || rating30 > 3.0) {
-    return null
-  }
-  val sum7 = whole(o.opt("sum7")) ?: return null
-  val streak = whole(o.opt("streak")) ?: return null
-  val note = o.optString("note").trim()
-  if (note !in NOTES) {
-    return null
-  }
-  val days = parseDays(o.optJSONArray("days") ?: return null)
+  // Pendant clamps and defaults. A missing or wild number is not a reason to hide the aim.
+  val rating30 = (finite(o.opt("rating30")) ?: 0.0).coerceIn(-3.0, 3.0)
+  val sum7 = whole(o.opt("sum7")) ?: 0
+  val streak = (whole(o.opt("streak")) ?: 0).coerceAtLeast(0)
+  val noteRaw = o.optString("note").trim()
+  val note = if (noteRaw.length <= AIM_NOTE_MAX) noteRaw else ""
+  // `days` is omitempty on the crane. No grid yet means an empty list, not a dropped aim.
+  val days = parseDays(o.optJSONArray("days"))
   return Aim(
     area = area,
     sentence = sentence,
@@ -106,18 +112,23 @@ internal fun parseAim(o: JSONObject): Aim? {
   )
 }
 
-private fun parseDays(arr: JSONArray): List<AimDay> = buildList {
-  for (i in 0 until arr.length()) {
-    if (size >= AIM_DAYS_MAX) {
-      break
+private fun parseDays(arr: JSONArray?): List<AimDay> {
+  if (arr == null) {
+    return emptyList()
+  }
+  return buildList {
+    for (i in 0 until arr.length()) {
+      if (size >= AIM_DAYS_MAX) {
+        break
+      }
+      val d = arr.optJSONObject(i) ?: continue
+      val day = d.optString("day")
+      if (!DAY_RE.matches(day)) {
+        continue
+      }
+      val score = whole(d.opt("score")) ?: continue
+      add(AimDay(day = day, score = score, events = parseIds(d.optJSONArray("events"))))
     }
-    val d = arr.optJSONObject(i) ?: continue
-    val day = d.optString("day")
-    if (!DAY_RE.matches(day)) {
-      continue
-    }
-    val score = whole(d.opt("score")) ?: continue
-    add(AimDay(day = day, score = score, events = parseIds(d.optJSONArray("events"))))
   }
 }
 
