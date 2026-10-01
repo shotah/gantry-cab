@@ -137,7 +137,7 @@ dependencies {
   implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.11.0")
   implementation("androidx.lifecycle:lifecycle-viewmodel-ktx:2.11.0")
   implementation("androidx.lifecycle:lifecycle-service:2.11.0")
-  implementation("androidx.core:core-ktx:1.19.0")
+  implementation("androidx.core:core-ktx:1.19.1")
   implementation("com.squareup.okhttp3:okhttp:5.5.0")
   implementation("androidx.car.app:app:1.7.0")
   implementation("androidx.car.app:app-projected:1.7.0")
