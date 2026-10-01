@@ -125,7 +125,7 @@ android {
 dependencies {
   val composeBom = platform("androidx.compose:compose-bom:2026.09.00")
   implementation(composeBom)
-  implementation("androidx.fragment:fragment-ktx:1.9.0")
+  implementation("androidx.fragment:fragment-ktx:1.9.1")
   implementation("androidx.compose.ui:ui")
   implementation("androidx.compose.ui:ui-tooling-preview")
   implementation("androidx.compose.material3:material3")
