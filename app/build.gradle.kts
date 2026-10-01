@@ -148,7 +148,7 @@ dependencies {
   implementation("com.mikepenz:multiplatform-markdown-renderer:0.45.0")
   implementation("com.mikepenz:multiplatform-markdown-renderer-m3:0.45.0")
   // The parser the renderer above already ships; `speakable()` walks the same tree the bubble paints.
-  implementation("org.jetbrains:markdown:0.7.14")
+  implementation("org.jetbrains:markdown:0.7.15")
   implementation("io.coil-kt.coil3:coil-compose:3.6.3")
   implementation("io.coil-kt.coil3:coil-network-okhttp:3.6.3")
   testImplementation("junit:junit:4.13.2")
