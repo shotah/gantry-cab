@@ -14,22 +14,6 @@ same as pendant's table: wire first, then UI.
 
 ## Wire (must not paint wrong or drop a turn)
 
-- [ ] **No local nonce.** `POST /api/auth/token` is 401 unless the nonce
-      came from `GET /api/auth/nonce` and is still stored. When that
-      GET fails, stop sign-in. Do not mint one and open the Google
-      sheet. Cab: `CabViewModel.signIn`.
-- [ ] **`todo` (tasks board).** New `kind`, crane only, no `text`.
-      `Mouth.ingest` returns before the bubble path; `movesCursor`
-      excludes it. Parse per frontends.md Tasks board: positive `id`,
-      slug, text ≤ 240, date `at`, cap 100, drop a bad row not the
-      list, keep oldest-first. Header check-square when the list has
-      rows. Badge is changes keyed by **slug** (a rewrite changes the
-      id), UserDefaults `helm` / `todoSeen`, marked seen on open and
-      while open. Checkbox → `/todo done <id>`, sheet stays open, row
-      struck through, no second send; next frame settles the ticks.
-      Add → `add to my list: <words>` and "Full list" → `/todo`, both
-      close. Pocket-list footer past 10. **CarPlay: nothing.** Cab:
-      `mailbox/Todo.kt`, `ui/TasksBoard.kt`.
 - [ ] **`act` (device actions).** Not shipped anywhere yet. When
       pendant lands routing: `device` / `kind=helm` / `caps` / `label`
       on the upgrade, `act` parse, AlarmKit executor, `needs_permission`
@@ -42,12 +26,15 @@ Thread order (`seq` / `at`, `placeInThread`, highest-seq ack),
 transcript hydrate + `shouldSpeak(kind, replay)`, `ThreadCache`,
 draft / typing rules, photo caps + ladder + `SendError`, face /
 backdrop / theme notices and the 82 / 80×40 / −2/−4 header hang,
-`surface` `ios` / `carplay`, Google sign-in (the nonce GET is the
-happy path; dropping the local mint is still open above),
+`surface` `ios` / `carplay`, Google sign-in (nonce only from
+`GET /api/auth/nonce`; a failed GET stops sign-in),
 4401 drops the JWE.
 
 `aims` (caps 5 / 14 / 13 / 3, not a turn, header badge is changes
 since `helm` / `aimsSeen`, sheet copy, CarPlay shows nothing),
+`todo` (cap 100, not a turn, header check-square badges changes
+since `helm` / `todoSeen` keyed by slug, checkbox `/todo done <id>`
+stays open, add and Full list close, CarPlay shows nothing),
 `react` ignore-then-paint (context menu on a Kit bubble, CarPlay
 read-only), `seen` on ack (connect with the thread up, and each live
 `reply` / `push`; a sibling inbound or a seen ack drops the local
