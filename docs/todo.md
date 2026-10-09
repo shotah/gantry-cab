@@ -95,7 +95,7 @@ letting another app read the thread are the failures that matter.
 
 Pendant does not have these either (`gantry-pendant` `docs/todo.md`). Do not build them "to catch up":
 
-- Failed + retry on an unacked send; copy on long-press
+- Failed + retry on an unacked send (copy on hold shipped: `ChatTurn` bubble menu, `AvatarSheet` — on the Helm list)
 - Painted timestamps / day chips
 - Crane presence (`asleep` / `queued`) separate from socket `live`
 - Stop-a-turn, quote / reply-to, inline Yes / No, one non-image file

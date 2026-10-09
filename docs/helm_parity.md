@@ -20,6 +20,37 @@ same as pendant's table: wire first, then UI.
       when the AlarmKit prompt was not accepted. Full contract:
       [device_actions.md](device_actions.md).
 
+## UI (phone only; CarPlay shows nothing new)
+
+- [ ] **Avatar sheet.** Tap the header face → a sheet, not the photo
+      picker: the face large (160 pt, same ring as the header), the
+      crane's name, then **Copy** (the JPEG on the pasteboard as an
+      image, label flips to "Copied", sheet stays up), **Share**
+      (system share sheet over the JPEG, closes), **Replace** (the
+      photo picker the tap used to open, closes). Copy and Share only
+      when the room has set a face; the bundled default is nobody's
+      work, so that sheet is Replace alone. The Google door still does
+      not open it. Cab: `ui/AvatarSheet.kt`, `JpegIo.avatarShareUri`
+      / `shareImageIntent`, `AvatarSheetTest`.
+- [ ] **Copy text from a bubble.** Hold on **any** bubble with words
+      — yours too, socket down too — opens the bubble menu, not only
+      Kit's reactable ones. First row **Copy text**: the raw markdown
+      of the bubble goes on the pasteboard and the menu closes. The
+      emoji rows sit under it only when `canReact` (Kit `reply` /
+      `push`, live). A photo-only bubble has no copy row. Cab:
+      `React.canCopy` / `canHold`, `ui/ChatTurn.kt` `BubbleMenu`,
+      `ChatTurnTest`.
+- [ ] **Task priority.** No wire change: the crane leads a row's `text`
+      with `!! ` (urgent) or `! ` (high); nothing is normal (crane
+      `internal/memory/tools.go`). Keep `text` raw (the seen-badge keys
+      on it). Tasks sheet: stable sort urgent → high → rest, oldest
+      first inside each rank; paint the marker as a coloured tag ahead
+      of the words (`!!` error / `!` tertiary, accessibility label
+      "urgent" / "high"), not as the first word. `!!!`, a glued
+      `!!file`, or a bare `!!` are words, not a marker. Cab:
+      `Todo.todoPriority` / `todoWords` / `sortTodo`,
+      `ui/TasksBoard.kt`, `TodoTest`, `TasksBoardTest`.
+
 ## Already matched (per frontends.md)
 
 Thread order (`seq` / `at`, `placeInThread`, highest-seq ack),

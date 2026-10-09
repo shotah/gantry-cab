@@ -37,14 +37,18 @@ import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import com.gantree.cab.R
 import com.gantree.cab.mailbox.TODO_LIST_COMMAND
+import com.gantree.cab.mailbox.TodoPriority
 import com.gantree.cab.mailbox.TodoRow
 import com.gantree.cab.mailbox.canTick
 import com.gantree.cab.mailbox.pocketFooter
 import com.gantree.cab.mailbox.settleTicked
+import com.gantree.cab.mailbox.sortTodo
 import com.gantree.cab.mailbox.tasksLabel
 import com.gantree.cab.mailbox.todoAddText
 import com.gantree.cab.mailbox.todoDoneCommand
 import com.gantree.cab.mailbox.todoMeta
+import com.gantree.cab.mailbox.todoPriority
+import com.gantree.cab.mailbox.todoWords
 import java.time.LocalDate
 
 /**
@@ -72,7 +76,9 @@ fun TasksButton(shown: Boolean, changed: Int, onOpen: () -> Unit) {
 }
 
 /**
- * One checklist row per task, oldest first. The checkbox sends `/todo done
+ * One checklist row per task: `!!` urgent first, then `!` high, then the
+ * rest, oldest first inside each rank; the marker paints as a coloured tag
+ * ahead of the words, not as the first word. The checkbox sends `/todo done
  * <id>` and the sheet **stays open** so several can be ticked; the row shows
  * ticked and struck through and will not send twice. Add and "Full list"
  * close the sheet so the answer is in view. A new list settles every tick.
@@ -120,8 +126,9 @@ fun TasksSheet(
         Text("Tasks", style = MaterialTheme.typography.titleLarge)
         TextButton(onClick = { ask(TODO_LIST_COMMAND) }) { Text("Full list") }
       }
-      for (row in rows) {
+      for (row in sortTodo(rows)) {
         val done = row.id in ticked
+        val priority = todoPriority(row.text)
         Row(
           modifier = Modifier.fillMaxWidth(),
           verticalAlignment = Alignment.CenterVertically,
@@ -137,12 +144,22 @@ fun TasksSheet(
             modifier = Modifier.semantics { contentDescription = "done ${row.slug}" },
           )
           Column(modifier = Modifier.weight(1f)) {
-            Text(
-              row.text,
-              style = MaterialTheme.typography.bodyMedium,
-              textDecoration = if (done) TextDecoration.LineThrough else null,
-              color = if (done) scheme.onSurfaceVariant else scheme.onSurface,
-            )
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+              priority.tag?.let { tag ->
+                Text(
+                  if (priority == TodoPriority.URGENT) "!!" else "!",
+                  style = MaterialTheme.typography.labelLarge,
+                  color = if (priority == TodoPriority.URGENT) scheme.error else scheme.tertiary,
+                  modifier = Modifier.semantics { contentDescription = tag },
+                )
+              }
+              Text(
+                todoWords(row.text),
+                style = MaterialTheme.typography.bodyMedium,
+                textDecoration = if (done) TextDecoration.LineThrough else null,
+                color = if (done) scheme.onSurfaceVariant else scheme.onSurface,
+              )
+            }
             Text(
               todoMeta(row, today),
               style = MaterialTheme.typography.labelSmall,

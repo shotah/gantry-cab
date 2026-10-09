@@ -14,7 +14,10 @@ README themes. The rest of the catalog lives in Settings.
 Not shot yet: the header mic (left of the cog, only when the Worker
 publishes `voice`) and the hold-to-talk bar it swaps in for compose,
 the Settings → Access rows (microphone / location / notifications),
-and Settings → Language (English / 日本語 / 中文 / Tiếng Việt, voice only).
+Settings → Language (English / 日本語 / 中文 / Tiếng Việt, voice only),
+the avatar sheet (tap the header face: Copy / Share / Replace), and
+the bubble menu (hold any bubble: Copy text, then the emoji rows on a
+Kit bubble).
 `phone-settings` predates Access and Language, and still paints Theme /
 Font size / Photo size as chip rows; on the phone they are dropdowns
 (one field each, choices in a menu under it — `CabSettingsTest`).

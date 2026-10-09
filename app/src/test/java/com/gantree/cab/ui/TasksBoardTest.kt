@@ -2,6 +2,7 @@ package com.gantree.cab.ui
 
 import android.app.Application
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.getBoundsInRoot
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
@@ -12,6 +13,7 @@ import com.gantree.cab.mailbox.DEFAULT_FONT
 import com.gantree.cab.mailbox.DEFAULT_THEME
 import com.gantree.cab.mailbox.TodoRow
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -92,6 +94,29 @@ class TasksBoardTest {
     compose.onNodeWithText("Full list").performScrollTo().performClick()
     assertEquals(listOf("add to my list: book a cleaning", "/todo"), sent)
     assertEquals(2, dismissed)
+  }
+
+  /** `!!` and `!` sort to the top and paint as a tag, not as the first word of the task. */
+  @Test
+  fun urgentThenHighLeadTheSheetWithTheMarkerAsATag() {
+    val ranked = listOf(
+      TodoRow(412, "dentist", "call to book a cleaning", "2026-09-23"),
+      TodoRow(418, "passport", "! renew, by Oct 15", "2026-09-24"),
+      TodoRow(421, "taxes", "!! file the extension", "2026-09-25"),
+    )
+    compose.setContent {
+      CabTheme(themeId = DEFAULT_THEME, fontId = DEFAULT_FONT) {
+        TasksSheet(rows = ranked, onTick = {}, onAsk = {}, onDismiss = {}, today = today)
+      }
+    }
+    val taxes = compose.onNodeWithText("file the extension").performScrollTo().getBoundsInRoot()
+    val passport = compose.onNodeWithText("renew, by Oct 15").performScrollTo().getBoundsInRoot()
+    val dentist = compose.onNodeWithText("call to book a cleaning").performScrollTo().getBoundsInRoot()
+    assertTrue(taxes.top < passport.top)
+    assertTrue(passport.top < dentist.top)
+    compose.onNodeWithContentDescription("urgent").assertIsDisplayed()
+    compose.onNodeWithContentDescription("high").assertIsDisplayed()
+    compose.onNodeWithText("!! file the extension").assertDoesNotExist()
   }
 
   @Test

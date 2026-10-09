@@ -196,6 +196,7 @@ fun CabScreen(
   }
   var followNewest by remember { mutableStateOf(true) }
   var pickingId by remember { mutableStateOf<String?>(null) }
+  var avatarOpen by remember { mutableStateOf(false) }
   LaunchedEffect(list) {
     snapshotFlow { list.isScrollInProgress }.collect { scrolling ->
       if (!scrolling) {
@@ -462,6 +463,7 @@ fun CabScreen(
                     onReact(line.id, toggleReaction(line.reaction, emoji))
                     pickingId = null
                   },
+                  onClose = { pickingId = null },
                 )
               }
             }
@@ -483,6 +485,9 @@ fun CabScreen(
   if (goalsOpen && !aims.isEmpty) {
     GoalsSheet(board = aims, onAsk = onSend, onDismiss = { goalsOpen = false })
   }
+  if (avatarOpen) {
+    AvatarSheet(slug = slug, bytes = avatarBytes, onReplace = onAvatar, onDismiss = { avatarOpen = false })
+  }
   if (!showSettings) {
     KitAvatar(
       slug = slug,
@@ -496,7 +501,7 @@ fun CabScreen(
       size = HEADER_FACE_SIZE,
       stroke = HEADER_FACE_STROKE,
       editable = !googleDoor,
-      onClick = onAvatar,
+      onClick = { avatarOpen = true },
     )
   }
   }

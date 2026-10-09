@@ -55,5 +55,11 @@ fun toggleReaction(current: String?, emoji: String): String =
 fun canReact(fromYou: Boolean, kind: String?, id: String): Boolean =
   !fromYou && (kind == "reply" || kind == "push") && id.isNotEmpty()
 
+/** Any bubble with words copies — yours too, socket down too. A photo-only bubble has nothing to copy. */
+fun canCopy(text: String): Boolean = text.isNotBlank()
+
+/** Hold opens the bubble menu when there is something to do there: copy the text, or react. */
+fun canHold(reactable: Boolean, text: String): Boolean = reactable || canCopy(text)
+
 fun reactFrame(id: String, text: String): WireFrame =
   WireFrame(kind = "react", id = id, text = text)

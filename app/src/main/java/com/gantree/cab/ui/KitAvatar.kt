@@ -79,7 +79,7 @@ fun KitAvatar(
     face(
       modifier
         .clickable(onClick = onClick)
-        .semantics { contentDescription = "Change $name's photo" },
+        .semantics { contentDescription = "$name's photo" },
     )
   }
 }

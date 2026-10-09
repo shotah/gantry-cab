@@ -77,6 +77,46 @@ class TodoTest {
     assertEquals(TODO_TEXT_MAX, rows[0].text.codePointCount(0, rows[0].text.length))
   }
 
+  /** The crane leads the words with `!!` (urgent) or `!` (high); nothing is normal. The marker is not the task. */
+  @Test
+  fun priorityIsAMarkerLeadingTheWords() {
+    assertEquals(TodoPriority.URGENT, todoPriority("!! file the extension"))
+    assertEquals(TodoPriority.HIGH, todoPriority("! renew, by Oct 15"))
+    assertEquals(TodoPriority.NORMAL, todoPriority("call to book a cleaning"))
+    assertEquals("file the extension", todoWords("!! file the extension"))
+    assertEquals("renew, by Oct 15", todoWords("! renew, by Oct 15"))
+    assertEquals("call to book a cleaning", todoWords("call to book a cleaning"))
+    // Not a marker: glued to the words, three bangs, or a bang with nothing after it.
+    assertEquals(TodoPriority.NORMAL, todoPriority("!!file"))
+    assertEquals("!!file", todoWords("!!file"))
+    assertEquals(TodoPriority.NORMAL, todoPriority("!!! now"))
+    assertEquals("!!! now", todoWords("!!! now"))
+    assertEquals(TodoPriority.NORMAL, todoPriority("!!"))
+    assertEquals("!!", todoWords("!!"))
+    // The parser collapses whitespace first, so a wide gap after the marker still reads.
+    val rows = parseTodo(
+      JSONObject("""{"todo":[{"id":1,"slug":"x","text":"  !!   file   it ","at":"2026-09-01"}]}"""),
+    )!!
+    assertEquals("!! file it", rows[0].text)
+    assertEquals(TodoPriority.URGENT, todoPriority(rows[0].text))
+  }
+
+  /** Urgent, then high, then the rest; the frame's oldest-first order holds inside each rank. */
+  @Test
+  fun sortTodoIsByPriorityThenFrameOrder() {
+    val rows = listOf(
+      TodoRow(1, "a", "old normal", "2026-09-01"),
+      TodoRow(2, "b", "! old high", "2026-09-02"),
+      TodoRow(3, "c", "new normal", "2026-09-03"),
+      TodoRow(4, "d", "!! urgent", "2026-09-04"),
+      TodoRow(5, "e", "! new high", "2026-09-05"),
+    )
+    assertEquals(listOf(4L, 2L, 5L, 1L, 3L), sortTodo(rows).map { it.id })
+    // No markers: the list comes back as it came.
+    val plain = rows.map { it.copy(text = todoWords(it.text)) }
+    assertEquals(plain, sortTodo(plain))
+  }
+
   @Test
   fun ageShowsAfterTheFirstDay() {
     val old = TodoRow(412, "dentist", "call", "2026-09-23")

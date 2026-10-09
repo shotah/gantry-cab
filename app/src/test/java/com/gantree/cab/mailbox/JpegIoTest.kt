@@ -2,14 +2,17 @@ package com.gantree.cab.mailbox
 
 import android.content.ContentResolver
 import android.content.Context
+import android.content.Intent
 import android.graphics.BitmapFactory
 import android.net.Uri
+import androidx.core.content.FileProvider
 import androidx.test.core.app.ApplicationProvider
 import com.gantree.cab.drive.solidJpeg
 import org.junit.Assert.assertArrayEquals
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertThrows
 import org.junit.Assert.assertTrue
+import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
@@ -31,6 +34,9 @@ import java.io.File
 class JpegIoTest {
   private val app: Context = ApplicationProvider.getApplicationContext()
   private val resolver: ContentResolver = app.contentResolver
+
+  @Before
+  fun freshProvider() = resetFileProvider()
 
   /** A picker-style `content://` URI; not the `media` authority, which Robolectric fakes. */
   private fun picked(name: String, bytes: ByteArray): Uri {
@@ -104,6 +110,42 @@ class JpegIoTest {
     file.writeBytes(raw)
     assertArrayEquals(raw, jpegFromUri(resolver, uri, edge = 1024, maxBytes = PHOTO_JPEG_BYTES_MAX))
   }
+
+  @Test
+  fun faceOutIsAFileProviderUriHoldingTheBytes() {
+    val raw = solidJpeg(64, 64)
+    val uri = avatarShareUri(app, raw)
+    assertEquals("content", uri.scheme)
+    assertEquals("${app.packageName}.fileprovider", uri.authority)
+    assertArrayEquals(raw, resolver.openInputStream(uri)!!.use { it.readBytes() })
+    // The next copy overwrites the same file; nothing piles up in cache.
+    val next = solidJpeg(32, 32)
+    assertEquals(uri, avatarShareUri(app, next))
+    assertArrayEquals(next, resolver.openInputStream(uri)!!.use { it.readBytes() })
+  }
+
+  @Test
+  fun shareImageIntentIsAChooserOverSendWithAReadGrant() {
+    val uri = Uri.parse("content://com.gantree.cab.fileprovider/avatar/face.jpg")
+    val chooser = shareImageIntent(uri)
+    assertEquals(Intent.ACTION_CHOOSER, chooser.action)
+    val send = chooser.getParcelableExtra(Intent.EXTRA_INTENT, Intent::class.java)!!
+    assertEquals(Intent.ACTION_SEND, send.action)
+    assertEquals("image/jpeg", send.type)
+    assertEquals(uri, send.getParcelableExtra(Intent.EXTRA_STREAM, Uri::class.java))
+    assertTrue(send.flags and Intent.FLAG_GRANT_READ_URI_PERMISSION != 0)
+  }
+}
+
+/**
+ * [FileProvider] caches its path roots per authority in a static map.
+ * Robolectric gives every test method a fresh data dir but keeps the class
+ * loader, so the second test to mint a URI would miss the roots the first one
+ * cached ("Failed to find configured root"). Call from `@Before`.
+ */
+fun resetFileProvider() {
+  val field = FileProvider::class.java.getDeclaredField("sCache").apply { isAccessible = true }
+  (field.get(null) as MutableMap<*, *>).clear()
 }
 
 /** Splice a minimal Exif APP1 (one IFD0 entry: 0x0112 Orientation) right after SOI. */

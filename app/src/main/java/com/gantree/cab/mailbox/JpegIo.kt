@@ -2,6 +2,7 @@ package com.gantree.cab.mailbox
 
 import android.content.ContentResolver
 import android.content.Context
+import android.content.Intent
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.ImageDecoder
@@ -101,4 +102,26 @@ private fun decodeSample(width: Int, height: Int, edge: Int): Int {
 fun cameraShotUri(ctx: Context): Uri {
   val dir = File(ctx.cacheDir, "camera").apply { mkdirs() }
   return FileProvider.getUriForFile(ctx, "${ctx.packageName}.fileprovider", File(dir, "shot.jpg"))
+}
+
+/**
+ * The crane's face as a `content://` URI another app can read — the
+ * clipboard (`ClipData.newUri`) or a share sheet. One fixed file in
+ * app-private cache, overwritten on every copy, same provider as the
+ * camera shot (`camera_paths.xml` also covers `cache/avatar/`).
+ */
+fun avatarShareUri(ctx: Context, jpeg: ByteArray): Uri {
+  val dir = File(ctx.cacheDir, "avatar").apply { mkdirs() }
+  val file = File(dir, "face.jpg")
+  file.writeBytes(jpeg)
+  return FileProvider.getUriForFile(ctx, "${ctx.packageName}.fileprovider", file)
+}
+
+/** Share sheet over one image. The read grant is what lets the picked app open the provider URI. */
+fun shareImageIntent(uri: Uri): Intent {
+  val send = Intent(Intent.ACTION_SEND)
+    .setType("image/jpeg")
+    .putExtra(Intent.EXTRA_STREAM, uri)
+    .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+  return Intent.createChooser(send, null)
 }

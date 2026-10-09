@@ -47,6 +47,16 @@ class ReactTest {
   }
 
   @Test
+  fun anyBubbleWithWordsCopiesAndAHoldNeedsCopyOrReact() {
+    assertTrue(canCopy("latched"))
+    assertFalse(canCopy(""))
+    assertFalse(canCopy("   "))
+    assertTrue(canHold(reactable = false, text = "mine"))
+    assertTrue(canHold(reactable = true, text = ""))
+    assertFalse(canHold(reactable = false, text = ""))
+  }
+
+  @Test
   fun reactFrameIsKindIdAndText() {
     val set = parseFrame(encodeFrame(reactFrame("r1", "👍")))!!
     assertEquals("react", set.kind)

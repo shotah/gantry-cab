@@ -88,6 +88,33 @@ private fun capRunes(s: String, max: Int): String {
   return s.substring(0, s.offsetByCodePoints(0, max))
 }
 
+/**
+ * Priority is a marker leading the words — `!!` urgent, `!` high, none
+ * normal (`"!! file the extension"`) — set by the crane (theirs, or its read
+ * of the stakes). It rides inside `text`, so [TodoRow.text] keeps it (the
+ * seen-badge keys on the raw words) and the sheet reads it out here.
+ */
+enum class TodoPriority(val rank: Int, val tag: String?) {
+  URGENT(2, "urgent"),
+  HIGH(1, "high"),
+  NORMAL(0, null),
+}
+
+/** Marker, a space, then the task. `!!!`, a glued `!!file`, or a bare `!!` are words, not a marker. */
+private val PRIORITY_RE = Regex("^(!!?) (?!!)(.+)$")
+
+fun todoPriority(text: String): TodoPriority = when (PRIORITY_RE.find(text)?.groupValues?.get(1)) {
+  "!!" -> TodoPriority.URGENT
+  "!" -> TodoPriority.HIGH
+  else -> TodoPriority.NORMAL
+}
+
+/** The task without its marker; what the row paints. */
+fun todoWords(text: String): String = PRIORITY_RE.find(text)?.groupValues?.get(2) ?: text
+
+/** Urgent, then high, then the rest. Stable, so the frame's oldest-first order holds inside each rank. */
+fun sortTodo(rows: List<TodoRow>): List<TodoRow> = rows.sortedByDescending { todoPriority(it.text).rank }
+
 /** Whole days since `at`; null when `at` does not parse or is in the future. */
 fun todoAgeDays(at: String, today: LocalDate): Long? {
   val day = try {
