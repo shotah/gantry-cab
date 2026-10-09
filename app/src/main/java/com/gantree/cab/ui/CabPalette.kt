@@ -37,17 +37,20 @@ data class CabColors(
 val LocalCabColors = compositionLocalOf { boomColors() }
 
 fun cabColors(themeId: String): CabColors = when (parseTheme(themeId)) {
-  "inlay" -> inlayColors()
-  "lamp" -> lampColors()
-  "noir" -> noirColors()
-  "ember" -> emberColors()
-  "tide" -> tideColors()
-  "bloom" -> bloomColors()
   "paper" -> paperColors()
-  "chalk" -> chalkColors()
-  "foam" -> foamColors()
-  "petal" -> petalColors()
   "ink" -> inkColors()
+  "marquee" -> marqueeColors()
+  "lemonade" -> lemonadeColors()
+  "neon" -> neonColors()
+  "fizz" -> fizzColors()
+  "rain" -> rainColors()
+  "mist" -> mistColors()
+  "fuse" -> fuseColors()
+  "grit" -> gritColors()
+  "siren" -> sirenColors()
+  "flare" -> flareColors()
+  "static" -> staticColors()
+  "flicker" -> flickerColors()
   else -> boomColors()
 }
 
@@ -71,126 +74,6 @@ fun boomColors() = CabColors(
   kit = Color(0xFF232B32),
 )
 
-private fun inlayColors() = CabColors(
-  canvas = Color(0xFF0C110F),
-  panel = Color(0xFF151C19),
-  track = Color(0xFF1E2823),
-  line = Color(0xFF33423B),
-  edge = Color(0xFF5A6E64),
-  fg = Color(0xFFF2EBE0),
-  body = Color(0xFFD9D0C4),
-  muted = Color(0xFFA3ADA6),
-  dim = Color(0xFF8A948C),
-  accent = Color(0xFFE6D3B0),
-  mark = Color(0xFFF7EBD4),
-  accentLine = Color(0xFFA89068),
-  accentSoft = Color(0xFF243028),
-  danger = Color(0xFFD4787A),
-  ok = Color(0xFF6BAF9A),
-  you = Color(0xFF2A2820),
-  kit = Color(0xFF1E2823),
-)
-
-private fun lampColors() = CabColors(
-  canvas = Color(0xFF0C0C16),
-  panel = Color(0xFF151522),
-  track = Color(0xFF1E1E2E),
-  line = Color(0xFF32324A),
-  edge = Color(0xFF5A5A78),
-  fg = Color(0xFFEEF0E6),
-  body = Color(0xFFD5D8C8),
-  muted = Color(0xFF9AA090),
-  dim = Color(0xFF8A9088),
-  accent = Color(0xFFC5D24A),
-  mark = Color(0xFFE4EEC8),
-  accentLine = Color(0xFF8A9430),
-  accentSoft = Color(0xFF222418),
-  danger = Color(0xFFE07090),
-  ok = Color(0xFF5EC8B0),
-  you = Color(0xFF2A2A18),
-  kit = Color(0xFF1E1E2E),
-)
-
-private fun noirColors() = CabColors(
-  canvas = Color(0xFF0A0C10),
-  panel = Color(0xFF12151A),
-  track = Color(0xFF1A1F28),
-  line = Color(0xFF2E3644),
-  edge = Color(0xFF5A6578),
-  fg = Color(0xFFE8EEF4),
-  body = Color(0xFFC5CED8),
-  muted = Color(0xFF8A96A8),
-  dim = Color(0xFF6E7A8C),
-  accent = Color(0xFF8EB4D4),
-  mark = Color(0xFFD4E4F4),
-  accentLine = Color(0xFF4A78A0),
-  accentSoft = Color(0xFF121820),
-  danger = Color(0xFFD07090),
-  ok = Color(0xFF5CB8A8),
-  you = Color(0xFF1A2430),
-  kit = Color(0xFF1A1F28),
-)
-
-private fun emberColors() = CabColors(
-  canvas = Color(0xFF120C0A),
-  panel = Color(0xFF1A1210),
-  track = Color(0xFF261C16),
-  line = Color(0xFF4A3430),
-  edge = Color(0xFF7A5850),
-  fg = Color(0xFFF4ECE4),
-  body = Color(0xFFDCC8BC),
-  muted = Color(0xFFB09080),
-  dim = Color(0xFF8A7064),
-  accent = Color(0xFFE07040),
-  mark = Color(0xFFF4C4A0),
-  accentLine = Color(0xFFA04828),
-  accentSoft = Color(0xFF241410),
-  danger = Color(0xFFE07090),
-  ok = Color(0xFF6BB090),
-  you = Color(0xFF2A1410),
-  kit = Color(0xFF261C16),
-)
-
-private fun tideColors() = CabColors(
-  canvas = Color(0xFF0A1214),
-  panel = Color(0xFF101A1C),
-  track = Color(0xFF182428),
-  line = Color(0xFF2A3C44),
-  edge = Color(0xFF4A6870),
-  fg = Color(0xFFE4F0EE),
-  body = Color(0xFFC4D8D4),
-  muted = Color(0xFF88A8A8),
-  dim = Color(0xFF6E8888),
-  accent = Color(0xFF3CB8B0),
-  mark = Color(0xFFB8ECE4),
-  accentLine = Color(0xFF2A7878),
-  accentSoft = Color(0xFF102020),
-  danger = Color(0xFFD07890),
-  ok = Color(0xFF4CBC9C),
-  you = Color(0xFF142428),
-  kit = Color(0xFF182428),
-)
-
-private fun bloomColors() = CabColors(
-  canvas = Color(0xFF100C14),
-  panel = Color(0xFF18141E),
-  track = Color(0xFF221C2A),
-  line = Color(0xFF3A3048),
-  edge = Color(0xFF6A5878),
-  fg = Color(0xFFF0E8F4),
-  body = Color(0xFFD8D0DC),
-  muted = Color(0xFFA890B0),
-  dim = Color(0xFF8A7898),
-  accent = Color(0xFFD070C0),
-  mark = Color(0xFFF0C8E8),
-  accentLine = Color(0xFF884878),
-  accentSoft = Color(0xFF20141E),
-  danger = Color(0xFFE07090),
-  ok = Color(0xFF68B8A0),
-  you = Color(0xFF241428),
-  kit = Color(0xFF221C2A),
-)
-
 private fun paperColors() = CabColors(
   canvas = Color(0xFFF6F1E8),
   panel = Color(0xFFEFE8DC),
@@ -212,69 +95,6 @@ private fun paperColors() = CabColors(
   scheme = "light",
 )
 
-private fun chalkColors() = CabColors(
-  canvas = Color(0xFFF2F5F8),
-  panel = Color(0xFFE6ECF2),
-  track = Color(0xFFD8E0E8),
-  line = Color(0xFF7A8A98),
-  edge = Color(0xFF4A5A68),
-  fg = Color(0xFF12161C),
-  body = Color(0xFF1E2630),
-  muted = Color(0xFF3A4856),
-  dim = Color(0xFF465462),
-  accent = Color(0xFF1E5A8C),
-  mark = Color(0xFF0E3A60),
-  accentLine = Color(0xFF164A74),
-  accentSoft = Color(0xFFD0E0F0),
-  danger = Color(0xFFB42858),
-  ok = Color(0xFF1A7060),
-  you = Color(0xFFC8D6E4),
-  kit = Color(0xFFD8E0E8),
-  scheme = "light",
-)
-
-private fun foamColors() = CabColors(
-  canvas = Color(0xFFEEF6F5),
-  panel = Color(0xFFE0EEEC),
-  track = Color(0xFFD0E4E0),
-  line = Color(0xFF5E8884),
-  edge = Color(0xFF3A5C58),
-  fg = Color(0xFF102018),
-  body = Color(0xFF1A2C2A),
-  muted = Color(0xFF345250),
-  dim = Color(0xFF425E5C),
-  accent = Color(0xFF0C6E68),
-  mark = Color(0xFF064840),
-  accentLine = Color(0xFF0A5C58),
-  accentSoft = Color(0xFFC4E8E4),
-  danger = Color(0xFFB42858),
-  ok = Color(0xFF1A7A64),
-  you = Color(0xFFB8D8D4),
-  kit = Color(0xFFD0E4E0),
-  scheme = "light",
-)
-
-private fun petalColors() = CabColors(
-  canvas = Color(0xFFF7F1F6),
-  panel = Color(0xFFEFE4EE),
-  track = Color(0xFFE6D8E6),
-  line = Color(0xFF8E748E),
-  edge = Color(0xFF5A485A),
-  fg = Color(0xFF1A121C),
-  body = Color(0xFF2A2030),
-  muted = Color(0xFF4E3E56),
-  dim = Color(0xFF5A4A62),
-  accent = Color(0xFFA02080),
-  mark = Color(0xFF6E0858),
-  accentLine = Color(0xFF881068),
-  accentSoft = Color(0xFFF4D0E8),
-  danger = Color(0xFFB42858),
-  ok = Color(0xFF1A7A64),
-  you = Color(0xFFE4C0DC),
-  kit = Color(0xFFE6D8E6),
-  scheme = "light",
-)
-
 private fun inkColors() = CabColors(
   canvas = Color(0xFF050506),
   panel = Color(0xFF141416),
@@ -293,6 +113,252 @@ private fun inkColors() = CabColors(
   ok = Color(0xFF3CC8A8),
   you = Color(0xFF3A2410),
   kit = Color(0xFF262628),
+)
+
+private fun marqueeColors() = CabColors(
+  canvas = Color(0xFF141A3C),
+  panel = Color(0xFF1C2450),
+  track = Color(0xFF283064),
+  line = Color(0xFF46508C),
+  edge = Color(0xFF7A84B8),
+  fg = Color(0xFFFFF8E6),
+  body = Color(0xFFE6E0D0),
+  muted = Color(0xFFB0B4D8),
+  dim = Color(0xFF9AA0C8),
+  accent = Color(0xFFFFCC33),
+  mark = Color(0xFFFFE599),
+  accentLine = Color(0xFFC99A10),
+  accentSoft = Color(0xFF332A12),
+  danger = Color(0xFFFF6B9D),
+  ok = Color(0xFF3AD0A0),
+  you = Color(0xFF2A2470),
+  kit = Color(0xFF283064),
+)
+
+private fun lemonadeColors() = CabColors(
+  canvas = Color(0xFFFFF6CC),
+  panel = Color(0xFFFFF0B0),
+  track = Color(0xFFF7E690),
+  line = Color(0xFFA89440),
+  edge = Color(0xFF6E6020),
+  fg = Color(0xFF1A1606),
+  body = Color(0xFF2E2810),
+  muted = Color(0xFF5A5020),
+  dim = Color(0xFF665C28),
+  accent = Color(0xFF1F52E0),
+  mark = Color(0xFF10308C),
+  accentLine = Color(0xFF1842B8),
+  accentSoft = Color(0xFFDDE6FF),
+  danger = Color(0xFFC0184C),
+  ok = Color(0xFF167A4A),
+  you = Color(0xFFFFD84D),
+  kit = Color(0xFFF7E690),
+  scheme = "light",
+)
+
+private fun neonColors() = CabColors(
+  canvas = Color(0xFF120A1E),
+  panel = Color(0xFF1B1030),
+  track = Color(0xFF281848),
+  line = Color(0xFF4A2E7A),
+  edge = Color(0xFF7E58B8),
+  fg = Color(0xFFFDF2FF),
+  body = Color(0xFFE6D8F2),
+  muted = Color(0xFFB89AD8),
+  dim = Color(0xFFA088C4),
+  accent = Color(0xFFFF2D95),
+  mark = Color(0xFFFFA6D2),
+  accentLine = Color(0xFFC0106A),
+  accentSoft = Color(0xFF3A1030),
+  danger = Color(0xFFFF5A5A),
+  ok = Color(0xFF2EF2B0),
+  you = Color(0xFF3A1458),
+  kit = Color(0xFF281848),
+)
+
+private fun fizzColors() = CabColors(
+  canvas = Color(0xFFE6FBFF),
+  panel = Color(0xFFD2F4FB),
+  track = Color(0xFFBCEAF4),
+  line = Color(0xFF4E8A98),
+  edge = Color(0xFF2E5C68),
+  fg = Color(0xFF081A20),
+  body = Color(0xFF142A32),
+  muted = Color(0xFF2E5260),
+  dim = Color(0xFF3A5E6C),
+  accent = Color(0xFFE0107A),
+  mark = Color(0xFF8E0848),
+  accentLine = Color(0xFFC00C66),
+  accentSoft = Color(0xFFFFD6EA),
+  danger = Color(0xFFC4123A),
+  ok = Color(0xFF0E7A5A),
+  you = Color(0xFFB0EEFC),
+  kit = Color(0xFFBCEAF4),
+  scheme = "light",
+)
+
+private fun rainColors() = CabColors(
+  canvas = Color(0xFF0F131F),
+  panel = Color(0xFF161C2C),
+  track = Color(0xFF20283C),
+  line = Color(0xFF364260),
+  edge = Color(0xFF5C6A90),
+  fg = Color(0xFFE8ECF8),
+  body = Color(0xFFC8D0E4),
+  muted = Color(0xFF8E9AC0),
+  dim = Color(0xFF8894BA),
+  accent = Color(0xFF8C9FE6),
+  mark = Color(0xFFC8D4FF),
+  accentLine = Color(0xFF4E60A8),
+  accentSoft = Color(0xFF1A2040),
+  danger = Color(0xFFD06A90),
+  ok = Color(0xFF5CB09A),
+  you = Color(0xFF1E2644),
+  kit = Color(0xFF20283C),
+)
+
+private fun mistColors() = CabColors(
+  canvas = Color(0xFFECEEF6),
+  panel = Color(0xFFE0E3EE),
+  track = Color(0xFFD0D4E4),
+  line = Color(0xFF7E86A4),
+  edge = Color(0xFF505870),
+  fg = Color(0xFF14161E),
+  body = Color(0xFF22262E),
+  muted = Color(0xFF464C62),
+  dim = Color(0xFF4C526A),
+  accent = Color(0xFF4A56A8),
+  mark = Color(0xFF2A3270),
+  accentLine = Color(0xFF3C4690),
+  accentSoft = Color(0xFFD8DCF6),
+  danger = Color(0xFFB02858),
+  ok = Color(0xFF1E7462),
+  you = Color(0xFFC8CCEC),
+  kit = Color(0xFFD0D4E4),
+  scheme = "light",
+)
+
+private fun fuseColors() = CabColors(
+  canvas = Color(0xFF17150F),
+  panel = Color(0xFF201D14),
+  track = Color(0xFF2C281C),
+  line = Color(0xFF4E4830),
+  edge = Color(0xFF7C7450),
+  fg = Color(0xFFFBF4E6),
+  body = Color(0xFFE2D8C4),
+  muted = Color(0xFFAEA48A),
+  dim = Color(0xFFA0967E),
+  accent = Color(0xFFFF7A00),
+  mark = Color(0xFFFFBF80),
+  accentLine = Color(0xFFC45A00),
+  accentSoft = Color(0xFF33200A),
+  danger = Color(0xFFFF5A6E),
+  ok = Color(0xFF86C46A),
+  you = Color(0xFF332A16),
+  kit = Color(0xFF2C281C),
+)
+
+private fun gritColors() = CabColors(
+  canvas = Color(0xFFF3EFE4),
+  panel = Color(0xFFE9E3D2),
+  track = Color(0xFFDCD4BC),
+  line = Color(0xFF8A8060),
+  edge = Color(0xFF5A5238),
+  fg = Color(0xFF1A1810),
+  body = Color(0xFF2C2818),
+  muted = Color(0xFF504A30),
+  dim = Color(0xFF5A543A),
+  accent = Color(0xFFD2500A),
+  mark = Color(0xFF8A3004),
+  accentLine = Color(0xFFB44208),
+  accentSoft = Color(0xFFFFDCC4),
+  danger = Color(0xFFB4203A),
+  ok = Color(0xFF4A7A1E),
+  you = Color(0xFFEAD29A),
+  kit = Color(0xFFDCD4BC),
+  scheme = "light",
+)
+
+private fun sirenColors() = CabColors(
+  canvas = Color(0xFF160608),
+  panel = Color(0xFF200A0E),
+  track = Color(0xFF2E1016),
+  line = Color(0xFF58202A),
+  edge = Color(0xFF8E3A48),
+  fg = Color(0xFFFFF2F2),
+  body = Color(0xFFECD4D6),
+  muted = Color(0xFFC09AA0),
+  dim = Color(0xFFAE8A90),
+  accent = Color(0xFFFF2E3F),
+  mark = Color(0xFFFFA0A8),
+  accentLine = Color(0xFFC0101E),
+  accentSoft = Color(0xFF3E0C12),
+  danger = Color(0xFFFF6AB8),
+  ok = Color(0xFF46D08A),
+  you = Color(0xFF3A0E18),
+  kit = Color(0xFF2E1016),
+)
+
+private fun flareColors() = CabColors(
+  canvas = Color(0xFFFFF0EE),
+  panel = Color(0xFFFDE0DC),
+  track = Color(0xFFF6CCC6),
+  line = Color(0xFFA06860),
+  edge = Color(0xFF6A4038),
+  fg = Color(0xFF1E0A0A),
+  body = Color(0xFF301616),
+  muted = Color(0xFF5A3030),
+  dim = Color(0xFF663A3A),
+  accent = Color(0xFFD4102C),
+  mark = Color(0xFF880818),
+  accentLine = Color(0xFFB00C22),
+  accentSoft = Color(0xFFFFD4D4),
+  danger = Color(0xFFB0147A),
+  ok = Color(0xFF1A7A4E),
+  you = Color(0xFFFFC2BC),
+  kit = Color(0xFFF6CCC6),
+  scheme = "light",
+)
+
+private fun staticColors() = CabColors(
+  canvas = Color(0xFF0D1410),
+  panel = Color(0xFF141C17),
+  track = Color(0xFF1E2A22),
+  line = Color(0xFF37493D),
+  edge = Color(0xFF5E7866),
+  fg = Color(0xFFF0F8F2),
+  body = Color(0xFFD2DCD6),
+  muted = Color(0xFF9AB0A2),
+  dim = Color(0xFF8AA092),
+  accent = Color(0xFFB388FF),
+  mark = Color(0xFFDCC8FF),
+  accentLine = Color(0xFF7A4EE0),
+  accentSoft = Color(0xFF221A38),
+  danger = Color(0xFFFF6A8A),
+  ok = Color(0xFF52D490),
+  you = Color(0xFF26203C),
+  kit = Color(0xFF1E2A22),
+)
+
+private fun flickerColors() = CabColors(
+  canvas = Color(0xFFEEF7F0),
+  panel = Color(0xFFDFF0E4),
+  track = Color(0xFFCCE4D4),
+  line = Color(0xFF6A8E78),
+  edge = Color(0xFF40604C),
+  fg = Color(0xFF0E1A12),
+  body = Color(0xFF1A2A20),
+  muted = Color(0xFF365244),
+  dim = Color(0xFF425E50),
+  accent = Color(0xFF6A2FD0),
+  mark = Color(0xFF3E1484),
+  accentLine = Color(0xFF5824B0),
+  accentSoft = Color(0xFFE8DCFF),
+  danger = Color(0xFFB4204E),
+  ok = Color(0xFF1A7A4A),
+  you = Color(0xFFD8D0F8),
+  kit = Color(0xFFCCE4D4),
+  scheme = "light",
 )
 
 fun CabColors.toColorScheme() = if (scheme == "light") {

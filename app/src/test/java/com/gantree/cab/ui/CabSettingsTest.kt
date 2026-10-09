@@ -28,7 +28,11 @@ class CabSettingsTest {
 
   private val picked = mutableListOf<Pair<String, String>>()
 
-  private fun settings(voiceOffered: Boolean = true) {
+  private fun settings(
+    voiceOffered: Boolean = true,
+    followTheme: Boolean = true,
+    kitTheme: String = "",
+  ) {
     compose.setContent {
       CabTheme(themeId = DEFAULT_THEME, fontId = DEFAULT_FONT) {
         CabSettings(
@@ -53,6 +57,8 @@ class CabSettingsTest {
           voiceOffered = voiceOffered,
           langId = DEFAULT_LANG,
           onLang = { picked += "lang" to it },
+          followTheme = followTheme,
+          kitTheme = kitTheme,
         )
       }
     }
@@ -77,14 +83,24 @@ class CabSettingsTest {
   }
 
   @Test
-  fun openingThemeListsTheCatalogAndAPickReportsTheId() {
-    settings()
+  fun openingThemeListsPlainAndMoodsAndAPickReportsTheId() {
+    settings(kitTheme = "paper")
     open("Theme")
+    compose.onNodeWithText("Plain").assertIsDisplayed()
+    compose.onNodeWithText("Moods").assertIsDisplayed()
     compose.onNodeWithContentDescription("Boom").assertIsSelected()
-    compose.onNodeWithContentDescription("Lamp").performClick()
-    assertEquals(listOf("theme" to "lamp"), picked)
-    // The menu closed and the field shows the pick's label.
-    compose.onNodeWithContentDescription("Inlay").assertDoesNotExist()
+    compose.onNodeWithContentDescription("Paper, Kit").assertIsDisplayed()
+    compose.onNodeWithContentDescription("Marquee").performClick()
+    assertEquals(listOf("theme" to "marquee"), picked)
+    compose.onNodeWithContentDescription("Lemonade").assertDoesNotExist()
+  }
+
+  @Test
+  fun kitTagHidesWhenFollowIsOff() {
+    settings(followTheme = false, kitTheme = "paper")
+    open("Theme")
+    compose.onNodeWithContentDescription("Paper").assertIsDisplayed()
+    compose.onNodeWithContentDescription("Paper, Kit").assertDoesNotExist()
   }
 
   @Test

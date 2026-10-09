@@ -1,20 +1,28 @@
 package com.gantree.cab.mailbox
 
-/** Same ids as pendant `lib/theme/catalog.ts`. Boom / Inlay / Lamp hexes must not drift. */
-val THEME_IDS = listOf(
-  "boom",
-  "inlay",
-  "lamp",
-  "noir",
-  "ember",
-  "tide",
-  "bloom",
-  "paper",
-  "chalk",
-  "foam",
-  "petal",
-  "ink",
+/**
+ * Same ids as pendant `lib/theme/catalog.ts`, in catalog order.
+ * Boom hexes stay shared with gantree. A stored id that is no longer
+ * here (`inlay`, `lamp`, `noir`, …) is unknown: [parseTheme] falls to boom.
+ */
+val THEME_PLAIN = listOf("boom", "paper", "ink")
+
+val THEME_MOODS = listOf(
+  "marquee",
+  "lemonade",
+  "neon",
+  "fizz",
+  "rain",
+  "mist",
+  "fuse",
+  "grit",
+  "siren",
+  "flare",
+  "static",
+  "flicker",
 )
+
+val THEME_IDS = THEME_PLAIN + THEME_MOODS
 const val DEFAULT_THEME = "boom"
 
 val FONT_IDS = listOf("sm", "md", "lg", "xl")

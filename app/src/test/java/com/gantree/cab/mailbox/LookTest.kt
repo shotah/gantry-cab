@@ -8,46 +8,51 @@ class LookTest {
   fun themeFallsBackToBoom() {
     assertEquals(DEFAULT_THEME, parseTheme(null))
     assertEquals("boom", parseTheme("nope"))
-    assertEquals("inlay", parseTheme("inlay"))
-    assertEquals("lamp", parseTheme("lamp"))
-    assertEquals("noir", parseTheme("noir"))
+    assertEquals("boom", parseTheme("noir"))
+    assertEquals("boom", parseTheme("lamp"))
+    assertEquals("siren", parseTheme("siren"))
+    assertEquals("lemonade", parseTheme("lemonade"))
     assertEquals(
-      listOf(
-        "boom",
-        "inlay",
-        "lamp",
-        "noir",
-        "ember",
-        "tide",
-        "bloom",
-        "paper",
-        "chalk",
-        "foam",
-        "petal",
-        "ink",
+      listOf("boom", "paper", "ink") + listOf(
+        "marquee",
+        "lemonade",
+        "neon",
+        "fizz",
+        "rain",
+        "mist",
+        "fuse",
+        "grit",
+        "siren",
+        "flare",
+        "static",
+        "flicker",
       ),
       THEME_IDS,
     )
+    assertEquals(THEME_PLAIN + THEME_MOODS, THEME_IDS)
     assertEquals("paper", parseTheme("paper"))
     assertEquals("ink", knownTheme("ink"))
-    assertEquals("noir", knownTheme("noir"))
+    assertEquals("marquee", knownTheme("marquee"))
+    assertEquals(null, knownTheme("noir"))
     assertEquals(null, knownTheme("nope"))
   }
 
   @Test
   fun followPaintsTheRoomThemeUntilItIsCleared() {
-    assertEquals("noir", paintedTheme(true, "noir", "boom"))
+    assertEquals("siren", paintedTheme(true, "siren", "boom"))
     assertEquals("boom", paintedTheme(true, "", "boom"))
     assertEquals("boom", paintedTheme(true, "nope", "boom"))
-    assertEquals("lamp", paintedTheme(false, "noir", "lamp"))
+    assertEquals("paper", paintedTheme(true, "noir", "paper"))
+    assertEquals("boom", paintedTheme(true, "lamp", "ember"))
+    assertEquals("rain", paintedTheme(false, "siren", "rain"))
   }
 
   @Test
   fun fetchedThemeKeepsALiveNoticeOverAStaleGet() {
-    assertEquals("lamp", fetchedRoomTheme("noir", "lamp", "boom"))
-    assertEquals("lamp", fetchedRoomTheme("", "lamp", ""))
-    assertEquals("tide", fetchedRoomTheme("noir", "noir", "tide"))
-    assertEquals("", fetchedRoomTheme("noir", "noir", ""))
+    assertEquals("rain", fetchedRoomTheme("siren", "rain", "boom"))
+    assertEquals("rain", fetchedRoomTheme("", "rain", ""))
+    assertEquals("marquee", fetchedRoomTheme("siren", "siren", "marquee"))
+    assertEquals("", fetchedRoomTheme("siren", "siren", ""))
   }
 
   @Test
@@ -67,13 +72,12 @@ class LookTest {
   fun labelsMatchPendant() {
     assertEquals("Boom", themeLabel("boom"))
     assertEquals("Boom", themeLabel("nope"))
-    assertEquals("Inlay", themeLabel("inlay"))
-    assertEquals("Noir", themeLabel("noir"))
+    assertEquals("Boom", themeLabel("noir"))
     assertEquals("Paper", themeLabel("paper"))
-    assertEquals("Chalk", themeLabel("chalk"))
-    assertEquals("Foam", themeLabel("foam"))
-    assertEquals("Petal", themeLabel("petal"))
     assertEquals("Ink", themeLabel("ink"))
+    assertEquals("Marquee", themeLabel("marquee"))
+    assertEquals("Lemonade", themeLabel("lemonade"))
+    assertEquals("Flicker", themeLabel("flicker"))
     assertEquals("Small", fontLabel("sm"))
     assertEquals("Medium", fontLabel("md"))
     assertEquals("Large", fontLabel("lg"))

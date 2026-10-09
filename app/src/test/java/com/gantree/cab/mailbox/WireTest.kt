@@ -167,9 +167,10 @@ class WireTest {
 
   @Test
   fun themeNoticeCarriesTheIdAndClearsOnNull() {
-    val got = parseFrame("""{"kind":"theme","theme":"noir"}""")!!
+    val got = parseFrame("""{"kind":"theme","theme":"siren"}""")!!
     assertEquals("theme", got.kind)
-    assertEquals("noir", got.theme)
+    assertEquals("siren", got.theme)
+    assertNull(parseFrame("""{"kind":"theme","theme":"noir"}""")!!.theme)
     assertNull(got.text)
     val cleared = parseFrame("""{"kind":"theme","theme":null}""")!!
     assertEquals("", cleared.theme)

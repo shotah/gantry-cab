@@ -3,6 +3,7 @@ package com.gantree.cab.ui
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -45,10 +46,12 @@ import com.gantree.cab.mailbox.DEFAULT_PHOTO_SIZE
 import com.gantree.cab.mailbox.FONT_IDS
 import com.gantree.cab.mailbox.LANG_IDS
 import com.gantree.cab.mailbox.PHOTO_SIZE_IDS
-import com.gantree.cab.mailbox.THEME_IDS
+import com.gantree.cab.mailbox.THEME_MOODS
+import com.gantree.cab.mailbox.THEME_PLAIN
 import com.gantree.cab.mailbox.chatSp
 import com.gantree.cab.mailbox.displaySlug
 import com.gantree.cab.mailbox.fontLabel
+import com.gantree.cab.mailbox.knownTheme
 import com.gantree.cab.mailbox.langLabel
 import com.gantree.cab.mailbox.photoSizeChip
 import com.gantree.cab.mailbox.themeLabel
@@ -79,6 +82,7 @@ fun CabSettings(
   onPhotoSize: (String) -> Unit = {},
   backdropOn: Boolean = true,
   followTheme: Boolean = true,
+  kitTheme: String = "",
   onBackdropToggle: () -> Unit = {},
   onFollowToggle: () -> Unit = {},
   voiceOffered: Boolean = false,
@@ -225,13 +229,11 @@ fun CabSettings(
         color = scheme.onSurfaceVariant,
       )
     }
-    SettingsPick(
-      label = "Theme",
-      ids = THEME_IDS,
+    ThemePick(
       selected = themeId,
-      itemLabel = ::themeLabel,
+      kitTheme = kitTheme,
+      followTheme = followTheme,
       onPick = onTheme,
-      leading = { ThemeSwatch(it, modifier = Modifier.size(16.dp)) },
     )
     SettingsPick(
       label = "Font size",
@@ -347,7 +349,94 @@ fun CabSettings(
 }
 
 /**
- * One closed-set setting as a dropdown (Theme, Font size, Photo size,
+ * Theme menu in two groups (Plain, then Moods). A tap still reports the id;
+ * the caller turns follow off. When follow is on, Kit's room id wears a Kit tag.
+ */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun ThemePick(
+  selected: String,
+  kitTheme: String,
+  followTheme: Boolean,
+  onPick: (String) -> Unit,
+) {
+  var open by remember { mutableStateOf(false) }
+  val kit = if (followTheme) knownTheme(kitTheme) else null
+  ExposedDropdownMenuBox(expanded = open, onExpandedChange = { open = it }) {
+    OutlinedTextField(
+      value = themeLabel(selected),
+      onValueChange = {},
+      readOnly = true,
+      singleLine = true,
+      label = { Text("Theme") },
+      leadingIcon = { ThemeSwatch(selected, modifier = Modifier.size(16.dp)) },
+      trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = open) },
+      modifier = Modifier
+        .fillMaxWidth()
+        .menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable)
+        .semantics { contentDescription = "Theme" },
+    )
+    ExposedDropdownMenu(expanded = open, onDismissRequest = { open = false }) {
+      ThemeGroup("Plain", THEME_PLAIN, selected, kit, onPick) { open = false }
+      ThemeGroup("Moods", THEME_MOODS, selected, kit, onPick) { open = false }
+    }
+  }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun ColumnScope.ThemeGroup(
+  header: String,
+  ids: List<String>,
+  selected: String,
+  kit: String?,
+  onPick: (String) -> Unit,
+  close: () -> Unit,
+) {
+  Text(
+    header,
+    style = MaterialTheme.typography.labelMedium,
+    color = LocalCabColors.current.dim,
+    modifier = Modifier
+      .padding(horizontal = 16.dp, vertical = 8.dp)
+      .semantics { contentDescription = header },
+  )
+  for (id in ids) {
+    val on = id == selected
+    val tagged = id == kit
+    DropdownMenuItem(
+      text = {
+        Row(
+          horizontalArrangement = Arrangement.spacedBy(8.dp),
+          verticalAlignment = Alignment.CenterVertically,
+        ) {
+          Text(themeLabel(id))
+          if (tagged) {
+            Text(
+              "Kit",
+              style = MaterialTheme.typography.labelSmall,
+              color = LocalCabColors.current.dim,
+            )
+          }
+        }
+      },
+      leadingIcon = { ThemeSwatch(id, modifier = Modifier.size(16.dp)) },
+      onClick = {
+        onPick(id)
+        close()
+      },
+      contentPadding = ExposedDropdownMenuDefaults.ItemContentPadding,
+      modifier = Modifier.semantics {
+        role = Role.RadioButton
+        this.selected = on
+        contentDescription = if (tagged) "${themeLabel(id)}, Kit" else themeLabel(id)
+      },
+    )
+  }
+}
+
+/**
+ * One closed-set setting as a dropdown (Font size, Photo size,
  * Language): a read-only field showing the pick, the choices in a menu under
  * it. Same shape as the PWA's `<select>` rows; the drawer stays one column.
  */

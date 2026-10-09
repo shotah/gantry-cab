@@ -57,8 +57,8 @@ not wrap the Vinext PWA. It does not run React Native.
 Paperclip is the rest of the mouth: photo or camera (caption + JPEG
 travel together), slash commands, GPS on send, drop a pin. Kit can
 pick the room's mood; you can unfollow and keep yours. Boom is the
-default. Lamp and Paper are the other two on this page — Settings has
-the full catalog.
+default. Paper is the neutral light, Marquee is one mood — Settings
+groups Plain and Moods.
 
 <p align="center">
   <img src="assets/docs/phone-thread.png" alt="Ada talking to Kit" width="180">
@@ -71,7 +71,7 @@ the full catalog.
 </p>
 
 <p align="center">
-  <img src="assets/docs/phone-thread-lamp.png" alt="Same thread in Lamp" width="180">
+  <img src="assets/docs/phone-thread-marquee.png" alt="Same thread in Marquee" width="180">
   &nbsp;
   <img src="assets/docs/phone-thread-paper.png" alt="Same thread in Paper" width="180">
   &nbsp;

@@ -61,10 +61,10 @@ private fun PreviewPhonePhoto() {
   PhoneShot("photo")
 }
 
-@Preview(name = "phone-thread-lamp", widthDp = 390, heightDp = 844)
+@Preview(name = "phone-thread-marquee", widthDp = 390, heightDp = 844)
 @Composable
-private fun PreviewPhoneThreadLamp() {
-  PhoneShot("thread", themeId = "lamp")
+private fun PreviewPhoneThreadMarquee() {
+  PhoneShot("thread", themeId = "marquee")
 }
 
 @Preview(name = "phone-thread-paper", widthDp = 390, heightDp = 844)

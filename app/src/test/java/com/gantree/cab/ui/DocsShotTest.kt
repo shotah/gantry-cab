@@ -209,14 +209,14 @@ class DocsShotTest {
   }
 
   @Test
-  fun lampAndPaperThreadsUseTheirCanvas() {
+  fun marqueeAndPaperThreadsUseTheirCanvas() {
     val boom = renderPhone("thread")
-    val lamp = renderDocsShot("phone-thread-lamp")
+    val marquee = renderDocsShot("phone-thread-marquee")
     val paper = renderDocsShot("phone-thread-paper")
     assertEquals(0x0E1316, boom.getRGB(200, 500) and 0xFFFFFF)
-    assertEquals(0x0C0C16, lamp.getRGB(200, 500) and 0xFFFFFF)
+    assertEquals(0x141A3C, marquee.getRGB(200, 500) and 0xFFFFFF)
     assertEquals(0xF6F1E8, paper.getRGB(200, 500) and 0xFFFFFF)
-    assertEquals(PHONE_W, lamp.width)
+    assertEquals(PHONE_W, marquee.width)
     assertEquals(PHONE_H, paper.height)
   }
 

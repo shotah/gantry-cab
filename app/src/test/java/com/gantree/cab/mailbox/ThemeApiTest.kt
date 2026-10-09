@@ -26,17 +26,21 @@ class ThemeApiTest {
 
   @Test
   fun roomThemeFromStateReadsTheIdAndTreatsNullAsCleared() {
-    assertEquals("tide", roomThemeFromState("""{"theme":"tide","themes":[]}"""))
+    assertEquals(
+      "siren",
+      roomThemeFromState("""{"theme":"siren","themes":[{"id":"siren","feel":"angry","scheme":"dark"}]}"""),
+    )
     assertEquals("", roomThemeFromState("""{"theme":null}"""))
+    assertEquals("", roomThemeFromState("""{"theme":"noir"}"""))
     assertEquals("", roomThemeFromState("""{"theme":"nope"}"""))
     assertEquals("", roomThemeFromState("nope"))
   }
 
   @Test
   fun fetchReturnsTheRoomIdAndSendsBearer() {
-    server.enqueue(MockResponse().setBody("""{"theme":"noir","themes":[]}"""))
+    server.enqueue(MockResponse().setBody("""{"theme":"rain","themes":[]}"""))
     val origin = server.url("/").toString()
-    assertEquals("noir", api.fetch(origin, "kit", "jwe"))
+    assertEquals("rain", api.fetch(origin, "kit", "jwe"))
     val req = server.takeRequest()
     assertEquals("/api/theme?slug=kit", req.path)
     assertEquals("Bearer jwe", req.getHeader("Authorization"))

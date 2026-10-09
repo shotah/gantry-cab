@@ -8,8 +8,9 @@ adb shell am start -n com.gantree.cab/.MainActivity --es sample thread
 ```
 
 Samples are canned Ada/Kit turns — not a live crane. Release builds ignore
-`sample` extras. Boom is the default mood; Lamp and Paper are the other two
-README themes. The rest of the catalog lives in Settings.
+`sample` extras. Boom is the default. Paper is the neutral light, Ink is
+high contrast, and Marquee is one mood. Settings groups the rest as Plain
+and Moods.
 
 Not shot yet: the header mic (left of the cog, only when the Worker
 publishes `voice`) and the hold-to-talk bar it swaps in for compose,
@@ -47,7 +48,7 @@ Font size / Photo size as chip rows; on the phone they are dropdowns
 </p>
 
 <p align="center">
-  <img src="../assets/docs/phone-thread-lamp.png" alt="Same thread in Lamp" width="180">
+  <img src="../assets/docs/phone-thread-marquee.png" alt="Same thread in Marquee" width="180">
   &nbsp;
   <img src="../assets/docs/phone-thread-paper.png" alt="Same thread in Paper" width="180">
   &nbsp;
@@ -59,7 +60,8 @@ Font size / Photo size as chip rows; on the phone they are dropdowns
 ## Android Auto
 
 ListTemplate + `ConversationItem` stand-in (DHU adds Reply / Play).
-Voice is Auto's host STT, not Assistant. An empty thread paints Kit's
+Voice is Auto's host STT, not Assistant. The head unit keeps the car's
+day and night; a theme notice paints the phone only. An empty thread paints Kit's
 starter card ("Nothing said yet. Tap Reply and talk to Kit.") so
 Reply exists before the phone has sent anything; `auto-empty` predates
 that card.
@@ -82,7 +84,7 @@ that card.
 | `phone-emoji` | `thread` | Emoji picker over compose. |
 | `phone-attach` | `thread` | Paperclip menu: photo, camera, commands, GPS, pin. |
 | `phone-draft` | `thread` | Staged photo on compose: thumbnail + Remove; Send carries caption + JPEG. |
-| `phone-thread-lamp` | `thread` | Same thread, Lamp. |
+| `phone-thread-marquee` | `thread` | Same thread, Marquee (happy, dark). |
 | `phone-thread-paper` | `thread` | Same thread, Paper (daylight). |
 | `auto-empty` | `empty` | Auto list, empty. |
 | `auto-thread` | `thread` | Auto list, last six turns. |

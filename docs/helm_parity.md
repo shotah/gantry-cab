@@ -22,6 +22,15 @@ same as pendant's table: wire first, then UI.
 
 ## UI (phone only; CarPlay shows nothing new)
 
+- [ ] **Mood themes.** Fifteen ids: Plain `boom` / `paper` / `ink`, then
+      six feelings × dark / light (`marquee`/`lemonade`, `neon`/`fizz`,
+      `rain`/`mist`, `fuse`/`grit`, `siren`/`flare`, `static`/`flicker`).
+      A stored retired id (`inlay`, `lamp`, `noir`, `ember`, `tide`,
+      `bloom`, `chalk`, `foam`, `petal`) falls to `boom`; a notice with
+      one of those is ignored. Settings groups Plain and Moods; a tap
+      writes the id and turns follow off. Kit's room id wears a Kit tag
+      while follow is on. CarPlay stays the car's palette. Cab:
+      `Look.kt` `THEME_IDS`, `CabPalette.kt`, `CabSettings` theme menu.
 - [ ] **Avatar sheet.** Tap the header face → a sheet, not the photo
       picker: the face large (160 pt, same ring as the header), the
       crane's name, then **Copy** (the JPEG on the pasteboard as an

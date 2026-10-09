@@ -96,7 +96,7 @@ val DOCS_SHOT_NAMES = listOf(
   "phone-emoji",
   "phone-attach",
   "phone-draft",
-  "phone-thread-lamp",
+  "phone-thread-marquee",
   "phone-thread-paper",
   "auto-empty",
   "auto-thread",
@@ -113,7 +113,7 @@ fun renderDocsShot(name: String): BufferedImage = when (name) {
   "phone-emoji" -> renderPhone("thread", emoji = true)
   "phone-attach" -> renderPhone("thread", attach = true)
   "phone-draft" -> renderPhone("thread", draftPhoto = true)
-  "phone-thread-lamp" -> renderPhone("thread", themeId = "lamp")
+  "phone-thread-marquee" -> renderPhone("thread", themeId = "marquee")
   "phone-thread-paper" -> renderPhone("thread", themeId = "paper")
   "auto-empty" -> renderAuto("empty")
   "auto-thread" -> renderAuto("thread")
@@ -380,7 +380,7 @@ private fun paintSettings(g: Graphics2D, ink: ShotInk, font: Font, slug: String,
     inset,
     y,
     THEME_IDS.take(5).map { ChipSpec(themeLabel(it), it == "boom", it) },
-    72f,
+    86f,
   )
   g.color = ink.muted
   g.font = font.deriveFont(12f)

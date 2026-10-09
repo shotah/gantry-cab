@@ -33,7 +33,7 @@ class ThemeApi(
   }
 }
 
-/** `{ "theme": "noir" | null, "themes": [...] }` — catalog cards are ignored. */
+/** `{ "theme": "siren" | null, "themes": [...] }` — card keys (`feel`, `scheme`) are ignored. */
 fun roomThemeFromState(raw: String): String {
   return try {
     val o = JSONObject(raw)

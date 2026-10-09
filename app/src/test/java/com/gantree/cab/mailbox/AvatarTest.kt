@@ -94,10 +94,11 @@ class AvatarTest {
 
   @Test
   fun roomThemeNoticeClearsOnNullAndIgnoresJunk() {
-    assertEquals("lamp", roomThemeNotice("theme", true, false, "lamp"))
-    assertEquals("", roomThemeNotice("theme", true, true, "lamp"))
+    assertEquals("rain", roomThemeNotice("theme", true, false, "rain"))
+    assertEquals("", roomThemeNotice("theme", true, true, "rain"))
     assertEquals("", roomThemeNotice("theme", false, false, null))
+    assertEquals(null, roomThemeNotice("theme", true, false, "noir"))
     assertEquals(null, roomThemeNotice("theme", true, false, "nope"))
-    assertEquals(null, roomThemeNotice("face", true, false, "lamp"))
+    assertEquals(null, roomThemeNotice("face", true, false, "rain"))
   }
 }

@@ -142,6 +142,12 @@ class CabViewModel(private val app: CabApp) : ViewModel() {
     SharingStarted.Eagerly,
     paintedTheme(app.prefs.followTheme, app.mouth.roomTheme.value, app.prefs.theme),
   )
+  /** Room id for the Settings "Kit" tag. Empty when Kit has not picked. */
+  val roomTheme = app.mouth.roomTheme.stateIn(
+    viewModelScope,
+    SharingStarted.WhileSubscribed(5_000),
+    app.mouth.roomTheme.value,
+  )
   val faceHint = app.mouth.faceHint.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), "")
   val typingUntil = app.mouth.typingUntil.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), 0L)
 

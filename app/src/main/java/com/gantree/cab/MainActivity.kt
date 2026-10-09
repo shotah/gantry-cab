@@ -76,6 +76,7 @@ class MainActivity : ComponentActivity() {
       val photoSize by vm.photoSize.collectAsStateWithLifecycle()
       val backdropOn by vm.backdropOn.collectAsStateWithLifecycle()
       val followTheme by vm.followTheme.collectAsStateWithLifecycle()
+      val roomTheme by vm.roomTheme.collectAsStateWithLifecycle()
       val gps by vm.gps.collectAsStateWithLifecycle()
       val cranes by vm.cranes.collectAsStateWithLifecycle()
       val face by vm.face.collectAsStateWithLifecycle()
@@ -166,6 +167,7 @@ class MainActivity : ComponentActivity() {
           backdropBytes = backdrop,
           backdropOn = backdropOn,
           followTheme = followTheme,
+          kitTheme = roomTheme,
           onBackdropToggle = vm::toggleBackdrop,
           onFollowToggle = vm::toggleFollowTheme,
           voiceOffered = voiceOffered,
