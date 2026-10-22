@@ -145,8 +145,8 @@ dependencies {
   implementation("androidx.credentials:credentials-play-services-auth:1.6.0")
   implementation("com.google.android.libraries.identity.googleid:googleid:1.2.1")
   implementation("com.google.android.gms:play-services-location:21.4.0")
-  implementation("com.mikepenz:multiplatform-markdown-renderer:0.45.0")
-  implementation("com.mikepenz:multiplatform-markdown-renderer-m3:0.45.0")
+  implementation("com.mikepenz:multiplatform-markdown-renderer:0.46.0")
+  implementation("com.mikepenz:multiplatform-markdown-renderer-m3:0.46.0")
   // The parser the renderer above already ships; `speakable()` walks the same tree the bubble paints.
   implementation("org.jetbrains:markdown:0.7.16")
   implementation("io.coil-kt.coil3:coil-compose:3.6.3")
